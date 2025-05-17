@@ -57,7 +57,7 @@ export class UserGroupFormComponent implements OnInit {
         this.groupForm.patchValue({
           name: group.name,
           description: group.description,
-          parent: group.parent
+          parent: group.parent?.id || null
         });
         this.loading = false;
       },
@@ -82,7 +82,7 @@ export class UserGroupFormComponent implements OnInit {
 
       request.subscribe({
         next: () => {
-          this.router.navigate(['/users/groups']);
+          this.router.navigate(['/settings/user-groups']);
         },
         error: (error) => {
           this.error = 'Failed to save group';
@@ -93,7 +93,7 @@ export class UserGroupFormComponent implements OnInit {
   }
 
   onCancel(): void {
-    this.router.navigate(['/users/groups']);
+    this.router.navigate(['/settings/user-groups']);
   }
 
   isFieldInvalid(fieldName: string): boolean {

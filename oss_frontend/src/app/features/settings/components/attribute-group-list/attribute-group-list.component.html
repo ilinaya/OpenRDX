@@ -1,0 +1,90 @@
+<!-- Attribute Group List Template -->
+<div class="container">
+  <div class="header">
+    <h2>Attribute Groups</h2>
+    <button class="btn btn-primary" (click)="onCreateGroup()">
+      <i class="fas fa-plus"></i> Create Group
+    </button>
+  </div>
+
+  <div class="alert alert-danger" *ngIf="error">
+    {{ error }}
+  </div>
+
+  <div class="spinner-container" *ngIf="loading">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <div class="no-data" *ngIf="!loading && groups.length === 0">
+    <i class="fas fa-tags"></i>
+    <p>No attribute groups found</p>
+    <button class="btn btn-primary" (click)="onCreateGroup()">
+      <i class="fas fa-plus"></i> Create Group
+    </button>
+  </div>
+
+  <div class="table-responsive" *ngIf="!loading && groups.length > 0">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+          <th>System Group</th>
+          <th>Created At</th>
+          <th>Updated At</th>
+          <th class="actions-column">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let group of groups">
+          <td>{{ group.name }}</td>
+          <td>{{ group.description || 'N/A' }}</td>
+          <td>
+            <span class="badge" [ngClass]="group.is_system ? 'bg-primary' : 'bg-secondary'">
+              {{ group.is_system ? 'Yes' : 'No' }}
+            </span>
+          </td>
+          <td>{{ group.created_at | date:'medium' }}</td>
+          <td>{{ group.updated_at | date:'medium' }}</td>
+          <td class="actions">
+            <div class="btn-group">
+              <button class="btn btn-sm btn-outline-primary" (click)="onEditGroup(group.id)" title="Edit">
+                <i class="fas fa-edit"></i> Edit
+              </button>
+              <button 
+                class="btn btn-sm btn-outline-danger" 
+                (click)="onDeleteGroup(group.id)" 
+                title="Delete"
+                [disabled]="group.is_system">
+                <i class="fas fa-trash"></i> Delete
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pagination" *ngIf="!loading && groups.length > 0">
+    <div class="pagination-info">
+      Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, totalItems) }} of {{ totalItems }} entries
+    </div>
+    <div class="pagination-controls">
+      <button 
+        class="btn btn-outline-primary" 
+        [disabled]="currentPage === 1"
+        (click)="onPageChange(currentPage - 1)">
+        <i class="fas fa-chevron-left"></i> Previous
+      </button>
+      <span class="page-info">Page {{ currentPage }} of {{ Math.ceil(totalItems / pageSize) }}</span>
+      <button 
+        class="btn btn-outline-primary" 
+        [disabled]="currentPage >= Math.ceil(totalItems / pageSize)"
+        (click)="onPageChange(currentPage + 1)">
+        Next <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+</div> 

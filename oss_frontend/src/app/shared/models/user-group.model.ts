@@ -1,10 +1,9 @@
 export interface UserGroup {
   id: number;
   name: string;
-  description: string;
-  parent: number | null;
-  parent_details?: UserGroup;
-  children?: UserGroup[];
+  description?: string;
+  parent?: UserGroup;
+  parent_id?: number;
   created_at: string;
   updated_at: string;
 }

@@ -6,7 +6,12 @@
   </div>
 
   <div class="navbar-menu">
-   
+    <div class="navbar-start">
+      <a class="navbar-item" routerLink="/settings/user-groups" routerLinkActive="active">
+        <i class="fas fa-users"></i>
+        <span>User Groups</span>
+      </a>
+    </div>
     <div class="navbar-end">
       <div class="user-menu" [class.active]="isUserMenuOpen">
         <div class="user-menu-trigger" (click)="toggleUserMenu()">

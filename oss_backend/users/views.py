@@ -4,7 +4,7 @@ from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
 from .models import User, UserGroup
 from .serializers import UserSerializer, UserCreateSerializer, UserUpdateSerializer, UserGroupSerializer
-
+from rest_framework.decorators import action
 
 class UserGroupViewSet(viewsets.ModelViewSet):
     """
@@ -69,6 +69,13 @@ class UserGroupViewSet(viewsets.ModelViewSet):
     )
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
+
+    @action(detail=False, methods=['get'])
+    def tree(self, request):
+        queryset = self.get_queryset()
+        # Assuming you have a serializer that can handle tree structure
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 class UserViewSet(viewsets.ModelViewSet):
     """

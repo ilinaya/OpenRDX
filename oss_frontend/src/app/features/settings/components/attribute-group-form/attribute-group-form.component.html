@@ -1,0 +1,161 @@
+<div class="container">
+  <div class="header">
+    <h2>{{ isEditMode ? 'Edit' : 'Create' }} Attribute Group</h2>
+  </div>
+
+  <div class="alert alert-danger" *ngIf="error">
+    {{ error }}
+  </div>
+
+  <div class="spinner-container" *ngIf="loading">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <div class="group-form" *ngIf="!loading">
+    <form [formGroup]="groupForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="name">Name</label>
+        <input
+          type="text"
+          id="name"
+          formControlName="name"
+          class="form-control"
+          [ngClass]="{ 'is-invalid': isFieldInvalid('name') }"
+        >
+        <div class="invalid-feedback" *ngIf="isFieldInvalid('name')">
+          {{ getErrorMessage('name') }}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea
+          id="description"
+          formControlName="description"
+          class="form-control"
+          rows="3"
+        ></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="submitting">
+          {{ isEditMode ? 'Update' : 'Create' }} Group
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="onCancel()">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="attributes-section" *ngIf="isEditMode && !loading">
+    <h3>RADIUS Attributes</h3>
+    
+    <div class="attribute-form">
+      <form [formGroup]="attributeForm" (ngSubmit)="onAddAttribute()">
+        <div class="form-row">
+          <div class="form-group col-md-2">
+            <label for="vendor_id">Vendor ID</label>
+            <input
+              type="number"
+              id="vendor_id"
+              formControlName="vendor_id"
+              class="form-control"
+              min="0"
+            >
+          </div>
+
+          <div class="form-group col-md-2">
+            <label for="attribute_id">Attribute ID</label>
+            <input
+              type="number"
+              id="attribute_id"
+              formControlName="attribute_id"
+              class="form-control"
+              min="1"
+            >
+          </div>
+
+          <div class="form-group col-md-3">
+            <label for="attribute_name">Attribute Name</label>
+            <input
+              type="text"
+              id="attribute_name"
+              formControlName="attribute_name"
+              class="form-control"
+            >
+          </div>
+
+          <div class="form-group col-md-2">
+            <label for="attribute_type">Type</label>
+            <select
+              id="attribute_type"
+              formControlName="attribute_type"
+              class="form-control"
+            >
+              <option *ngFor="let type of attributeTypes" [value]="type">
+                {{ type }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group col-md-3">
+            <label for="attribute_value">Value</label>
+            <input
+              type="text"
+              id="attribute_value"
+              formControlName="attribute_value"
+              class="form-control"
+            >
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">
+            Add Attribute
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="attributes-table" *ngIf="attributes.length > 0">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Vendor ID</th>
+            <th>Attribute ID</th>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Value</th>
+            <th class="actions-column">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let attr of attributes">
+            <td>{{ attr.vendor_id }}</td>
+            <td>{{ attr.attribute_id }}</td>
+            <td>{{ attr.attribute_name }}</td>
+            <td>{{ attr.attribute_type }}</td>
+            <td>{{ attr.attribute_value }}</td>
+            <td class="actions">
+              <button
+                class="btn btn-sm btn-outline-danger"
+                (click)="onDeleteAttribute(attr.id)"
+                title="Delete"
+              >
+                <i class="fas fa-trash"></i> Delete
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="no-data" *ngIf="attributes.length === 0">
+      <i class="fas fa-tags"></i>
+      <p>No attributes found</p>
+    </div>
+  </div>
+</div> 

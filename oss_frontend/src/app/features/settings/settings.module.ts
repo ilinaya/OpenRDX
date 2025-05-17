@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule } from '@angular/forms';
+import { CommonModule, DatePipe } from '@angular/common';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { SettingsRoutingModule } from './settings-routing.module';
 import { SettingsComponent } from './settings.component';
 import { AdminListComponent } from './components/admin-list/admin-list.component';
@@ -16,6 +17,10 @@ import { VendorListComponent } from './components/vendor-list/vendor-list.compon
 import { VendorFormComponent } from './components/vendor-form/vendor-form.component';
 import { VendorDetailComponent } from './components/vendor-detail/vendor-detail.component';
 import { ChangePasswordComponent } from './components/change-password/change-password.component';
+import { UserGroupListComponent } from './components/user-group-list/user-group-list.component';
+import { UserGroupFormComponent } from './components/user-group-form/user-group-form.component';
+import { AttributeGroupListComponent } from './components/attribute-group-list/attribute-group-list.component';
+import { AttributeGroupFormComponent } from './components/attribute-group-form/attribute-group-form.component';
 
 @NgModule({
     declarations: [
@@ -32,12 +37,21 @@ import { ChangePasswordComponent } from './components/change-password/change-pas
         VendorListComponent,
         VendorFormComponent,
         VendorDetailComponent,
-        ChangePasswordComponent
+        ChangePasswordComponent,
+        UserGroupListComponent,
+        UserGroupFormComponent,
+        AttributeGroupListComponent,
+        AttributeGroupFormComponent
     ],
     imports: [
         CommonModule,
         ReactiveFormsModule,
+        FormsModule,
+        RouterModule,
         SettingsRoutingModule
+    ],
+    providers: [
+        DatePipe
     ]
 })
 export class SettingsModule { }

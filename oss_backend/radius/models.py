@@ -1,7 +1,5 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django.db.models.signals import post_migrate
-from django.dispatch import receiver
 from users.models import User
 
 

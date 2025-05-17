@@ -1,0 +1,144 @@
+version: '3.9'
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - oss_frontend
+      - oss_backend
+    networks:
+      - openrdx-network
+    restart: unless-stopped
+
+  core:
+    build:
+      context: ./core
+      dockerfile: Dockerfile
+    environment:
+      - COA_TOPIC=radius_coa
+    networks:
+      - openrdx-network
+    depends_on:
+      - redis
+      - postgres
+      - mongodb
+    ports:
+      - "1812:1812/udp"
+      - "1813:1813/udp"
+    restart: unless-stopped
+
+  oss_backend:
+    build:
+      context: ./oss_backend
+      dockerfile: Dockerfile
+    environment:
+      # Django settings
+      - DEBUG=False
+      - SECRET_KEY=django-insecure-key-for-development-only
+      - ALLOWED_HOSTS=localhost,127.0.0.1,*
+      - LOGGING_LEVEL=INFO
+      - DJANGO_SETTINGS_MODULE=core.settings
+      
+      # Database settings
+      - DB_NAME=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      
+      # MongoDB settings
+      - MONGODB_URI=mongodb://mongodb:27017/radius_accounting
+      
+      # JWT settings
+      - JWT_SECRET_KEY=jwt-secret-key-for-development-only
+      - JWT_ACCESS_TOKEN_LIFETIME=60
+      - JWT_REFRESH_TOKEN_LIFETIME=1
+      
+      # Email settings (Mailgun)
+      - MAILGUN_API_KEY=
+      - MAILGUN_SENDER_DOMAIN=mg.example.com
+      - DEFAULT_FROM_EMAIL=noreply@example.com
+      
+      # Integrations
+      - GOOGLE_CHAT_WEBHOOK_URL=
+      
+      # Redis settings
+      - REDIS_URL=redis://redis:6379/0
+
+      # RADIUS settings
+      - COA_TOPIC=radius_coa
+    expose:
+      - "8000"
+    networks:
+      - openrdx-network
+    depends_on:
+      - postgres
+      - redis
+      - mongodb
+    restart: unless-stopped
+
+  oss_frontend:
+    build:
+      context: ./oss_frontend
+      dockerfile: Dockerfile
+    environment:
+      - API_URL=http://nginx/api
+    expose:
+      - "80"
+    networks:
+      - openrdx-network
+    depends_on:
+      - oss_backend
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=openrdx
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    networks:
+      - openrdx-network
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:6.0
+    environment:
+      - MONGO_INITDB_DATABASE=radius_accounting
+    volumes:
+      - mongodb_data:/data/db
+    expose:
+      - "27017"
+    networks:
+      - openrdx-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    expose:
+      - "6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - openrdx-network
+    restart: unless-stopped
+
+networks:
+  openrdx-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  mongodb_data:
+  redis_data: 

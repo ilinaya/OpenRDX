@@ -1,0 +1,22 @@
+<div class="devices-container">
+  <div class="devices-header">
+    <h2>Network Devices</h2>
+  </div>
+
+  <div class="devices-content">
+    <div class="devices-nav">
+      <ul>
+        <li>
+          <a routerLink="/devices/nas" routerLinkActive="active">NAS Devices</a>
+        </li>
+        <li>
+          <a routerLink="/devices/groups" routerLinkActive="active">NAS Groups</a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="devices-main">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div>

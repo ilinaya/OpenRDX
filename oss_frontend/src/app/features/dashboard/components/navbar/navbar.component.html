@@ -1,0 +1,20 @@
+<div class="navbar">
+  <div class="navbar-header">
+    <h2>OpenRDX</h2>
+  </div>
+  
+  <nav class="nav-menu">
+    <ul>
+      <li *ngFor="let item of navItems" [class.active]="isActive(item.route)">
+        <a [routerLink]="item.route">
+          <i class="material-icons">{{ item.icon }}</i>
+          <span>{{ item.name }}</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+  
+  <div class="navbar-footer">
+    <p>© 2025 OSS Frontend</p>
+  </div>
+</div>

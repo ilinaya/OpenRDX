@@ -1,0 +1,28 @@
+<div class="settings-container">
+  <div class="settings-sidebar">
+    <div class="sidebar-header">
+      <h2>Settings</h2>
+    </div>
+    <nav class="settings-nav">
+      <a routerLink="admins" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+        <i class="fas fa-users"></i>
+        Admin Users
+      </a>
+      <a routerLink="groups" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+        <i class="fas fa-user-friends"></i>
+        Admin Groups
+      </a>
+      <a routerLink="secrets" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+        <i class="fas fa-key"></i>
+        Secrets
+      </a>
+      <a routerLink="vendors" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+        <i class="fas fa-building"></i>
+        Vendors
+      </a>
+    </nav>
+  </div>
+  <div class="settings-content">
+    <router-outlet></router-outlet>
+  </div>
+</div>

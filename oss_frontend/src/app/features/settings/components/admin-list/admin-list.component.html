@@ -1,0 +1,67 @@
+<div class="admin-list-container">
+  <div class="header">
+    <h2>Administrators</h2>
+    <button class="btn btn-primary" (click)="createNewAdmin()">Add New Administrator</button>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Loading administrators...</p>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <div *ngIf="!loading && admins.length === 0" class="empty-state">
+    <p>No administrators found. Click the button above to add a new administrator.</p>
+  </div>
+
+  <div *ngIf="!loading && admins.length > 0" class="admin-table-container">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Position</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let admin of admins">
+          <td>{{ admin.first_name }} {{ admin.last_name }}</td>
+          <td>{{ admin.email }}</td>
+          <td>{{ admin.position || 'N/A' }}</td>
+          <td>
+            <span class="status-badge" [ngClass]="{'active': admin.is_active, 'inactive': !admin.is_active}">
+              {{ admin.is_active ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td class="actions">
+            <button class="btn btn-sm btn-info" (click)="viewAdminDetails(admin.id)">View</button>
+            <button class="btn btn-sm btn-warning" (click)="editAdmin(admin.id)">Edit</button>
+            <button class="btn btn-sm btn-danger" (click)="deleteAdmin(admin.id)">Delete</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div class="pagination" *ngIf="totalPages > 1">
+      <button 
+        class="btn btn-sm" 
+        [disabled]="currentPage === 1"
+        (click)="changePage(currentPage - 1)">
+        Previous
+      </button>
+      <span class="page-info">Page {{ currentPage }} of {{ totalPages }}</span>
+      <button 
+        class="btn btn-sm" 
+        [disabled]="currentPage === totalPages"
+        (click)="changePage(currentPage + 1)">
+        Next
+      </button>
+    </div>
+  </div>
+</div>

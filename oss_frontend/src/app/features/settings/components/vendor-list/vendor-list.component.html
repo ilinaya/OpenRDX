@@ -1,0 +1,80 @@
+<div class="vendor-list-container">
+  <div class="list-header">
+    <h2>Vendors</h2>
+    <a class="btn btn-primary" routerLink="new">
+      <i class="fas fa-plus"></i> Add Vendor
+    </a>
+  </div>
+
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading vendors...</p>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <div *ngIf="!loading && !error" class="list-content">
+    <div *ngIf="vendors.length === 0" class="empty-state">
+      <i class="fas fa-building"></i>
+      <p>No vendors found</p>
+      <a class="btn btn-primary" routerLink="new">
+        <i class="fas fa-plus"></i> Add Vendor
+      </a>
+    </div>
+
+    <div *ngIf="vendors.length > 0" class="table-container">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Vendor ID</th>
+            <th>Description</th>
+            <th>Created At</th>
+            <th>Updated At</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let vendor of vendors">
+            <td>{{ vendor.name }}</td>
+            <td>{{ vendor.vendor_id }}</td>
+            <td>{{ vendor.description || 'No description provided' }}</td>
+            <td>{{ vendor.created_at | date:'medium' }}</td>
+            <td>{{ vendor.updated_at | date:'medium' }}</td>
+            <td class="actions">
+              <a class="btn btn-sm btn-info" [routerLink]="[vendor.id]" title="View">
+                <i class="fas fa-eye"></i> View
+              </a>
+              <a class="btn btn-sm btn-primary" [routerLink]="[vendor.id, 'edit']" title="Edit">
+                <i class="fas fa-edit"></i> Edit
+              </a>
+              <button class="btn btn-sm btn-danger" (click)="deleteVendor(vendor.id)" title="Delete">
+                <i class="fas fa-trash"></i> Delete
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div *ngIf="totalPages > 1" class="pagination">
+        <button 
+          class="btn btn-outline-primary" 
+          [disabled]="currentPage === 1"
+          (click)="onPageChange(currentPage - 1)"
+        >
+          <i class="fas fa-chevron-left"></i> Previous
+        </button>
+        <span class="page-info">Page {{ currentPage }} of {{ totalPages }}</span>
+        <button 
+          class="btn btn-outline-primary" 
+          [disabled]="currentPage === totalPages"
+          (click)="onPageChange(currentPage + 1)"
+        >
+          Next <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div> 

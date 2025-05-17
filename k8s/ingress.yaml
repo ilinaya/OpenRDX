@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: openrdx-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: openrdx.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: oss-frontend
+            port:
+              number: 4200
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: oss-backend
+            port:
+              number: 8000 

@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oss-frontend
+  labels:
+    app: oss-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: oss-frontend
+  template:
+    metadata:
+      labels:
+        app: oss-frontend
+    spec:
+      containers:
+      - name: oss-frontend
+        image: openrdx/oss-frontend:latest
+        ports:
+        - containerPort: 4200
+        env:
+        - name: API_URL
+          value: "http://oss-backend:8000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oss-frontend
+spec:
+  selector:
+    app: oss-frontend
+  ports:
+    - protocol: TCP
+      port: 4200
+      targetPort: 4200
+  type: ClusterIP 

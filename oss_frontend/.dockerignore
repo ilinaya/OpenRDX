@@ -1,0 +1,11 @@
+.idea
+node_modules
+npm-debug.log
+dist
+e2e
+coverage
+.git
+.github
+.vscode
+*.md
+.angular

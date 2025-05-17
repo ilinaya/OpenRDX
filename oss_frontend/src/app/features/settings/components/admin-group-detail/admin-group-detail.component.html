@@ -1,0 +1,61 @@
+<div class="admin-group-detail-container">
+  <div class="header">
+    <h2>Admin Group Details</h2>
+    <div class="actions">
+      <button class="btn btn-warning" (click)="editGroup()">Edit</button>
+      <button class="btn btn-danger" (click)="deleteGroup()">Delete</button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading admin group details...</p>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <div *ngIf="!loading && group" class="group-details">
+    <div class="detail-section">
+      <h3>Group Information</h3>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <label>Name</label>
+          <p>{{ group.name }}</p>
+        </div>
+        <div class="detail-item">
+          <label>Description</label>
+          <p>{{ group.description || 'N/A' }}</p>
+        </div>
+        <div class="detail-item">
+          <label>Created At</label>
+          <p>{{ group.created_at | date:'medium' }}</p>
+        </div>
+        <div class="detail-item">
+          <label>Last Updated</label>
+          <p>{{ group.updated_at | date:'medium' }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <h3>Group Members</h3>
+      <div *ngIf="members.length === 0" class="empty-state">
+        <p>No members in this group yet.</p>
+      </div>
+      <div *ngIf="members.length > 0" class="members-list">
+        <div class="member-item" *ngFor="let member of members">
+          <div class="member-info">
+            <span class="member-name">{{ member.first_name }} {{ member.last_name }}</span>
+            <span class="member-email">{{ member.email }}</span>
+            <span class="member-position" *ngIf="member.position">{{ member.position }}</span>
+          </div>
+          <button class="btn btn-danger btn-sm" (click)="removeMember(member.id)">
+            Remove
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

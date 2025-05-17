@@ -1,0 +1,120 @@
+<div class="nas-form-container">
+  <div class="header">
+    <h2>{{ isEditMode ? 'Edit' : 'Create' }} NAS Device</h2>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Loading...</p>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <form *ngIf="!loading" [formGroup]="nasForm" (ngSubmit)="onSubmit()" class="nas-form">
+    <div class="form-group">
+      <label for="name">Name *</label>
+      <input 
+        type="text" 
+        id="name" 
+        formControlName="name" 
+        class="form-control" 
+        [ngClass]="{'is-invalid': nasForm.get('name')?.touched && nasForm.get('name')?.invalid}"
+      >
+      <div *ngIf="nasForm.get('name')?.touched && nasForm.get('name')?.invalid" class="error-message">
+        <div *ngIf="nasForm.get('name')?.errors?.['required']">Name is required</div>
+        <div *ngIf="nasForm.get('name')?.errors?.['maxlength']">Name cannot exceed 255 characters</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="ip_address">IP Address *</label>
+      <input 
+        type="text" 
+        id="ip_address" 
+        formControlName="ip_address" 
+        class="form-control" 
+        [ngClass]="{'is-invalid': nasForm.get('ip_address')?.touched && nasForm.get('ip_address')?.invalid}"
+      >
+      <div *ngIf="nasForm.get('ip_address')?.touched && nasForm.get('ip_address')?.invalid" class="error-message">
+        <div *ngIf="nasForm.get('ip_address')?.errors?.['required']">IP Address is required</div>
+        <div *ngIf="nasForm.get('ip_address')?.errors?.['pattern']">Please enter a valid IP address</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="description">Description</label>
+      <textarea 
+        id="description" 
+        formControlName="description" 
+        class="form-control" 
+        rows="3"
+      ></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group checkbox-group">
+        <label class="checkbox-container">
+          <input type="checkbox" formControlName="coa_enabled">
+          <span class="checkbox-label">CoA Enabled</span>
+        </label>
+      </div>
+
+      <div class="form-group" *ngIf="nasForm.get('coa_enabled')?.value">
+        <label for="coa_port">CoA Port</label>
+        <input 
+          type="number" 
+          id="coa_port" 
+          formControlName="coa_port" 
+          class="form-control" 
+          [ngClass]="{'is-invalid': nasForm.get('coa_port')?.touched && nasForm.get('coa_port')?.invalid}"
+        >
+        <div *ngIf="nasForm.get('coa_port')?.touched && nasForm.get('coa_port')?.invalid" class="error-message">
+          <div *ngIf="nasForm.get('coa_port')?.errors?.['min']">Port must be at least 1</div>
+          <div *ngIf="nasForm.get('coa_port')?.errors?.['max']">Port cannot exceed 65535</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="group_ids">NAS Groups</label>
+      <select 
+        id="group_ids" 
+        formControlName="group_ids" 
+        class="form-control" 
+        multiple
+      >
+        <option *ngFor="let group of nasGroups" [value]="group.id">{{ group.name }}</option>
+      </select>
+      <small class="form-text text-muted">Hold Ctrl (or Cmd on Mac) to select multiple groups</small>
+    </div>
+
+    <div class="form-group">
+      <label for="secret_id">Secret</label>
+      <select 
+        id="secret_id" 
+        formControlName="secret_id" 
+        class="form-control"
+      >
+        <option [value]="null">None</option>
+        <option *ngFor="let secret of secrets" [value]="secret.id">{{ secret.name }}</option>
+      </select>
+    </div>
+
+    <div class="form-group checkbox-group">
+      <label class="checkbox-container">
+        <input type="checkbox" formControlName="is_active">
+        <span class="checkbox-label">Active</span>
+      </label>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
+      <button type="submit" class="btn btn-primary" [disabled]="submitting">
+        <span *ngIf="submitting" class="spinner-sm"></span>
+        {{ isEditMode ? 'Update' : 'Create' }}
+      </button>
+    </div>
+  </form>
+</div>

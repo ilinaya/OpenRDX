@@ -1,0 +1,77 @@
+export interface Vendor {
+  id: number;
+  name: string;
+  description: string;
+  vendor_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VendorAttribute {
+  id: number;
+  vendor: number;
+  name: string;
+  description: string;
+  attribute_id: number;
+  attribute_type: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NasGroup {
+  id: number;
+  name: string;
+  description: string;
+  parent: number | null;
+  created_at: string;
+  updated_at: string;
+  children?: NasGroup[];
+}
+
+export interface Secret {
+  id: number;
+  name: string;
+  secret: string;
+  rad_sec: boolean;
+  description: string;
+  source_subnets: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Nas {
+  id: number;
+  name: string;
+  description: string;
+  ip_address: string;
+  coa_enabled: boolean;
+  coa_port: number;
+  groups: NasGroup[];
+  secret: Secret | null;
+  vendor: Vendor | null;
+  created_at: string;
+  updated_at: string;
+  is_active: boolean;
+}
+
+export interface NasCreate {
+  name: string;
+  description: string;
+  ip_address: string;
+  coa_enabled: boolean;
+  coa_port: number;
+  group_ids: number[];
+  secret_id?: number;
+  is_active: boolean;
+}
+
+export interface NasUpdate {
+  name?: string;
+  description?: string;
+  ip_address?: string;
+  coa_enabled?: boolean;
+  coa_port?: number;
+  group_ids?: number[];
+  secret_id?: number;
+  is_active?: boolean;
+}

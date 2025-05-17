@@ -1,0 +1,87 @@
+<div class="nas-list-container">
+  <div class="header">
+    <h2>NAS Devices</h2>
+    <button class="btn btn-primary" (click)="createNewNas()">Add New NAS</button>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Loading NAS devices...</p>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <div *ngIf="!loading && nasDevices.length === 0" class="empty-state">
+    <p>No NAS devices found. Click the button above to add a new NAS device.</p>
+  </div>
+
+  <div *ngIf="!loading && nasDevices.length > 0" class="nas-table-container">
+    <table class="nas-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>IP Address</th>
+          <th>Status</th>
+          <th>CoA Enabled</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let nas of nasDevices">
+          <td>{{ nas.name }}</td>
+          <td>{{ nas.ip_address }}</td>
+          <td>
+            <span class="status-badge" [ngClass]="{'active': nas.is_active, 'inactive': !nas.is_active}">
+              {{ nas.is_active ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td>{{ nas.coa_enabled ? 'Yes' : 'No' }}</td>
+          <td class="actions">
+            <button class="btn btn-sm btn-info" (click)="viewNasDetails(nas.id)">View</button>
+            <button class="btn btn-sm btn-warning" (click)="editNas(nas.id)">Edit</button>
+            <button class="btn btn-sm btn-danger" (click)="deleteNas(nas.id)">Delete</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Pagination controls -->
+    <div *ngIf="totalPages > 1" class="pagination">
+      <button 
+        class="pagination-btn" 
+        [disabled]="currentPage === 1" 
+        (click)="changePage(1)"
+      >
+        &laquo;
+      </button>
+      <button 
+        class="pagination-btn" 
+        [disabled]="currentPage === 1" 
+        (click)="changePage(currentPage - 1)"
+      >
+        &lsaquo;
+      </button>
+
+      <div class="pagination-info">
+        Page {{ currentPage }} of {{ totalPages }} ({{ totalItems }} items)
+      </div>
+
+      <button 
+        class="pagination-btn" 
+        [disabled]="currentPage === totalPages" 
+        (click)="changePage(currentPage + 1)"
+      >
+        &rsaquo;
+      </button>
+      <button 
+        class="pagination-btn" 
+        [disabled]="currentPage === totalPages" 
+        (click)="changePage(totalPages)"
+      >
+        &raquo;
+      </button>
+    </div>
+  </div>
+</div>

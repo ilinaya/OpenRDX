@@ -1,0 +1,57 @@
+<div class="vendor-detail-container">
+  <div class="header">
+    <h2>Vendor Details</h2>
+    <div class="actions">
+      <button class="btn btn-primary" (click)="editVendor()">
+        <i class="fas fa-edit"></i> Edit
+      </button>
+      <button class="btn btn-danger" (click)="deleteVendor()">
+        <i class="fas fa-trash"></i> Delete
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading vendor details...</p>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <div *ngIf="!loading && !error && vendor" class="detail-content">
+    <div class="detail-section">
+      <div class="detail-item">
+        <label>Name</label>
+        <div class="value">{{ vendor.name }}</div>
+      </div>
+
+      <div class="detail-item">
+        <label>Vendor ID</label>
+        <div class="value">{{ vendor.vendor_id }}</div>
+      </div>
+
+      <div class="detail-item full-width">
+        <label>Description</label>
+        <div class="value">{{ vendor.description || 'No description provided' }}</div>
+      </div>
+
+      <div class="detail-item">
+        <label>Created At</label>
+        <div class="value">{{ vendor.created_at | date:'medium' }}</div>
+      </div>
+
+      <div class="detail-item">
+        <label>Updated At</label>
+        <div class="value">{{ vendor.updated_at | date:'medium' }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions-footer">
+    <button class="btn btn-secondary" (click)="goBack()">
+      <i class="fas fa-arrow-left"></i> Back to List
+    </button>
+  </div>
+</div> 

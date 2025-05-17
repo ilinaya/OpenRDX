@@ -1,0 +1,62 @@
+<div class="nas-group-form-container">
+  <div class="header">
+    <h2>{{ isEditMode ? 'Edit' : 'Create' }} NAS Group</h2>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Loading...</p>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <form *ngIf="!loading" [formGroup]="groupForm" (ngSubmit)="onSubmit()" class="group-form">
+    <div class="form-group">
+      <label for="name">Name *</label>
+      <input 
+        type="text" 
+        id="name" 
+        formControlName="name" 
+        class="form-control" 
+        [ngClass]="{'is-invalid': groupForm.get('name')?.touched && groupForm.get('name')?.invalid}"
+      >
+      <div *ngIf="groupForm.get('name')?.touched && groupForm.get('name')?.invalid" class="error-message">
+        <div *ngIf="groupForm.get('name')?.errors?.['required']">Name is required</div>
+        <div *ngIf="groupForm.get('name')?.errors?.['maxlength']">Name cannot exceed 255 characters</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="description">Description</label>
+      <textarea 
+        id="description" 
+        formControlName="description" 
+        class="form-control" 
+        rows="3"
+      ></textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="parent">Parent Group</label>
+      <select 
+        id="parent" 
+        formControlName="parent" 
+        class="form-control"
+      >
+        <option [value]="null">None (Root Group)</option>
+        <option *ngFor="let group of parentGroups" [value]="group.id">{{ group.name }}</option>
+      </select>
+      <small class="form-text text-muted">Select a parent group to create a hierarchical structure</small>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
+      <button type="submit" class="btn btn-primary" [disabled]="submitting">
+        <span *ngIf="submitting" class="spinner-sm"></span>
+        {{ isEditMode ? 'Update' : 'Create' }}
+      </button>
+    </div>
+  </form>
+</div>

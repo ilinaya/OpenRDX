@@ -2,9 +2,73 @@ from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
-from .models import User
-from .serializers import UserSerializer, UserCreateSerializer, UserUpdateSerializer
+from .models import User, UserGroup
+from .serializers import UserSerializer, UserCreateSerializer, UserUpdateSerializer, UserGroupSerializer
 
+
+class UserGroupViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for viewing and editing User instances.
+    """
+    queryset = UserGroup.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return UserGroupSerializer
+        elif self.action in ['update', 'partial_update']:
+            return UserGroupSerializer
+        return UserGroupSerializer
+
+    @swagger_auto_schema(
+        operation_description="List all user groups",
+        responses={200: UserGroupSerializer(many=True)}
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_description="Create a new user group",
+        request_body=UserGroupSerializer,
+        responses={201: UserGroupSerializer()}
+    )
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            UserGroupSerializer(instance=serializer.instance).data,
+            status=status.HTTP_201_CREATED,
+            headers=headers
+        )
+
+    @swagger_auto_schema(
+        operation_description="Retrieve a user group by ID",
+        responses={200: UserGroupSerializer()}
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_description="Update a user group",
+        request_body=UserGroupSerializer,
+        responses={200: UserGroupSerializer()}
+    )
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(UserGroupSerializer(instance=instance).data)
+
+    @swagger_auto_schema(
+        operation_description="Delete a user group",
+        responses={204: "No content"}
+    )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
 
 class UserViewSet(viewsets.ModelViewSet):
     """

@@ -1,0 +1,74 @@
+<div class="user-group-form-container">
+  <div class="form-header">
+    <h2>{{ isEditMode ? 'Edit' : 'Create' }} User Group</h2>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <div *ngIf="loading" class="loading-spinner">
+    <i class="fas fa-spinner fa-spin"></i> Loading...
+  </div>
+
+  <form *ngIf="!loading" [formGroup]="groupForm" (ngSubmit)="onSubmit()" class="group-form">
+    <div class="form-group">
+      <label for="name">Group Name</label>
+      <input
+        type="text"
+        id="name"
+        formControlName="name"
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('name')"
+        placeholder="Enter group name"
+      >
+      <div *ngIf="isFieldInvalid('name')" class="invalid-feedback">
+        {{ getErrorMessage('name') }}
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="description">Description</label>
+      <textarea
+        id="description"
+        formControlName="description"
+        class="form-control"
+        rows="3"
+        placeholder="Enter group description"
+      ></textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="parent">Parent Group</label>
+      <select
+        id="parent"
+        formControlName="parent"
+        class="form-control"
+      >
+        <option [ngValue]="null">None</option>
+        <option *ngFor="let group of groups" [ngValue]="group.id">
+          {{ group.name }}
+        </option>
+      </select>
+    </div>
+
+    <div class="form-actions">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="onCancel()"
+        [disabled]="submitting"
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        class="btn btn-primary"
+        [disabled]="groupForm.invalid || submitting"
+      >
+        <span *ngIf="submitting" class="spinner spinner-sm"></span>
+        {{ isEditMode ? 'Update' : 'Create' }} Group
+      </button>
+    </div>
+  </form>
+</div> 

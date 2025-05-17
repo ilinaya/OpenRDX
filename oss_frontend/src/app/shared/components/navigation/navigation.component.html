@@ -6,10 +6,11 @@
   </div>
 
   <div class="navbar-menu">
+   
     <div class="navbar-end">
       <div class="user-menu" [class.active]="isUserMenuOpen">
         <div class="user-menu-trigger" (click)="toggleUserMenu()">
-          <span class="user-email">sss{{ currentUser?.email }}</span>
+          <span class="user-email">{{ currentUser?.email }}</span>
           <i class="fas fa-chevron-down"></i>
         </div>
         

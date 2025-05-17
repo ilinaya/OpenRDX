@@ -1,20 +1,26 @@
 import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterModule, Routes } from '@angular/router';
+import { CommonModule, DatePipe } from '@angular/common';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { UsersRoutingModule } from './users-routing.module';
 
-import { UsersComponent } from './users.component';
-
-const routes: Routes = [
-  { path: '', component: UsersComponent }
-];
+import { UserGroupListComponent } from './components/user-group-list/user-group-list.component';
+import { UserGroupFormComponent } from './components/user-group-form/user-group-form.component';
 
 @NgModule({
   declarations: [
-    UsersComponent
+    UserGroupListComponent,
+    UserGroupFormComponent
   ],
   imports: [
     CommonModule,
-    RouterModule.forChild(routes)
+    ReactiveFormsModule,
+    FormsModule,
+    RouterModule,
+    UsersRoutingModule
+  ],
+  providers: [
+    DatePipe
   ]
 })
 export class UsersModule { }

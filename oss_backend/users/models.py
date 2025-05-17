@@ -61,5 +61,3 @@ class User(models.Model):
             return f"{self.first_name} {self.last_name}"
         return self.email
 
-
-# Default user groups are now created in migration 0002_create_default_user_groups.py

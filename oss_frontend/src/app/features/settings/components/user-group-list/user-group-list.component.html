@@ -1,9 +1,9 @@
 <!-- User Group List Template -->
 <div class="container">
   <div class="header">
-    <h2>User Groups</h2>
+    <h2>{{ 'settings.userGroups.title' | translate }}</h2>
     <button class="btn btn-primary" (click)="onCreateGroup()">
-      <i class="fas fa-plus"></i> Create Group
+      <i class="fas fa-plus"></i> {{ 'settings.userGroups.create' | translate }}
     </button>
   </div>
 
@@ -13,15 +13,15 @@
 
   <div class="spinner-container" *ngIf="loading">
     <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Loading...</span>
+      <span class="visually-hidden">{{ 'common.loading' | translate }}</span>
     </div>
   </div>
 
   <div class="no-data" *ngIf="!loading && groups.length === 0">
     <i class="fas fa-users"></i>
-    <p>No user groups found</p>
+    <p>{{ 'settings.userGroups.noGroups' | translate }}</p>
     <button class="btn btn-primary" (click)="onCreateGroup()">
-      <i class="fas fa-plus"></i> Create Group
+      <i class="fas fa-plus"></i> {{ 'settings.userGroups.create' | translate }}
     </button>
   </div>
 
@@ -29,28 +29,28 @@
     <table class="table">
       <thead>
         <tr>
-          <th>Name</th>
-          <th>Description</th>
-          <th>Parent Group</th>
-          <th>Created At</th>
-          <th>Updated At</th>
-          <th class="actions-column">Actions</th>
+          <th>{{ 'settings.userGroups.name' | translate }}</th>
+          <th>{{ 'settings.userGroups.description' | translate }}</th>
+          <th>{{ 'settings.userGroups.parentGroup' | translate }}</th>
+          <th>{{ 'settings.userGroups.createdAt' | translate }}</th>
+          <th>{{ 'settings.userGroups.updatedAt' | translate }}</th>
+          <th class="actions-column">{{ 'common.actions' | translate }}</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let group of groups">
           <td>{{ group.name }}</td>
-          <td>{{ group.description || 'N/A' }}</td>
-          <td>{{ group.parent?.name || 'None' }}</td>
+          <td>{{ group.description || ('common.notAvailable' | translate) }}</td>
+          <td>{{ group.parent?.name || ('common.none' | translate) }}</td>
           <td>{{ group.created_at | date:'medium' }}</td>
           <td>{{ group.updated_at | date:'medium' }}</td>
           <td class="actions">
             <div class="btn-group">
-              <button class="btn btn-sm btn-outline-primary" (click)="onEditGroup(group.id)" title="Edit">
-                <i class="fas fa-edit"></i> Edit
+              <button class="btn btn-sm btn-outline-primary" (click)="onEditGroup(group.id)" title="{{ 'common.actions.edit' | translate }}">
+                <i class="fas fa-edit"></i> {{ 'common.edit' | translate }}
               </button>
-              <button class="btn btn-sm btn-outline-danger" (click)="onDeleteGroup(group.id)" title="Delete">
-                <i class="fas fa-trash"></i> Delete
+              <button class="btn btn-sm btn-outline-danger" (click)="onDeleteGroup(group.id)" title="{{ 'common.actions.delete' | translate }}">
+                <i class="fas fa-trash"></i> {{ 'common.delete' | translate }}
               </button>
             </div>
           </td>

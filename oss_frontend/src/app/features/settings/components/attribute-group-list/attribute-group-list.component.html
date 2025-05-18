@@ -1,9 +1,9 @@
 <!-- Attribute Group List Template -->
 <div class="container">
   <div class="header">
-    <h2>Attribute Groups</h2>
+    <h2>{{ 'settings.attributeGroups.title' | translate }}</h2>
     <button class="btn btn-primary" (click)="onCreateGroup()">
-      <i class="fas fa-plus"></i> Create Group
+      <i class="fas fa-plus"></i> {{ 'settings.attributeGroups.create' | translate }}
     </button>
   </div>
 
@@ -13,15 +13,15 @@
 
   <div class="spinner-container" *ngIf="loading">
     <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Loading...</span>
+      <span class="visually-hidden">{{ 'common.loading' | translate }}</span>
     </div>
   </div>
 
   <div class="no-data" *ngIf="!loading && groups.length === 0">
     <i class="fas fa-tags"></i>
-    <p>No attribute groups found</p>
+    <p>{{ 'settings.attributeGroups.noGroups' | translate }}</p>
     <button class="btn btn-primary" (click)="onCreateGroup()">
-      <i class="fas fa-plus"></i> Create Group
+      <i class="fas fa-plus"></i> {{ 'settings.attributeGroups.create' | translate }}
     </button>
   </div>
 
@@ -29,36 +29,26 @@
     <table class="table">
       <thead>
         <tr>
-          <th>Name</th>
-          <th>Description</th>
-          <th>System Group</th>
-          <th>Created At</th>
-          <th>Updated At</th>
-          <th class="actions-column">Actions</th>
+          <th>{{ 'settings.attributeGroups.name' | translate }}</th>
+          <th>{{ 'settings.attributeGroups.description' | translate }}</th>
+          <th>{{ 'settings.attributeGroups.createdAt' | translate }}</th>
+          <th>{{ 'settings.attributeGroups.updatedAt' | translate }}</th>
+          <th class="actions-column">{{ 'common.actions' | translate }}</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let group of groups">
           <td>{{ group.name }}</td>
-          <td>{{ group.description || 'N/A' }}</td>
-          <td>
-            <span class="badge" [ngClass]="group.is_system ? 'bg-primary' : 'bg-secondary'">
-              {{ group.is_system ? 'Yes' : 'No' }}
-            </span>
-          </td>
+          <td>{{ group.description || ('common.notAvailable' | translate) }}</td>
           <td>{{ group.created_at | date:'medium' }}</td>
           <td>{{ group.updated_at | date:'medium' }}</td>
           <td class="actions">
             <div class="btn-group">
-              <button class="btn btn-sm btn-outline-primary" (click)="onEditGroup(group.id)" title="Edit">
-                <i class="fas fa-edit"></i> Edit
+              <button class="btn btn-sm btn-outline-primary" (click)="onEditGroup(group.id)" title="{{ 'common.actions.edit' | translate }}">
+                <i class="fas fa-edit"></i> {{ 'common.edit' | translate }}
               </button>
-              <button 
-                class="btn btn-sm btn-outline-danger" 
-                (click)="onDeleteGroup(group.id)" 
-                title="Delete"
-                [disabled]="group.is_system">
-                <i class="fas fa-trash"></i> Delete
+              <button class="btn btn-sm btn-outline-danger" (click)="onDeleteGroup(group.id)" title="{{ 'common.actions.delete' | translate }}">
+                <i class="fas fa-trash"></i> {{ 'common.delete' | translate }}
               </button>
             </div>
           </td>

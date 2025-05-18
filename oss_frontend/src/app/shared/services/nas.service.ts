@@ -13,17 +13,36 @@ export class NasService {
 
   constructor(private http: HttpClient) { }
 
-  // NAS Devices
-  getAllNas(params?: PaginationParams): Observable<PagedResponse<Nas>> {
-    let httpParams = new HttpParams();
+  // NAS Groups
+  getAllNasGroups(): Observable<NasGroup[]> {
+    return this.http.get<NasGroup[]>(`${this.apiUrl}/groups`);
+  }
 
-    if (params) {
-      Object.keys(params).forEach(key => {
-        if (params[key] !== undefined && params[key] !== null) {
-          httpParams = httpParams.set(key, params[key].toString());
-        }
-      });
-    }
+  getNasGroupById(id: number): Observable<NasGroup> {
+    return this.http.get<NasGroup>(`${this.apiUrl}/groups/${id}`);
+  }
+
+  createNasGroup(group: { name: string; description: string; parent?: number }): Observable<NasGroup> {
+    return this.http.post<NasGroup>(`${this.apiUrl}/groups`, group);
+  }
+
+  updateNasGroup(id: number, group: { name?: string; description?: string; parent?: number }): Observable<NasGroup> {
+    return this.http.patch<NasGroup>(`${this.apiUrl}/groups/${id}/`, group);
+  }
+
+  deleteNasGroup(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/groups/${id}`);
+  }
+
+  getNasGroupTree(): Observable<NasGroup[]> {
+    return this.http.get<NasGroup[]>(`${this.apiUrl}/groups/tree`);
+  }
+
+  // NAS Devices
+  getAllNas(params: PaginationParams): Observable<PagedResponse<Nas>> {
+    const httpParams = new HttpParams()
+      .set('page', (params.page || 1).toString())
+      .set('page_size', (params.page_size || 10).toString());
 
     return this.http.get<PagedResponse<Nas>>(`${this.apiUrl}/nas/`, { params: httpParams });
   }
@@ -33,45 +52,20 @@ export class NasService {
   }
 
   createNas(nas: NasCreate): Observable<Nas> {
-    return this.http.post<Nas>(`${this.apiUrl}/nas/`, nas);
+    return this.http.post<Nas>(this.apiUrl, nas);
   }
 
   updateNas(id: number, nas: NasUpdate): Observable<Nas> {
-    return this.http.patch<Nas>(`${this.apiUrl}/nas/${id}/`, nas);
+    return this.http.patch<Nas>(`${this.apiUrl}/nas/${id}`, nas);
   }
 
   deleteNas(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/nas/${id}/`);
+    return this.http.delete<void>(`${this.apiUrl}/nas/${id}`);
   }
 
   getNasByGroup(groupId: number): Observable<Nas[]> {
-    return this.http.get<Nas[]>(`${this.apiUrl}/nas/by_group/`, {
+    return this.http.get<Nas[]>(`${this.apiUrl}/by_group`, {
       params: new HttpParams().set('group_id', groupId.toString())
     });
-  }
-
-  // NAS Groups
-  getAllNasGroups(): Observable<NasGroup[]> {
-    return this.http.get<NasGroup[]>(`${this.apiUrl}/groups/`);
-  }
-
-  getNasGroupById(id: number): Observable<NasGroup> {
-    return this.http.get<NasGroup>(`${this.apiUrl}/groups/${id}/`);
-  }
-
-  createNasGroup(group: { name: string; description: string; parent?: number }): Observable<NasGroup> {
-    return this.http.post<NasGroup>(`${this.apiUrl}/groups/`, group);
-  }
-
-  updateNasGroup(id: number, group: { name?: string; description?: string; parent?: number }): Observable<NasGroup> {
-    return this.http.patch<NasGroup>(`${this.apiUrl}/groups/${id}/`, group);
-  }
-
-  deleteNasGroup(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/groups/${id}/`);
-  }
-
-  getNasGroupTree(): Observable<NasGroup[]> {
-    return this.http.get<NasGroup[]>(`${this.apiUrl}/groups/tree/`);
   }
 }

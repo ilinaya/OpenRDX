@@ -59,8 +59,12 @@ export class NasListComponent implements OnInit {
       });
   }
 
-  viewNasDetails(id: number): void {
-    this.router.navigate(['/devices/nas', id]);
+  createNas(): void {
+    this.router.navigate(['/devices/nas/new']);
+  }
+
+  viewNas(nas: Nas): void {
+    this.router.navigate(['/devices/nas', nas.id]);
   }
 
   editNas(id: number): void {
@@ -98,9 +102,5 @@ export class NasListComponent implements OnInit {
       queryParams: { page },
       queryParamsHandling: 'merge'
     });
-  }
-
-  createNewNas(): void {
-    this.router.navigate(['/devices/nas/new']);
   }
 }

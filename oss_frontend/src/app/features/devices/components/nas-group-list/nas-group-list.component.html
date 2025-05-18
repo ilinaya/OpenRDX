@@ -1,17 +1,17 @@
 <div class="nas-group-list-container">
   <div class="header">
-    <h2>NAS Groups</h2>
+    <h2>{{ 'devices.nasGroups.list.title' | translate }}</h2>
     <div class="header-actions">
-      <button class="btn btn-outline" (click)="toggleView()">
-        {{ treeView ? 'List View' : 'Tree View' }}
+
+      <button class="btn btn-primary" (click)="createNewGroup()">
+        <i class="fas fa-plus"></i> {{ 'devices.nasGroups.list.create' | translate }}
       </button>
-      <button class="btn btn-primary" (click)="createNewGroup()">Add New Group</button>
     </div>
   </div>
 
   <div *ngIf="loading" class="loading">
     <div class="spinner"></div>
-    <p>Loading NAS groups...</p>
+    <p>{{ 'common.loading' | translate }}</p>
   </div>
 
   <div *ngIf="error" class="alert alert-danger">
@@ -19,7 +19,7 @@
   </div>
 
   <div *ngIf="!loading && nasGroups.length === 0" class="empty-state">
-    <p>No NAS groups found. Click the button above to add a new NAS group.</p>
+    <p>{{ 'devices.nasGroups.list.noGroups' | translate }}</p>
   </div>
 
   <!-- Tree View -->
@@ -29,28 +29,40 @@
 
   <!-- List View -->
   <div *ngIf="!loading && nasGroups.length > 0 && !treeView" class="list-view">
-    <table class="group-table">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Description</th>
-          <th>Parent Group</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let group of nasGroups">
-          <td>{{ group.name }}</td>
-          <td>{{ group.description || 'No description' }}</td>
-          <td>{{ group.parent ? 'Has parent' : 'Root group' }}</td>
-          <td class="actions">
-            <button class="btn btn-sm btn-info" (click)="viewNasInGroup(group.id)">View NAS</button>
-            <button class="btn btn-sm btn-warning" (click)="editGroup(group.id, $event)">Edit</button>
-            <button class="btn btn-sm btn-danger" (click)="deleteGroup(group.id, $event)">Delete</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{{ 'devices.nasGroups.list.name' | translate }}</th>
+            <th>{{ 'devices.nasGroups.list.description' | translate }}</th>
+            <th>{{ 'devices.nasGroups.list.parentGroup' | translate }}</th>
+            <th>{{ 'devices.nasGroups.list.status' | translate }}</th>
+            <th>{{ 'common.actions' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let group of nasGroups">
+            <td>{{ group.name }}</td>
+            <td>{{ group.description || ('common.none' | translate) }}</td>
+            <td>{{ group.parent?.name || ('common.none' | translate) }}</td>
+
+            <td>
+              <div class="btn-group">
+                <button class="btn btn-sm btn-info" (click)="viewNasInGroup(group.id)">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-primary" (click)="editGroup(group.id, $event)">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" (click)="deleteGroup(group.id, $event)">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 

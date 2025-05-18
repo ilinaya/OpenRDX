@@ -1,7 +1,7 @@
 <!-- User Group Form Template -->
 <div class="container">
   <div class="header">
-    <h2>{{ isEditMode ? 'Edit User Group' : 'Create User Group' }}</h2>
+    <h2>{{ (isEditMode ? 'settings.userGroups.edit' : 'settings.userGroups.create') | translate }}</h2>
   </div>
 
   <div class="alert alert-danger" *ngIf="error">
@@ -10,43 +10,43 @@
 
   <div class="spinner-container" *ngIf="loading">
     <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Loading...</span>
+      <span class="visually-hidden">{{ 'common.loading' | translate }}</span>
     </div>
   </div>
 
   <form [formGroup]="groupForm" (ngSubmit)="onSubmit()" *ngIf="!loading" class="group-form">
     <div class="form-group">
-      <label for="name">Name</label>
+      <label for="name">{{ 'settings.userGroups.name' | translate }}</label>
       <input
         type="text"
         id="name"
         formControlName="name"
         class="form-control"
         [ngClass]="{'is-invalid': isFieldInvalid('name')}"
-        placeholder="Enter group name">
+        [placeholder]="'settings.userGroups.namePlaceholder' | translate">
       <div class="invalid-feedback" *ngIf="isFieldInvalid('name')">
         {{ getErrorMessage('name') }}
       </div>
     </div>
 
     <div class="form-group">
-      <label for="description">Description</label>
+      <label for="description">{{ 'settings.userGroups.description' | translate }}</label>
       <textarea
         id="description"
         formControlName="description"
         class="form-control"
         rows="3"
-        placeholder="Enter group description">
+        [placeholder]="'settings.userGroups.descriptionPlaceholder' | translate">
       </textarea>
     </div>
 
     <div class="form-group">
-      <label for="parent">Parent Group</label>
+      <label for="parent">{{ 'settings.userGroups.parentGroup' | translate }}</label>
       <select
         id="parent"
         formControlName="parent"
         class="form-control">
-        <option [ngValue]="null">None</option>
+        <option [ngValue]="null">{{ 'common.none' | translate }}</option>
         <option *ngFor="let group of groups" [ngValue]="group.id">
           {{ group.name }}
         </option>
@@ -58,14 +58,14 @@
         type="submit"
         class="btn btn-primary"
         [disabled]="groupForm.invalid || submitting">
-        {{ isEditMode ? 'Update' : 'Create' }} Group
+        {{ (isEditMode ? 'common.update' : 'common.create') | translate }}
       </button>
       <button
         type="button"
         class="btn btn-secondary"
         (click)="onCancel()"
         [disabled]="submitting">
-        Cancel
+        {{ 'common.cancel' | translate }}
       </button>
     </div>
   </form>

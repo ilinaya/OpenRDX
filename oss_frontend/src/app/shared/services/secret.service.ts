@@ -21,6 +21,10 @@ export class SecretService {
     return this.http.get<PagedResponse<Secret>>(this.apiUrl, { params: httpParams });
   }
 
+  listSecrets(): Observable<Secret[]> {
+    return this.http.get<Secret[]>(`${this.apiUrl}/list_all/`);
+  }
+
   getSecret(id: number): Observable<Secret> {
     return this.http.get<Secret>(`${this.apiUrl}/${id}`);
   }

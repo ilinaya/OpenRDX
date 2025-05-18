@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
 import { SettingsRoutingModule } from './settings-routing.module';
 import { SettingsComponent } from './settings.component';
 import { AdminListComponent } from './components/admin-list/admin-list.component';
@@ -48,7 +49,8 @@ import { AttributeGroupFormComponent } from './components/attribute-group-form/a
         ReactiveFormsModule,
         FormsModule,
         RouterModule,
-        SettingsRoutingModule
+        SettingsRoutingModule,
+        TranslateModule
     ],
     providers: [
         DatePipe

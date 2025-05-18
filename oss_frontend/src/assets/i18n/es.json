@@ -1,0 +1,223 @@
+{
+  "common": {
+    "actions": "Acciones",
+    "create": "Crear",
+    "update": "Actualizar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "cancel": "Cancelar",
+    "loading": "Cargando...",
+    "notAvailable": "N/D",
+    "none": "Ninguno",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "page": "Página",
+    "of": "de",
+    "entries": "entradas",
+    "showing": "Mostrando",
+    "to": "a",
+    "active": "Activo",
+    "parent_group": "Pariente",
+    "yes": "Si",
+    "no": "No"
+
+  },
+  "settings": {
+    "title": "Configuración",
+    "navigation": {
+      "adminUsers": "Usuarios Administradores",
+      "adminGroups": "Grupos de Administradores",
+      "userGroups": "Grupos de Usuarios",
+      "secrets": "Secretos",
+      "vendors": "Marcas",
+      "attributeGroups": "Grupos de Atributos"
+    },
+    "userGroups": {
+      "title": "Grupos de Usuarios",
+      "create": "Crear Grupo",
+      "edit": "Editar Grupo de Usuario",
+      "name": "Nombre",
+      "description": "Descripción",
+      "parentGroup": "Grupo Padre",
+      "createdAt": "Creado",
+      "updatedAt": "Actualizado",
+      "noGroups": "No se encontraron grupos de usuarios",
+      "namePlaceholder": "Ingrese el nombre del grupo",
+      "descriptionPlaceholder": "Ingrese la descripción del grupo"
+    },
+    "attributeGroups": {
+      "title": "Grupos de Atributos",
+      "create": "Crear Grupo",
+      "edit": "Editar Grupo de Atributos",
+      "name": "Nombre",
+      "description": "Descripción",
+      "createdAt": "Creado",
+      "updatedAt": "Actualizado",
+      "noGroups": "No se encontraron grupos de atributos",
+      "namePlaceholder": "Ingrese el nombre del grupo",
+      "descriptionPlaceholder": "Ingrese la descripción del grupo",
+      "radiusAttributes": {
+        "title": "Atributos RADIUS",
+        "vendorId": "ID del Marca",
+        "attributeId": "ID del Atributo",
+        "attributeName": "Nombre del Atributo",
+        "attributeType": "Tipo de Atributo",
+        "types": {
+          "string": "Cadena",
+          "integer": "Entero",
+          "octets": "Octetos",
+          "ipaddr": "Dirección IP",
+          "date": "Fecha",
+          "ifid": "ID de Interfaz",
+          "ipv6addr": "Dirección IPv6",
+          "ipv6prefix": "Prefijo IPv6",
+          "ether": "Ethernet",
+          "abinary": "Binario",
+          "byte": "Byte",
+          "short": "Corto",
+          "signed": "Firmado",
+          "tlv": "TLV",
+          "extended": "Extendido"
+        },
+        "addAttribute": "Agregar Atributo",
+        "deleteAttribute": "Eliminar Atributo",
+        "noAttributes": "No se encontraron atributos",
+        "saveGroupFirst": "Por favor guarde el grupo antes de agregar atributos"
+      },
+      "errors": {
+        "loadFailed": "Error al cargar los grupos de atributos",
+        "saveFailed": "Error al guardar el grupo",
+        "deleteFailed": "Error al eliminar el grupo",
+        "addAttributeFailed": "Error al agregar el atributo",
+        "deleteAttributeFailed": "Error al eliminar el atributo"
+      }
+    },
+    "changePassword": {
+      "title": "Cambiar Contraseña",
+      "currentPassword": "Contraseña Actual",
+      "newPassword": "Nueva Contraseña",
+      "confirmPassword": "Confirmar Nueva Contraseña",
+      "submit": "Cambiar Contraseña",
+      "success": "Contraseña cambiada exitosamente. Redirigiendo..."
+    }
+  },
+  "devices": {
+    "title": "Dispositivos de Red",
+    "nav": {
+      "nasDevices": "Dispositivos NAS",
+      "nasGroups": "Grupos NAS"
+    },
+    "nas": {
+      "title": "Dispositivos NAS",
+      "list": {
+        "vendor": "Marca",
+        "status": "Estatus",
+
+        "title": "Dispositivos NAS",
+        "create": "Agregar Nuevo NAS",
+        "name": "Nombre",
+        "ipAddress": "Dirección IP",
+        "description": "Descripción",
+        "coaEnabled": "CoA Habilitado",
+        "coaPort": "Puerto CoA",
+        "groups": "Grupos NAS",
+        "secret": "Secreto",
+        "active": "Activo",
+        "createdAt": "Creado",
+        "updatedAt": "Actualizado",
+        "noDevices": "No se encontraron dispositivos NAS",
+        "viewDetails": "Ver Detalles",
+        "edit": "Editar",
+        "delete": "Eliminar",
+        "deleteConfirm": "¿Está seguro de que desea eliminar este dispositivo NAS?",
+        "errors": {
+          "loadFailed": "Error al cargar los dispositivos NAS",
+          "deleteFailed": "Error al eliminar el dispositivo NAS"
+        }
+      },
+      "form": {
+        "create": "Crear Dispositivo NAS",
+        "edit": "Editar Dispositivo NAS",
+        "name": "Nombre",
+        "nameRequired": "El nombre es requerido",
+        "nameMaxLength": "El nombre no puede exceder 255 caracteres",
+        "ipAddress": "Dirección IP",
+        "ipAddressRequired": "La dirección IP es requerida",
+        "ipAddressInvalid": "Por favor ingrese una dirección IP válida",
+        "description": "Descripción",
+        "coaEnabled": "CoA Habilitado",
+        "coaPort": "Puerto CoA",
+        "coaPortMin": "El puerto debe ser al menos 1",
+        "coaPortMax": "El puerto no puede exceder 65535",
+        "groups": "Grupos NAS",
+        "secret": "Secreto",
+        "secretRequired": "El secreto es requerido",
+        "vendor": "Marca",
+        "vendorRequired": "La Marca es requerida",
+        "active": "Activo",
+        "errors": {
+          "createFailed": "Error al crear el dispositivo NAS",
+          "updateFailed": "Error al actualizar el dispositivo NAS"
+        }
+      },
+      "detail": {
+        "title": "Detalles del Dispositivo NAS",
+        "edit": "Editar",
+        "delete": "Eliminar",
+        "deleteConfirm": "¿Está seguro de que desea eliminar este dispositivo NAS?",
+        "basicInfo": "Información Básica",
+        "name": "Nombre",
+        "ipAddress": "Dirección IP",
+        "description": "Descripción",
+        "coaSettings": "Configuración CoA",
+        "coaEnabled": "CoA Habilitado",
+        "coaPort": "Puerto CoA",
+        "groups": "Grupos NAS",
+        "secret": "Secreto",
+        "secretName": "Nombre del Secreto",
+        "timestamps": "Marcas de Tiempo",
+        "createdAt": "Creado",
+        "updatedAt": "Actualizado",
+        "errors": {
+          "loadFailed": "Error al cargar los detalles del NAS",
+          "deleteFailed": "Error al eliminar el dispositivo NAS"
+        }
+      }
+    },
+    "nasGroups": {
+      "title": "Grupos NAS",
+      "list": {
+        "title": "Grupos NAS",
+        "create": "Agregar Nuevo Grupo",
+        "name": "Nombre",
+        "description": "Descripción",
+        "parentGroup": "Grupo Padre",
+        "createdAt": "Creado",
+        "updatedAt": "Actualizado",
+        "noGroups": "No se encontraron grupos NAS",
+        "viewNas": "Ver NAS",
+        "edit": "Editar",
+        "delete": "Eliminar",
+        "deleteConfirm": "¿Está seguro de que desea eliminar este grupo NAS?",
+        "errors": {
+          "loadFailed": "Error al cargar los grupos NAS",
+          "deleteFailed": "Error al eliminar el grupo NAS"
+        }
+      },
+      "form": {
+        "create": "Crear Grupo NAS",
+        "edit": "Editar Grupo NAS",
+        "name": "Nombre",
+        "nameRequired": "El nombre es requerido",
+        "nameMaxLength": "El nombre no puede exceder 255 caracteres",
+        "description": "Descripción",
+        "parentGroup": "Grupo Padre",
+        "parentGroupHelp": "Seleccione un grupo padre para crear una estructura jerárquica",
+        "errors": {
+          "createFailed": "Error al crear el grupo NAS",
+          "updateFailed": "Error al actualizar el grupo NAS"
+        }
+      }
+    }
+  }
+} 

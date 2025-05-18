@@ -9,10 +9,10 @@ import { AdminGroup, AdminUser } from '../../../../shared/models/admin.model';
   styleUrls: ['./admin-group-detail.component.scss']
 })
 export class AdminGroupDetailComponent implements OnInit {
-  group: AdminGroup | null = null;
-  members: AdminUser[] = [];
-  loading = false;
-  error = '';
+  public group: AdminGroup | null = null;
+  public  members: AdminUser[] = [];
+  public loading = false;
+  public error = '';
 
   constructor(
     private adminService: AdminService,
@@ -34,6 +34,7 @@ export class AdminGroupDetailComponent implements OnInit {
         next: (group) => {
           this.group = group;
           this.loadGroupMembers(id);
+          console.log('Admin group loaded successfully');
         },
         error: (err) => {
           this.error = 'Failed to load admin group details. Please try again later.';
@@ -47,7 +48,7 @@ export class AdminGroupDetailComponent implements OnInit {
     this.adminService.getGroupMembers(groupId)
       .subscribe({
         next: (response) => {
-          this.members = response.results;
+          this.members = response;
           this.loading = false;
         },
         error: (err) => {
@@ -59,7 +60,9 @@ export class AdminGroupDetailComponent implements OnInit {
   }
 
   editGroup(): void {
-    this.router.navigate(['edit'], { relativeTo: this.route });
+    if (this.group) {
+      this.router.navigate(['edit'], { relativeTo: this.route });
+    }
   }
 
   deleteGroup(): void {

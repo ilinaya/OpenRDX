@@ -1,4 +1,6 @@
 export const environment = {
-  production: true,
-  apiUrl: '${API_URL}' // This will be replaced during Docker build
+    production: true,
+    apiUrl: ENV.apiUrl,
+    commitVersion: ENV.commitVersion,
+    buildTimestamp: ENV.buildTimestamp,
 };

@@ -4,10 +4,9 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "build:development": "ng build store --configuration=development",
-    "build:production": "ng build store --configuration=production"
+    "build:development": "ng build --configuration=development",
+    "build:production": "ng build --configuration=production"
   },
   "private": true,
   "dependencies": {
@@ -26,6 +25,7 @@
     "zone.js": "0.15.0"
   },
   "devDependencies": {
+    "@angular-builders/custom-webpack": "19.0.1",
     "@angular-devkit/build-angular": "19.2.0",
     "@angular/cli": "19.2.0",
     "@angular/compiler-cli": "19.2.0",

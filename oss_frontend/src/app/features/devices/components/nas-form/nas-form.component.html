@@ -3,136 +3,186 @@
     <h2>{{ isEditMode ? ('devices.nas.form.edit' | translate) : ('devices.nas.form.create' | translate) }}</h2>
   </div>
 
-  <div *ngIf="loading" class="loading">
-    <div class="spinner"></div>
-    <p>{{ 'common.loading' | translate }}</p>
-  </div>
-
-  <div *ngIf="error" class="alert alert-danger">
-    {{ error }}
-  </div>
-
-  <form *ngIf="!loading" [formGroup]="nasForm" (ngSubmit)="onSubmit()" class="nas-form">
-    <div class="form-group">
-      <label for="name">{{ 'devices.nas.form.name' | translate }} *</label>
-      <input 
-        type="text" 
-        id="name" 
-        formControlName="name" 
-        class="form-control" 
-        [ngClass]="{'is-invalid': nasForm.get('name')?.touched && nasForm.get('name')?.invalid}"
-      >
-      <div *ngIf="nasForm.get('name')?.touched && nasForm.get('name')?.invalid" class="error-message">
-        <div *ngIf="nasForm.get('name')?.errors?.['required']">{{ 'devices.nas.form.nameRequired' | translate }}</div>
-        <div *ngIf="nasForm.get('name')?.errors?.['maxlength']">{{ 'devices.nas.form.nameMaxLength' | translate }}</div>
-      </div>
+  @if (loading) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>{{ 'common.loading' | translate }}</p>
     </div>
+  }
 
-    <div class="form-group">
-      <label for="ip_address">{{ 'devices.nas.form.ipAddress' | translate }} *</label>
-      <input 
-        type="text" 
-        id="ip_address" 
-        formControlName="ip_address" 
-        class="form-control" 
-        [ngClass]="{'is-invalid': nasForm.get('ip_address')?.touched && nasForm.get('ip_address')?.invalid}"
-      >
-      <div *ngIf="nasForm.get('ip_address')?.touched && nasForm.get('ip_address')?.invalid" class="error-message">
-        <div *ngIf="nasForm.get('ip_address')?.errors?.['required']">{{ 'devices.nas.form.ipAddressRequired' | translate }}</div>
-        <div *ngIf="nasForm.get('ip_address')?.errors?.['pattern']">{{ 'devices.nas.form.ipAddressInvalid' | translate }}</div>
-      </div>
-    </div>
+  @if (error) {
+    <div class="alert alert-danger">{{ error }}</div>
+  }
 
-    <div class="form-group">
-      <label for="description">{{ 'devices.nas.form.description' | translate }}</label>
-      <textarea 
-        id="description" 
-        formControlName="description" 
-        class="form-control" 
-        rows="3"
-      ></textarea>
-    </div>
-
-    <div class="form-row">
-      <div class="form-group checkbox-group">
-        <label class="checkbox-container">
-          <input type="checkbox" formControlName="coa_enabled">
-          <span class="checkbox-label">{{ 'devices.nas.form.coaEnabled' | translate }}</span>
-        </label>
-      </div>
-
-      <div class="form-group" *ngIf="nasForm.get('coa_enabled')?.value">
-        <label for="coa_port">{{ 'devices.nas.form.coaPort' | translate }}</label>
-        <input 
-          type="number" 
-          id="coa_port" 
-          formControlName="coa_port" 
-          class="form-control" 
-          [ngClass]="{'is-invalid': nasForm.get('coa_port')?.touched && nasForm.get('coa_port')?.invalid}"
+  @if (!loading) {
+    <form [formGroup]="nasForm"
+          (ngSubmit)="onSubmit()"
+          class="nas-form">
+      <div class="form-group">
+        <label for="name">{{ 'devices.nas.form.name' | translate }} *</label>
+        <input
+          type="text"
+          id="name"
+          formControlName="name"
+          class="form-control"
+          [class.is-invalid]="nasForm.get('name')?.touched && nasForm.get('name')?.invalid"
         >
-        <div *ngIf="nasForm.get('coa_port')?.touched && nasForm.get('coa_port')?.invalid" class="error-message">
-          <div *ngIf="nasForm.get('coa_port')?.errors?.['min']">{{ 'devices.nas.form.coaPortMin' | translate }}</div>
-          <div *ngIf="nasForm.get('coa_port')?.errors?.['max']">{{ 'devices.nas.form.coaPortMax' | translate }}</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label for="group_ids">{{ 'devices.nas.form.groups' | translate }}</label>
-      <div class="groups-container">
-        <div *ngFor="let group of flattenedGroups" class="group-item" [style.margin-left.px]="(group.level ?? 0) * 20">
-          <div class="form-check">
-            <input type="checkbox" 
-                   class="form-check-input" 
-                   [id]="'group-' + group.id"
-                   [value]="group.id"
-                   [checked]="nasForm.get('group_ids')?.value?.includes(group.id)"
-                   (change)="onGroupSelectionChange($event, group.id)">
-            <label class="form-check-label" [for]="'group-' + group.id">
-              {{ group.name }}
-            </label>
+        @if (nasForm.get('name')?.touched && nasForm.get('name')?.invalid) {
+          <div class="error-message">
+            @if (nasForm.get('name')?.errors?.['required']) {
+              <div>{{ 'devices.nas.form.nameRequired' | translate }}</div>
+            }
+            @if (nasForm.get('name')?.errors?.['maxlength']) {
+              <div>{{ 'devices.nas.form.nameMaxLength' | translate }}</div>
+            }
           </div>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="ip_address">{{ 'devices.nas.form.ipAddress' | translate }} *</label>
+        <input
+          type="text"
+          id="ip_address"
+          formControlName="ip_address"
+          class="form-control"
+          [class.is-invalid]="nasForm.get('ip_address')?.touched && nasForm.get('ip_address')?.invalid"
+        >
+        @if (nasForm.get('ip_address')?.touched && nasForm.get('ip_address')?.invalid) {
+          <div class="error-message">
+            @if (nasForm.get('ip_address')?.errors?.['required']) {
+              <div>{{ 'devices.nas.form.ipAddressRequired' | translate }}</div>
+            }
+            @if (nasForm.get('ip_address')?.errors?.['pattern']) {
+              <div>{{ 'devices.nas.form.ipAddressInvalid' | translate }}</div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="description">{{ 'devices.nas.form.description' | translate }}</label>
+        <textarea
+          id="description"
+          formControlName="description"
+          class="form-control"
+          rows="3"
+        ></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group checkbox-group">
+          <label class="checkbox-container">
+            <input type="checkbox"
+                   formControlName="coa_enabled">
+            <span class="checkbox-label">{{ 'devices.nas.form.coaEnabled' | translate }}</span>
+          </label>
+        </div>
+
+        @if (nasForm.get('coa_enabled')?.value) {
+          <div class="form-group">
+            <label for="coa_port">{{ 'devices.nas.form.coaPort' | translate }}</label>
+            <input
+              type="number"
+              id="coa_port"
+              formControlName="coa_port"
+              class="form-control"
+              [class.is-invalid]="nasForm.get('coa_port')?.touched && nasForm.get('coa_port')?.invalid"
+            >
+            @if (nasForm.get('coa_port')?.touched && nasForm.get('coa_port')?.invalid) {
+              <div class="error-message">
+                @if (nasForm.get('coa_port')?.errors?.['min']) {
+                  <div>{{ 'devices.nas.form.coaPortMin' | translate }}</div>
+                }
+                @if (nasForm.get('coa_port')?.errors?.['max']) {
+                  <div>{{ 'devices.nas.form.coaPortMax' | translate }}</div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="group_ids">{{ 'devices.nas.form.groups' | translate }}</label>
+        <div class="groups-container">
+          @for (group of flattenedGroups; track group.id) {
+            <div class="group-item"
+                 [style.margin-left.px]="(group.level ?? 0) * 20">
+              <div class="form-check">
+                <input type="checkbox"
+                       class="form-check-input"
+                       [id]="'group-' + group.id"
+                       [value]="group.id"
+                       [checked]="nasForm.get('group_ids')?.value?.includes(group.id)"
+                       (change)="onGroupSelectionChange($event, group.id)">
+                <label class="form-check-label"
+                       [for]="'group-' + group.id">
+                  {{ group.name }}
+                </label>
+              </div>
+            </div>
+          }
         </div>
       </div>
-    </div>
 
-    <div class="form-group">
-      <label for="secret_id">{{ 'devices.nas.form.secret' | translate }}</label>
-      <select 
-        id="secret_id" 
-        formControlName="secret_id" 
-        class="form-control"
-      >
-        <option [value]="null">{{ 'common.none' | translate }}</option>
-        <option *ngFor="let secret of secrets" [value]="secret.id">{{ secret.name }}</option>
-      </select>
-      <div *ngIf="nasForm.get('secret_id')?.touched && nasForm.get('secret_id')?.invalid" class="error-message">
-        <div *ngIf="nasForm.get('secret_id')?.errors?.['required']">{{ 'devices.nas.form.secretRequired' | translate }}</div>
+      <div class="form-group">
+        <label for="secret_id">{{ 'devices.nas.form.secret' | translate }}</label>
+        <select
+          id="secret_id"
+          formControlName="secret_id"
+          class="form-control"
+        >
+          <option [value]="null">{{ 'common.none' | translate }}</option>
+          @for (secret of secrets; track secret.id) {
+            <option [value]="secret.id">{{ secret.name }}</option>
+          }
+        </select>
+        @if (nasForm.get('secret_id')?.touched && nasForm.get('secret_id')?.invalid) {
+          <div class="error-message">
+            @if (nasForm.get('secret_id')?.errors?.['required']) {
+              <div>{{ 'devices.nas.form.secretRequired' | translate }}</div>
+            }
+          </div>
+        }
       </div>
-    </div>
 
-    <div class="form-group">
-      <label for="vendor_id">{{ 'devices.nas.form.vendor' | translate }} *</label>
-      <select 
-        id="vendor_id" 
-        formControlName="vendor_id" 
-        class="form-control"
-        [ngClass]="{'is-invalid': nasForm.get('vendor_id')?.touched && nasForm.get('vendor_id')?.invalid}"
-      >
-        <option [value]="null">{{ 'common.none' | translate }}</option>
-        <option *ngFor="let vendor of vendors" [value]="vendor.id">{{ vendor.name }}</option>
-      </select>
-      <div *ngIf="nasForm.get('vendor_id')?.touched && nasForm.get('vendor_id')?.invalid" class="error-message">
-        <div *ngIf="nasForm.get('vendor_id')?.errors?.['required']">{{ 'devices.nas.form.vendorRequired' | translate }}</div>
+      <div class="form-group">
+        <label for="vendor_id">{{ 'devices.nas.form.vendor' | translate }} *</label>
+        <select
+          id="vendor_id"
+          formControlName="vendor_id"
+          class="form-control"
+          [class.is-invalid]="nasForm.get('vendor_id')?.touched && nasForm.get('vendor_id')?.invalid"
+        >
+          <option [value]="null">{{ 'common.none' | translate }}</option>
+          @for (vendor of vendors; track vendor.id) {
+            <option [value]="vendor.id">{{ vendor.name }}</option>
+          }
+        </select>
+        @if (nasForm.get('vendor_id')?.touched && nasForm.get('vendor_id')?.invalid) {
+          <div class="error-message">
+            @if (nasForm.get('vendor_id')?.errors?.['required']) {
+              <div>{{ 'devices.nas.form.vendorRequired' | translate }}</div>
+            }
+          </div>
+        }
       </div>
-    </div>
 
-    <div class="form-actions">
-      <button type="button" class="btn btn-secondary" (click)="cancel()">{{ 'common.cancel' | translate }}</button>
-      <button type="submit" class="btn btn-primary" [disabled]="submitting">
-        <span *ngIf="submitting" class="spinner-sm"></span>
-        {{ isEditMode ? ('common.update' | translate) : ('common.create' | translate) }}
-      </button>
-    </div>
-  </form>
+      <div class="form-actions">
+        <button type="button"
+                class="btn btn-secondary"
+                (click)="cancel()">{{ 'common.cancel' | translate }}
+        </button>
+        <button type="submit"
+                class="btn btn-primary"
+                [disabled]="submitting">
+          @if (submitting) {
+            <span class="spinner-sm"></span>
+          }
+          {{ isEditMode ? ('common.update' | translate) : ('common.create' | translate) }}
+        </button>
+      </div>
+    </form>
+  }
 </div>

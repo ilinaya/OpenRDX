@@ -3,17 +3,21 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AdminService } from '../../../../shared/services/admin.service';
 import { AdminGroup } from '../../../../shared/models/admin.model';
 import { PagedResponse, PaginationParams } from '../../../../shared/models/pagination.model';
+import {DatePipe} from '@angular/common';
 
 @Component({
   selector: 'app-admin-group-list',
   templateUrl: './admin-group-list.component.html',
-  styleUrls: ['./admin-group-list.component.scss']
+  imports: [
+    DatePipe,
+  ],
+  styleUrls: ['./admin-group-list.component.scss'],
 })
 export class AdminGroupListComponent implements OnInit {
   groups: AdminGroup[] = [];
   loading = false;
   error = '';
-  
+
   // Pagination properties
   currentPage = 1;
   pageSize = 10;
@@ -90,7 +94,7 @@ export class AdminGroupListComponent implements OnInit {
         });
     }
   }
-  
+
   changePage(page: number): void {
     if (page >= 1 && page <= this.totalPages) {
       this.router.navigate([], {
@@ -99,4 +103,4 @@ export class AdminGroupListComponent implements OnInit {
       });
     }
   }
-} 
+}

@@ -1,13 +1,15 @@
-import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
-import { AuthService } from '../../core/auth/auth.service';
-import { AdminUser } from '../../shared/models/admin.model';
-import { TranslateService } from '@ngx-translate/core';
+import {Component, OnInit} from '@angular/core';
+import {Router, RouterLink, RouterOutlet} from '@angular/router';
+import {AuthService} from '../../core/auth/auth.service';
+import {AdminUser} from '../../shared/models/admin.model';
+import {TranslateService} from '@ngx-translate/core';
+import {NavbarComponent} from './components/navbar/navbar.component';
 
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.scss']
+  imports: [NavbarComponent, RouterLink, RouterOutlet],
+  styleUrls: ['./dashboard.component.scss'],
 })
 export class DashboardComponent implements OnInit {
   currentUser: AdminUser | null = null;
@@ -17,7 +19,7 @@ export class DashboardComponent implements OnInit {
   constructor(
     private router: Router,
     private authService: AuthService,
-    private translate: TranslateService
+    private translate: TranslateService,
   ) {
     this.currentLang = this.translate.currentLang;
   }

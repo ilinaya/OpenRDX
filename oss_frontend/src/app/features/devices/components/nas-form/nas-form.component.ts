@@ -1,17 +1,22 @@
-import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { NasService } from '../../../../shared/services/nas.service';
-import { SecretService } from '../../../../shared/services/secret.service';
-import { VendorService } from '../../../../shared/services/vendor.service';
-import { Nas, NasGroup, Secret, Vendor } from '../../../../shared/models/nas.model';
-import { forkJoin, of } from 'rxjs';
-import { catchError, switchMap, tap } from 'rxjs/operators';
+import {Component, OnInit} from '@angular/core';
+import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {ActivatedRoute, Router} from '@angular/router';
+import {NasService} from '../../../../shared/services/nas.service';
+import {SecretService} from '../../../../shared/services/secret.service';
+import {VendorService} from '../../../../shared/services/vendor.service';
+import {NasGroup, Secret, Vendor} from '../../../../shared/models/nas.model';
+import {forkJoin, of} from 'rxjs';
+import {catchError, tap} from 'rxjs/operators';
+import {TranslatePipe} from '@ngx-translate/core';
 
 @Component({
   selector: 'app-nas-form',
   templateUrl: './nas-form.component.html',
-  styleUrls: ['./nas-form.component.scss']
+  imports: [
+    TranslatePipe,
+    ReactiveFormsModule,
+  ],
+  styleUrls: ['./nas-form.component.scss'],
 })
 export class NasFormComponent implements OnInit {
   nasForm: FormGroup;
@@ -31,7 +36,7 @@ export class NasFormComponent implements OnInit {
     private secretService: SecretService,
     private vendorService: VendorService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
   ) {
     this.nasForm = this.fb.group({
       name: ['', [Validators.required, Validators.maxLength(255)]],
@@ -41,7 +46,7 @@ export class NasFormComponent implements OnInit {
       coa_port: [3799, [Validators.min(1), Validators.max(65535)]],
       group_ids: [[]],
       secret_id: [null, [Validators.required]],
-      vendor_id: [null, [Validators.required]]
+      vendor_id: [null, [Validators.required]],
     });
   }
 
@@ -60,28 +65,28 @@ export class NasFormComponent implements OnInit {
         catchError(error => {
           console.error('Error loading NAS groups:', error);
           return of([]);
-        })
+        }),
       ),
       secrets: this.secretService.listSecrets().pipe(
         tap(secrets => console.log('Loaded secrets:', secrets)),
         catchError(error => {
           console.error('Error loading secrets:', error);
           return of([]);
-        })
+        }),
       ),
       vendors: this.vendorService.getAllVendorsList().pipe(
         tap(vendors => console.log('Loaded vendors:', vendors)),
         catchError(error => {
           console.error('Error loading vendors:', error);
           return of([]);
-        })
-      )
+        }),
+      ),
     }).subscribe({
       next: (result) => {
         console.log('Form data loaded successfully:', result);
         this.secrets = result.secrets;
         this.vendors = result.vendors;
-        
+
         // Check if we're in edit mode
         const id = this.route.snapshot.paramMap.get('id');
         if (id && id !== 'new') {
@@ -96,7 +101,7 @@ export class NasFormComponent implements OnInit {
         console.error('Error in forkJoin:', err);
         this.error = 'Failed to load form data. Please try again later.';
         this.loading = false;
-      }
+      },
     });
   }
 
@@ -105,9 +110,9 @@ export class NasFormComponent implements OnInit {
       // Add the current group with its level
       this.flattenedGroups.push({
         ...group,
-        level: level // Explicitly set level to ensure it's not undefined
+        level: level, // Explicitly set level to ensure it's not undefined
       });
-      
+
       // Recursively add children if they exist
       if (group.children && group.children.length > 0) {
         this.flattenGroups(group.children, level + 1);
@@ -128,7 +133,7 @@ export class NasFormComponent implements OnInit {
             coa_port: nas.coa_port,
             group_ids: nas.groups.map(g => g.id),
             secret_id: nas.secret_id || null,
-            vendor_id: nas.vendor_id || null
+            vendor_id: nas.vendor_id || null,
           });
           this.loading = false;
         },
@@ -136,7 +141,7 @@ export class NasFormComponent implements OnInit {
           this.error = 'Failed to load NAS details. Please try again later.';
           console.error('Error loading NAS details:', err);
           this.loading = false;
-        }
+        },
       });
   }
 
@@ -166,7 +171,7 @@ export class NasFormComponent implements OnInit {
         coa_port: nasData.coa_port,
         group_ids: nasData.group_ids,
         secret_id: nasData.secret_id,
-        vendor_id: nasData.vendor_id
+        vendor_id: nasData.vendor_id,
       }).subscribe({
         next: (nas) => {
           console.log('NAS updated successfully:', nas);
@@ -181,7 +186,7 @@ export class NasFormComponent implements OnInit {
           console.error('Error updating NAS:', err);
           this.error = err.error?.message || 'Failed to update NAS. Please try again later.';
           this.submitting = false;
-        }
+        },
       });
     } else {
       // Create new NAS
@@ -200,7 +205,7 @@ export class NasFormComponent implements OnInit {
             console.error('Error creating NAS:', err);
             this.error = err.error?.message || 'Failed to create NAS. Please try again later.';
             this.submitting = false;
-          }
+          },
         });
     }
   }
@@ -216,18 +221,18 @@ export class NasFormComponent implements OnInit {
   onGroupSelectionChange(event: Event, groupId: number): void {
     const checkbox = event.target as HTMLInputElement;
     const currentValue = this.nasForm.get('group_ids')?.value || [];
-    
+
     if (checkbox.checked) {
       // Add the group ID if it's not already in the array
       if (!currentValue.includes(groupId)) {
         this.nasForm.patchValue({
-          group_ids: [...currentValue, groupId]
+          group_ids: [...currentValue, groupId],
         });
       }
     } else {
       // Remove the group ID from the array
       this.nasForm.patchValue({
-        group_ids: currentValue.filter((id: number) => id !== groupId)
+        group_ids: currentValue.filter((id: number) => id !== groupId),
       });
     }
   }

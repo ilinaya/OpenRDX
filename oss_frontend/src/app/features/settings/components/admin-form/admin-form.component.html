@@ -3,196 +3,206 @@
     <h2>{{ isEditMode ? 'Edit' : 'Create' }} Admin</h2>
   </div>
 
-  <div *ngIf="loading" class="loading-container">
-    <div class="spinner"></div>
-    <p>Loading admin...</p>
-  </div>
-
-  <div *ngIf="error" class="alert alert-danger">
-    {{ error }}
-  </div>
-
-  <form [formGroup]="adminForm" (ngSubmit)="onSubmit()" *ngIf="!loading" class="admin-form">
-    <!-- Email field -->
-    <div class="form-row">
-      <div class="form-group">
-        <label for="email">Email *</label>
-        <input
-          type="email"
-          id="email"
-          formControlName="email"
-          class="form-control"
-          [class.is-invalid]="adminForm.get('email')?.invalid && adminForm.get('email')?.touched"
-        >
-        <div class="invalid-feedback" *ngIf="adminForm.get('email')?.errors?.['required']">
-          Email is required
-        </div>
-        <div class="invalid-feedback" *ngIf="adminForm.get('email')?.errors?.['email']">
-          Please enter a valid email address
-        </div>
-      </div>
+  @if (loading) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading admin...</p>
     </div>
+  }
 
-    <!-- First Name and Last Name -->
-    <div class="form-row">
-      <div class="form-group">
-        <label for="first_name">First Name *</label>
-        <input
-          type="text"
-          id="first_name"
-          formControlName="first_name"
-          class="form-control"
-          [class.is-invalid]="adminForm.get('first_name')?.invalid && adminForm.get('first_name')?.touched"
-        >
-        <div class="invalid-feedback" *ngIf="adminForm.get('first_name')?.errors?.['required']">
-          First name is required
-        </div>
-        <div class="invalid-feedback" *ngIf="adminForm.get('first_name')?.errors?.['maxlength']">
-          First name cannot exceed 150 characters
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="last_name">Last Name *</label>
-        <input
-          type="text"
-          id="last_name"
-          formControlName="last_name"
-          class="form-control"
-          [class.is-invalid]="adminForm.get('last_name')?.invalid && adminForm.get('last_name')?.touched"
-        >
-        <div class="invalid-feedback" *ngIf="adminForm.get('last_name')?.errors?.['required']">
-          Last name is required
-        </div>
-        <div class="invalid-feedback" *ngIf="adminForm.get('last_name')?.errors?.['maxlength']">
-          Last name cannot exceed 150 characters
-        </div>
-      </div>
+  @if (error) {
+    <div class="alert alert-danger">
+      {{ error }}
     </div>
+  }
 
-    <!-- Position and Phone Number -->
-    <div class="form-row">
-      <div class="form-group">
-        <label for="position">Position</label>
-        <input
-          type="text"
-          id="position"
-          formControlName="position"
-          class="form-control"
-          [class.is-invalid]="adminForm.get('position')?.invalid && adminForm.get('position')?.touched"
-        >
-        <div class="invalid-feedback" *ngIf="adminForm.get('position')?.errors?.['maxlength']">
-          Position cannot exceed 100 characters
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="phone_number">Phone Number</label>
-        <input
-          type="tel"
-          id="phone_number"
-          formControlName="phone_number"
-          class="form-control"
-          [class.is-invalid]="adminForm.get('phone_number')?.invalid && adminForm.get('phone_number')?.touched"
-        >
-        <div class="invalid-feedback" *ngIf="adminForm.get('phone_number')?.errors?.['maxlength']">
-          Phone number cannot exceed 20 characters
-        </div>
-      </div>
-    </div>
-
-    <!-- Checkboxes -->
-    <div class="form-row checkbox-row">
-      <div class="form-group">
-        <div class="form-check">
+  @if (!loading) {
+    <form [formGroup]="adminForm"
+          (ngSubmit)="onSubmit()"
+          class="admin-form">
+      <!-- Email field -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="email">Email *</label>
           <input
-            type="checkbox"
-            id="is_active"
-            formControlName="is_active"
-            class="form-check-input"
+            type="email"
+            id="email"
+            formControlName="email"
+            class="form-control"
+            [class.is-invalid]="adminForm.get('email')?.invalid && adminForm.get('email')?.touched"
           >
-          <label class="form-check-label" for="is_active">
-            Active
-          </label>
+          @if (adminForm.get('email')?.errors?.['required']) {
+            <div class="invalid-feedback">Email is required</div>
+          }
+          @if (adminForm.get('email')?.errors?.['email']) {
+            <div class="invalid-feedback">Please enter a valid email address</div>
+          }
         </div>
       </div>
-    </div>
 
-    <div class="form-row checkbox-row">
-      <div class="form-group">
-        <div class="form-check">
+      <!-- First Name and Last Name -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="first_name">First Name *</label>
           <input
-            type="checkbox"
-            id="is_staff"
-            formControlName="is_staff"
-            class="form-check-input"
+            type="text"
+            id="first_name"
+            formControlName="first_name"
+            class="form-control"
+            [class.is-invalid]="adminForm.get('first_name')?.invalid && adminForm.get('first_name')?.touched"
           >
-          <label class="form-check-label" for="is_staff">
-            Staff
-          </label>
+          @if (adminForm.get('first_name')?.errors?.['required']) {
+            <div class="invalid-feedback">First name is required</div>
+          }
+          @if (adminForm.get('first_name')?.errors?.['maxlength']) {
+            <div class="invalid-feedback">First name cannot exceed 150 characters</div>
+          }
         </div>
-      </div>
-    </div>
 
-    <div class="form-row checkbox-row">
-      <div class="form-group">
-        <div class="form-check">
+        <div class="form-group">
+          <label for="last_name">Last Name *</label>
           <input
-            type="checkbox"
-            id="is_superuser"
-            formControlName="is_superuser"
-            class="form-check-input"
+            type="text"
+            id="last_name"
+            formControlName="last_name"
+            class="form-control"
+            [class.is-invalid]="adminForm.get('last_name')?.invalid && adminForm.get('last_name')?.touched"
           >
-          <label class="form-check-label" for="is_superuser">
-            Superuser
-          </label>
+          @if (adminForm.get('last_name')?.errors?.['required']) {
+            <div class="invalid-feedback">Last name is required</div>
+          }
+          @if (adminForm.get('last_name')?.errors?.['maxlength']) {
+            <div class="invalid-feedback">Last name cannot exceed 150 characters</div>
+          }
         </div>
       </div>
-    </div>
 
-    <!-- Groups -->
-    <div class="form-row">
-      <div class="form-group">
-        <label>Groups</label>
-        <div class="groups-container">
-          <div class="group-item" *ngFor="let group of adminGroups">
-            <div class="form-check">
-              <input
-                type="checkbox"
-                [id]="'group-' + group.id"
-                [checked]="isGroupSelected(group.id)"
-                (change)="onGroupChange($event, group.id)"
-                class="form-check-input"
-              >
-              <label class="form-check-label" [for]="'group-' + group.id">
-                {{ group.name }}
-              </label>
-            </div>
-            <small class="text-muted" *ngIf="group.description">
-              {{ group.description }}
-            </small>
+      <!-- Position and Phone Number -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="position">Position</label>
+          <input
+            type="text"
+            id="position"
+            formControlName="position"
+            class="form-control"
+            [class.is-invalid]="adminForm.get('position')?.invalid && adminForm.get('position')?.touched"
+          >
+          @if (adminForm.get('position')?.errors?.['maxlength']) {
+            <div class="invalid-feedback">Position cannot exceed 100 characters</div>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="phone_number">Phone Number</label>
+          <input
+            type="tel"
+            id="phone_number"
+            formControlName="phone_number"
+            class="form-control"
+            [class.is-invalid]="adminForm.get('phone_number')?.invalid && adminForm.get('phone_number')?.touched"
+          >
+          @if (adminForm.get('phone_number')?.errors?.['maxlength']) {
+            <div class="invalid-feedback">Phone number cannot exceed 20 characters</div>
+          }
+        </div>
+      </div>
+
+      <!-- Checkboxes -->
+      <div class="form-row checkbox-row">
+        <div class="form-group">
+          <div class="form-check">
+            <input
+              type="checkbox"
+              id="is_active"
+              formControlName="is_active"
+              class="form-check-input"
+            >
+            <label class="form-check-label"
+                   for="is_active">Active</label>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="form-actions">
-      <button
-        type="button"
-        class="btn btn-secondary"
-        (click)="cancel()"
-        [disabled]="submitting"
-      >
-        Cancel
-      </button>
-      <button
-        type="submit"
-        class="btn btn-primary"
-        [disabled]="adminForm.invalid || submitting"
-      >
-        <span *ngIf="submitting" class="spinner spinner-sm"></span>
-        {{ isEditMode ? 'Update' : 'Create' }} Admin
-      </button>
-    </div>
-  </form>
-</div> 
+      <div class="form-row checkbox-row">
+        <div class="form-group">
+          <div class="form-check">
+            <input
+              type="checkbox"
+              id="is_staff"
+              formControlName="is_staff"
+              class="form-check-input"
+            >
+            <label class="form-check-label"
+                   for="is_staff">Staff</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row checkbox-row">
+        <div class="form-group">
+          <div class="form-check">
+            <input
+              type="checkbox"
+              id="is_superuser"
+              formControlName="is_superuser"
+              class="form-check-input"
+            >
+            <label class="form-check-label"
+                   for="is_superuser">Superuser</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Groups -->
+      <div class="form-row">
+        <div class="form-group">
+          <label>Groups</label>
+          <div class="groups-container">
+            @for (group of adminGroups; track group.id) {
+              <div class="group-item">
+                <div class="form-check">
+                  <input
+                    type="checkbox"
+                    [id]="'group-' + group.id"
+                    [checked]="isGroupSelected(group.id)"
+                    (change)="onGroupChange($event, group.id)"
+                    class="form-check-input"
+                  >
+                  <label class="form-check-label"
+                         [for]="'group-' + group.id">
+                    {{ group.name }}
+                  </label>
+                </div>
+                @if (group.description) {
+                  <small class="text-muted">{{ group.description }}</small>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="cancel()"
+          [disabled]="submitting"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="adminForm.invalid || submitting"
+        >
+          @if (submitting) {
+            <span class="spinner spinner-sm"></span>
+          }
+          {{ isEditMode ? 'Update' : 'Create' }} Admin
+        </button>
+      </div>
+    </form>
+  }
+</div>

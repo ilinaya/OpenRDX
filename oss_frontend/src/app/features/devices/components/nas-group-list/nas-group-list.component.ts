@@ -1,12 +1,16 @@
-import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
-import { NasService } from '../../../../shared/services/nas.service';
-import { NasGroup } from '../../../../shared/models/nas.model';
+import {Component, OnInit} from '@angular/core';
+import {Router} from '@angular/router';
+import {NasService} from '../../../../shared/services/nas.service';
+import {NasGroup} from '../../../../shared/models/nas.model';
+import {TranslatePipe} from '@ngx-translate/core';
 
 @Component({
   selector: 'app-nas-group-list',
   templateUrl: './nas-group-list.component.html',
-  styleUrls: ['./nas-group-list.component.scss']
+  styleUrls: ['./nas-group-list.component.scss'],
+  imports: [
+    TranslatePipe,
+  ],
 })
 export class NasGroupListComponent implements OnInit {
   nasGroups: NasGroup[] = [];
@@ -16,8 +20,9 @@ export class NasGroupListComponent implements OnInit {
 
   constructor(
     private nasService: NasService,
-    private router: Router
-  ) { }
+    private router: Router,
+  ) {
+  }
 
   ngOnInit(): void {
     this.loadNasGroups();
@@ -38,7 +43,7 @@ export class NasGroupListComponent implements OnInit {
             this.error = 'Failed to load NAS groups. Please try again later.';
             console.error('Error loading NAS groups:', err);
             this.loading = false;
-          }
+          },
         });
     } else {
       this.nasService.getAllNasGroups()
@@ -51,7 +56,7 @@ export class NasGroupListComponent implements OnInit {
             this.error = 'Failed to load NAS groups. Please try again later.';
             console.error('Error loading NAS groups:', err);
             this.loading = false;
-          }
+          },
         });
     }
   }
@@ -62,7 +67,7 @@ export class NasGroupListComponent implements OnInit {
   }
 
   viewNasInGroup(groupId: number): void {
-    this.router.navigate(['/devices/nas'], { queryParams: { group: groupId } });
+    this.router.navigate(['/devices/nas'], {queryParams: {group: groupId}});
   }
 
   editGroup(id: number, event: Event): void {
@@ -81,7 +86,7 @@ export class NasGroupListComponent implements OnInit {
           error: (err) => {
             this.error = 'Failed to delete NAS group. Please try again later.';
             console.error('Error deleting NAS group:', err);
-          }
+          },
         });
     }
   }

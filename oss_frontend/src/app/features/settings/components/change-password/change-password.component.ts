@@ -1,12 +1,17 @@
 import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import { AdminService } from '../../../../shared/services/admin.service';
 import { Router } from '@angular/router';
+import {TranslatePipe} from '@ngx-translate/core';
 
 @Component({
   selector: 'app-change-password',
   templateUrl: './change-password.component.html',
-  styleUrls: ['./change-password.component.scss']
+  imports: [
+    TranslatePipe,
+    ReactiveFormsModule,
+  ],
+  styleUrls: ['./change-password.component.scss'],
 })
 export class ChangePasswordComponent {
   passwordForm: FormGroup;
@@ -34,7 +39,7 @@ export class ChangePasswordComponent {
   passwordMatchValidator(form: FormGroup) {
     const newPassword = form.get('new_password')?.value;
     const confirmPassword = form.get('confirm_password')?.value;
-    
+
     if (newPassword && confirmPassword && newPassword !== confirmPassword) {
       form.get('confirm_password')?.setErrors({ passwordMismatch: true });
       return { passwordMismatch: true };
@@ -104,4 +109,4 @@ export class ChangePasswordComponent {
   onCancel() {
     this.router.navigate(['/settings']);
   }
-} 
+}

@@ -3,66 +3,81 @@
     <h2>{{ isEditMode ? 'Edit' : 'Create' }} Admin Group</h2>
   </div>
 
-  <div *ngIf="loading" class="loading-container">
-    <div class="spinner"></div>
-    <p>Loading admin group...</p>
-  </div>
+  @if (loading) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading admin group...</p>
+    </div>
+  }
 
-  <div *ngIf="error" class="alert alert-danger">
-    {{ error }}
-  </div>
+  @if (error) {
+    <div class="alert alert-danger">
+      {{ error }}
+    </div>
+  }
 
-  <form [formGroup]="groupForm" (ngSubmit)="onSubmit()" *ngIf="!loading">
-    <div class="form-grid">
-      <div class="form-group">
-        <label for="name">Group Name *</label>
-        <input
-          type="text"
-          id="name"
-          formControlName="name"
-          class="form-control"
-          [class.is-invalid]="groupForm.get('name')?.invalid && groupForm.get('name')?.touched"
+  @if (!loading) {
+    <form [formGroup]="groupForm"
+          (ngSubmit)="onSubmit()">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="name">Group Name *</label>
+          <input
+            type="text"
+            id="name"
+            formControlName="name"
+            class="form-control"
+            [class.is-invalid]="groupForm.get('name')?.invalid && groupForm.get('name')?.touched"
+          >
+          @if (groupForm.get('name')?.errors?.['required']) {
+            <div class="invalid-feedback">
+              Group name is required
+            </div>
+          }
+          @if (groupForm.get('name')?.errors?.['maxlength']) {
+            <div class="invalid-feedback">
+              Group name cannot exceed 150 characters
+            </div>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea
+            id="description"
+            formControlName="description"
+            class="form-control"
+            rows="3"
+            [class.is-invalid]="groupForm.get('description')?.invalid && groupForm.get('description')?.touched"
+          ></textarea>
+          @if (groupForm.get('description')?.errors?.['maxlength']) {
+            <div class="invalid-feedback">
+              Description cannot exceed 200 characters
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="cancel()"
+          [disabled]="submitting"
         >
-        <div class="invalid-feedback" *ngIf="groupForm.get('name')?.errors?.['required']">
-          Group name is required
-        </div>
-        <div class="invalid-feedback" *ngIf="groupForm.get('name')?.errors?.['maxlength']">
-          Group name cannot exceed 150 characters
-        </div>
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="groupForm.invalid || submitting"
+        >
+          @if (submitting) {
+            <span class="spinner spinner-sm"></span>
+          }
+          {{ isEditMode ? 'Update' : 'Create' }} Group
+        </button>
       </div>
-
-      <div class="form-group">
-        <label for="description">Description</label>
-        <textarea
-          id="description"
-          formControlName="description"
-          class="form-control"
-          rows="3"
-          [class.is-invalid]="groupForm.get('description')?.invalid && groupForm.get('description')?.touched"
-        ></textarea>
-        <div class="invalid-feedback" *ngIf="groupForm.get('description')?.errors?.['maxlength']">
-          Description cannot exceed 200 characters
-        </div>
-      </div>
-    </div>
-
-    <div class="form-actions">
-      <button
-        type="button"
-        class="btn btn-secondary"
-        (click)="cancel()"
-        [disabled]="submitting"
-      >
-        Cancel
-      </button>
-      <button
-        type="submit"
-        class="btn btn-primary"
-        [disabled]="groupForm.invalid || submitting"
-      >
-        <span *ngIf="submitting" class="spinner spinner-sm"></span>
-        {{ isEditMode ? 'Update' : 'Create' }} Group
-      </button>
-    </div>
-  </form>
-</div> 
+    </form>
+  }
+</div>

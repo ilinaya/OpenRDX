@@ -1,12 +1,16 @@
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { SecretService } from '../../../../shared/services/secret.service';
-import { Secret } from '../../../../shared/models/secret.model';
+import {Component, OnInit} from '@angular/core';
+import {ActivatedRoute, Router} from '@angular/router';
+import {SecretService} from '../../../../shared/services/secret.service';
+import {Secret} from '../../../../shared/models/secret.model';
+import {DatePipe} from '@angular/common';
 
 @Component({
   selector: 'app-secret-detail',
   templateUrl: './secret-detail.component.html',
-  styleUrls: ['./secret-detail.component.scss']
+  styleUrls: ['./secret-detail.component.scss'],
+  imports: [
+    DatePipe,
+  ],
 })
 export class SecretDetailComponent implements OnInit {
   secret?: Secret;
@@ -17,8 +21,9 @@ export class SecretDetailComponent implements OnInit {
   constructor(
     private secretService: SecretService,
     private router: Router,
-    private route: ActivatedRoute
-  ) { }
+    private route: ActivatedRoute,
+  ) {
+  }
 
   ngOnInit(): void {
     const id = this.route.snapshot.params['id'];
@@ -39,13 +44,13 @@ export class SecretDetailComponent implements OnInit {
           this.error = 'Failed to load secret. Please try again later.';
           console.error('Error loading secret:', err);
           this.loading = false;
-        }
+        },
       });
   }
 
   editSecret(): void {
     if (this.secret) {
-      this.router.navigate(['edit'], { relativeTo: this.route });
+      this.router.navigate(['edit'], {relativeTo: this.route});
     }
   }
 
@@ -54,12 +59,12 @@ export class SecretDetailComponent implements OnInit {
       this.secretService.deleteSecret(this.secret.id)
         .subscribe({
           next: () => {
-            this.router.navigate(['../'], { relativeTo: this.route });
+            this.router.navigate(['../'], {relativeTo: this.route});
           },
           error: (err) => {
             this.error = 'Failed to delete secret. Please try again later.';
             console.error('Error deleting secret:', err);
-          }
+          },
         });
     }
   }
@@ -67,4 +72,4 @@ export class SecretDetailComponent implements OnInit {
   toggleSecretVisibility(): void {
     this.showSecret = !this.showSecret;
   }
-} 
+}

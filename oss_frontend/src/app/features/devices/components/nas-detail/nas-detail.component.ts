@@ -2,11 +2,17 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NasService } from '../../../../shared/services/nas.service';
 import { Nas } from '../../../../shared/models/nas.model';
+import {TranslatePipe} from '@ngx-translate/core';
+import {DatePipe} from '@angular/common';
 
 @Component({
   selector: 'app-nas-detail',
   templateUrl: './nas-detail.component.html',
-  styleUrls: ['./nas-detail.component.scss']
+  imports: [
+    TranslatePipe,
+    DatePipe,
+  ],
+  styleUrls: ['./nas-detail.component.scss'],
 })
 export class NasDetailComponent implements OnInit {
   nas: Nas | null = null;

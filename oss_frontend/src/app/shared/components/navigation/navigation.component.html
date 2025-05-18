@@ -1,31 +1,40 @@
 <nav class="navbar">
   <div class="navbar-brand">
-    <a class="navbar-item" routerLink="/">
-      <img src="assets/images/logo.png" alt="Logo">
+    <a class="navbar-item"
+       routerLink="/">
+      <img src="assets/images/logo.png"
+           alt="Logo">
     </a>
   </div>
 
   <div class="navbar-menu">
     <div class="navbar-start">
-      <a class="navbar-item" routerLink="/settings/user-groups" routerLinkActive="active">
+      <a class="navbar-item"
+         routerLink="/settings/user-groups"
+         routerLinkActive="active">
         <i class="fas fa-users"></i>
         <span>User Groups</span>
       </a>
     </div>
     <div class="navbar-end">
-      <div class="user-menu" [class.active]="isUserMenuOpen">
-        <div class="user-menu-trigger" (click)="toggleUserMenu()">
+      <div class="user-menu"
+           [class.active]="isUserMenuOpen">
+        <div class="user-menu-trigger"
+             (click)="toggleUserMenu()">
           <span class="user-email">{{ currentUser?.email }}</span>
           <i class="fas fa-chevron-down"></i>
         </div>
-        
-        <div class="dropdown-menu" *ngIf="isUserMenuOpen">
-          <a class="dropdown-item" routerLink="/settings/change-password">
-            <i class="fas fa-key"></i>
-            Change Password
-          </a>
-        </div>
+
+        @if (isUserMenuOpen) {
+          <div class="dropdown-menu">
+            <a class="dropdown-item"
+               routerLink="/settings/change-password">
+              <i class="fas fa-key"></i>
+              Change Password
+            </a>
+          </div>
+        }
       </div>
     </div>
   </div>
-</nav> 
+</nav>

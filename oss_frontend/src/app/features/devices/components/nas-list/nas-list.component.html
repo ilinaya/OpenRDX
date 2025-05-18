@@ -1,67 +1,83 @@
 <div class="nas-list-container">
   <div class="header">
     <h2>{{ 'devices.nas.list.title' | translate }}</h2>
-    <button class="btn btn-primary" (click)="createNas()">
+    <button class="btn btn-primary"
+            (click)="createNas()">
       <i class="fas fa-plus"></i> {{ 'devices.nas.list.create' | translate }}
     </button>
   </div>
 
-  <div *ngIf="loading" class="loading">
-    <div class="spinner"></div>
-    <p>{{ 'common.loading' | translate }}</p>
-  </div>
+  @if (loading) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>{{ 'common.loading' | translate }}</p>
+    </div>
+  }
 
-  <div *ngIf="error" class="alert alert-danger">
-    {{ error }}
-  </div>
+  @if (error) {
+    <div class="alert alert-danger">
+      {{ error }}
+    </div>
+  }
 
-  <div *ngIf="!loading && !error" class="nas-list">
-    <div class="table-responsive">
-      <table class="table">
-        <thead>
+  @if (!loading && !error) {
+    <div class="nas-list">
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
           <tr>
             <th>{{ 'devices.nas.list.name' | translate }}</th>
-              <th>{{ 'devices.nas.list.vendor' | translate }}</th>
+            <th>{{ 'devices.nas.list.vendor' | translate }}</th>
 
-              <th>{{ 'devices.nas.list.ipAddress' | translate }}</th>
+            <th>{{ 'devices.nas.list.ipAddress' | translate }}</th>
             <th>{{ 'devices.nas.list.groups' | translate }}</th>
             <th>{{ 'devices.nas.list.secret' | translate }}</th>
             <th>{{ 'common.actions' | translate }}</th>
           </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let nas of nasDevices">
-            <td>{{ nas.name }}</td>
-              <td>{{ nas.vendor?.name || ('common.none' | translate) }}</td>
+          </thead>
+          <tbody>
+            @for (nas of nasDevices; track nas.id) {
+              <tr>
+                <td>{{ nas.name }}</td>
+                <td>{{ nas.vendor?.name || ('common.none' | translate) }}</td>
 
-              <td>{{ nas.ip_address }}</td>
-            <td>
-              <span *ngFor="let group of nas.groups; let last = last">
-                {{ group.name }}{{ !last ? ', ' : '' }}
-              </span>
-            </td>
+                <td>{{ nas.ip_address }}</td>
+                <td>
+                  @for (group of nas.groups; track group; let last = $last) {
+                    {{ group.name }}{{ !last ? ', ' : '' }}
+                  }
+                </td>
 
-              <td>{{ nas.secret?.name || ('common.none' | translate) }}</td>
+                <td>{{ nas.secret?.name || ('common.none' | translate) }}</td>
 
-            <td>
-              <div class="btn-group">
-                <button class="btn btn-info" (click)="viewNas(nas)">
-                  <i class="fas fa-eye"></i> {{ 'devices.nas.list.viewDetails' | translate }}
-                </button>
-                <button class="btn btn-primary" (click)="editNas(nas.id)">
-                  <i class="fas fa-edit"></i> {{ 'common.edit' | translate }}
-                </button>
-                <button class="btn btn-danger" (click)="deleteNas(nas.id)">
-                  <i class="fas fa-trash"></i> {{ 'common.delete' | translate }}
-                </button>
-              </div>
-            </td>
-          </tr>
-          <tr *ngIf="nasDevices.length === 0">
-            <td colspan="6" class="text-center">{{ 'devices.nas.list.noDevices' | translate }}</td>
-          </tr>
-        </tbody>
-      </table>
+                <td>
+                  <div class="btn-group">
+                    <button class="btn btn-info"
+                            (click)="viewNas(nas)">
+                      <i class="fas fa-eye"></i> {{ 'devices.nas.list.viewDetails' | translate }}
+                    </button>
+                    <button class="btn btn-primary"
+                            (click)="editNas(nas.id)">
+                      <i class="fas fa-edit"></i> {{ 'common.edit' | translate }}
+                    </button>
+                    <button class="btn btn-danger"
+                            (click)="deleteNas(nas.id)">
+                      <i class="fas fa-trash"></i> {{ 'common.delete' | translate }}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+            @if (nasDevices.length === 0) {
+              <tr>
+                <td colspan="6"
+                    class="text-center">{{ 'devices.nas.list.noDevices' | translate }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
+  }
 </div>

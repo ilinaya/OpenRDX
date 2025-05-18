@@ -2,11 +2,15 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AdminService } from '../../../../shared/services/admin.service';
 import { AdminUser } from '../../../../shared/models/admin.model';
+import {DatePipe} from '@angular/common';
 
 @Component({
   selector: 'app-admin-detail',
   templateUrl: './admin-detail.component.html',
-  styleUrls: ['./admin-detail.component.scss']
+  imports: [
+    DatePipe,
+  ],
+  styleUrls: ['./admin-detail.component.scss'],
 })
 export class AdminDetailComponent implements OnInit {
   admin: AdminUser | null = null;
@@ -99,4 +103,4 @@ export class AdminDetailComponent implements OnInit {
         }
       });
   }
-} 
+}

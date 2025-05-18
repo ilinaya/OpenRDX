@@ -2,11 +2,15 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AdminService } from '../../../../shared/services/admin.service';
 import { AdminGroup, AdminUser } from '../../../../shared/models/admin.model';
+import {DatePipe} from '@angular/common';
 
 @Component({
   selector: 'app-admin-group-detail',
   templateUrl: './admin-group-detail.component.html',
-  styleUrls: ['./admin-group-detail.component.scss']
+  imports: [
+    DatePipe,
+  ],
+  styleUrls: ['./admin-group-detail.component.scss'],
 })
 export class AdminGroupDetailComponent implements OnInit {
   public group: AdminGroup | null = null;
@@ -94,4 +98,4 @@ export class AdminGroupDetailComponent implements OnInit {
         });
     }
   }
-} 
+}

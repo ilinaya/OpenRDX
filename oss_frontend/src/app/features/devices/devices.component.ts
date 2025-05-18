@@ -1,9 +1,12 @@
-import { Component } from '@angular/core';
+import {Component} from '@angular/core';
+import {TranslatePipe} from '@ngx-translate/core';
+import {RouterLink, RouterLinkActive, RouterOutlet} from '@angular/router';
 
 @Component({
   selector: 'app-devices',
   templateUrl: './devices.component.html',
-  styleUrls: ['./devices.component.scss']
+  imports: [TranslatePipe, RouterLink, RouterLinkActive, RouterOutlet],
+  styleUrls: ['./devices.component.scss'],
 })
 export class DevicesComponent {
   // This is a placeholder component for the Devices section

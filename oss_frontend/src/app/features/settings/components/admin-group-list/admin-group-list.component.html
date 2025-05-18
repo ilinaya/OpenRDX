@@ -1,27 +1,35 @@
 <div class="admin-group-list-container">
   <div class="header">
     <h2>Admin Groups</h2>
-    <button class="btn btn-primary" (click)="createNewGroup()">
+    <button class="btn btn-primary"
+            (click)="createNewGroup()">
       Create New Group
     </button>
   </div>
 
-  <div *ngIf="loading" class="loading-container">
-    <div class="spinner"></div>
-    <p>Loading admin groups...</p>
-  </div>
+  @if (loading) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading admin groups...</p>
+    </div>
+  }
 
-  <div *ngIf="error" class="alert alert-danger">
-    {{ error }}
-  </div>
+  @if (error) {
+    <div class="alert alert-danger">
+      {{ error }}
+    </div>
+  }
 
-  <div *ngIf="!loading && groups.length === 0" class="empty-state">
-    <p>No admin groups found. Create your first group to get started.</p>
-  </div>
+  @if (!loading && groups.length === 0) {
+    <div class="empty-state">
+      <p>No admin groups found. Create your first group to get started.</p>
+    </div>
+  }
 
-  <div *ngIf="!loading && groups.length > 0" class="groups-table-container">
-    <table class="groups-table">
-      <thead>
+  @if (!loading && groups.length > 0) {
+    <div class="groups-table-container">
+      <table class="groups-table">
+        <thead>
         <tr>
           <th>Name</th>
           <th>Description</th>
@@ -29,46 +37,52 @@
           <th>Updated At</th>
           <th>Actions</th>
         </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let group of groups">
-          <td>{{ group.name }}</td>
-          <td>{{ group.description || 'N/A' }}</td>
-          <td>{{ group.created_at | date:'medium' }}</td>
-          <td>{{ group.updated_at | date:'medium' }}</td>
-          <td class="actions">
-            <button class="btn btn-info" (click)="viewGroupDetails(group.id)">
-              View
-            </button>
-            <button class="btn btn-warning" (click)="editGroup(group.id)">
-              Edit
-            </button>
-            <button class="btn btn-danger" (click)="deleteGroup(group.id)">
-              Delete
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          @for (group of groups; track group) {
+            <tr>
+              <td>{{ group.name }}</td>
+              <td>{{ group.description || 'N/A' }}</td>
+              <td>{{ group.created_at | date:'medium' }}</td>
+              <td>{{ group.updated_at | date:'medium' }}</td>
+              <td class="actions">
+                <button class="btn btn-info"
+                        (click)="viewGroupDetails(group.id)">
+                  View
+                </button>
+                <button class="btn btn-warning"
+                        (click)="editGroup(group.id)">
+                  Edit
+                </button>
+                <button class="btn btn-danger"
+                        (click)="deleteGroup(group.id)">
+                  Delete
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
 
-    <div class="pagination" *ngIf="totalPages > 1">
-      <button 
-        class="btn btn-secondary" 
-        [disabled]="currentPage === 1"
-        (click)="changePage(currentPage - 1)"
-      >
-        Previous
-      </button>
-      <span class="page-info">
+      @if (totalPages > 1) {
+        <div class="pagination">
+          <button
+            class="btn btn-secondary"
+            [disabled]="currentPage === 1"
+            (click)="changePage(currentPage - 1)">
+            Previous
+          </button>
+          <span class="page-info">
         Page {{ currentPage }} of {{ totalPages }}
       </span>
-      <button 
-        class="btn btn-secondary" 
-        [disabled]="currentPage === totalPages"
-        (click)="changePage(currentPage + 1)"
-      >
-        Next
-      </button>
+          <button
+            class="btn btn-secondary"
+            [disabled]="currentPage === totalPages"
+            (click)="changePage(currentPage + 1)">
+            Next
+          </button>
+        </div>
+      }
     </div>
-  </div>
-</div> 
+  }
+</div>

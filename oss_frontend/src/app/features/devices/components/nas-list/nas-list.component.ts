@@ -3,11 +3,15 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { NasService } from '../../../../shared/services/nas.service';
 import { Nas } from '../../../../shared/models/nas.model';
 import { PagedResponse, PaginationParams } from '../../../../shared/models/pagination.model';
+import {TranslatePipe} from '@ngx-translate/core';
 
 @Component({
   selector: 'app-nas-list',
   templateUrl: './nas-list.component.html',
-  styleUrls: ['./nas-list.component.scss']
+  imports: [
+    TranslatePipe,
+  ],
+  styleUrls: ['./nas-list.component.scss'],
 })
 export class NasListComponent implements OnInit {
   nasDevices: Nas[] = [];

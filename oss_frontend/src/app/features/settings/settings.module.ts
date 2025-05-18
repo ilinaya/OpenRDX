@@ -1,59 +1,13 @@
-import { NgModule } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
-import { ReactiveFormsModule, FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
-import { TranslateModule } from '@ngx-translate/core';
-import { SettingsRoutingModule } from './settings-routing.module';
-import { SettingsComponent } from './settings.component';
-import { AdminListComponent } from './components/admin-list/admin-list.component';
-import { AdminDetailComponent } from './components/admin-detail/admin-detail.component';
-import { AdminFormComponent } from './components/admin-form/admin-form.component';
-import { AdminGroupListComponent } from './components/admin-group-list/admin-group-list.component';
-import { AdminGroupDetailComponent } from './components/admin-group-detail/admin-group-detail.component';
-import { AdminGroupFormComponent } from './components/admin-group-form/admin-group-form.component';
-import { SecretListComponent } from './components/secret-list/secret-list.component';
-import { SecretDetailComponent } from './components/secret-detail/secret-detail.component';
-import { SecretFormComponent } from './components/secret-form/secret-form.component';
-import { VendorListComponent } from './components/vendor-list/vendor-list.component';
-import { VendorFormComponent } from './components/vendor-form/vendor-form.component';
-import { VendorDetailComponent } from './components/vendor-detail/vendor-detail.component';
-import { ChangePasswordComponent } from './components/change-password/change-password.component';
-import { UserGroupListComponent } from './components/user-group-list/user-group-list.component';
-import { UserGroupFormComponent } from './components/user-group-form/user-group-form.component';
-import { AttributeGroupListComponent } from './components/attribute-group-list/attribute-group-list.component';
-import { AttributeGroupFormComponent } from './components/attribute-group-form/attribute-group-form.component';
+import {NgModule} from '@angular/core';
+import {DatePipe} from '@angular/common';
+import {provideRouter} from '@angular/router';
+import {routes} from './settings.routes';
 
 @NgModule({
-    declarations: [
-        SettingsComponent,
-        AdminListComponent,
-        AdminDetailComponent,
-        AdminFormComponent,
-        AdminGroupListComponent,
-        AdminGroupDetailComponent,
-        AdminGroupFormComponent,
-        SecretListComponent,
-        SecretDetailComponent,
-        SecretFormComponent,
-        VendorListComponent,
-        VendorFormComponent,
-        VendorDetailComponent,
-        ChangePasswordComponent,
-        UserGroupListComponent,
-        UserGroupFormComponent,
-        AttributeGroupListComponent,
-        AttributeGroupFormComponent
-    ],
-    imports: [
-        CommonModule,
-        ReactiveFormsModule,
-        FormsModule,
-        RouterModule,
-        SettingsRoutingModule,
-        TranslateModule
-    ],
-    providers: [
-        DatePipe
-    ]
+  providers: [
+    DatePipe,
+    provideRouter(routes),
+  ],
 })
-export class SettingsModule { }
+export class SettingsModule {
+}

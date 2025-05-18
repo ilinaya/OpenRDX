@@ -1,13 +1,18 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UserGroupService } from '../../../../shared/services/user-group.service';
 import { UserGroup } from '../../../../shared/models/user-group.model';
+import {TranslatePipe} from '@ngx-translate/core';
 
 @Component({
   selector: 'app-user-group-form',
   templateUrl: './user-group-form.component.html',
-  styleUrls: ['./user-group-form.component.scss']
+  imports: [
+    TranslatePipe,
+    ReactiveFormsModule,
+  ],
+  styleUrls: ['./user-group-form.component.scss'],
 })
 export class UserGroupFormComponent implements OnInit {
   groupForm: FormGroup;
@@ -113,4 +118,4 @@ export class UserGroupFormComponent implements OnInit {
     }
     return '';
   }
-} 
+}

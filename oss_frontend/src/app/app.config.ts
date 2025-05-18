@@ -5,23 +5,25 @@ import {HttpClient, provideHttpClient, withInterceptorsFromDi} from '@angular/co
 import {TranslateLoader, TranslateModule} from '@ngx-translate/core';
 import {createTranslateLoader} from './shared/loaders/translation.loader';
 import {routes} from './app.routes';
+import {CoreModule} from './core/core.module';
 
 
 export const appConfig: ApplicationConfig = {
-    providers: [
-        provideAnimationsAsync(),
-        provideZoneChangeDetection({eventCoalescing: true}),
-        provideRouter(routes),
-        provideHttpClient(
-            withInterceptorsFromDi(),
-        ),
-        importProvidersFrom([TranslateModule.forRoot({
-            defaultLanguage: 'en',
-            loader: {
-                provide: TranslateLoader,
-                useFactory: createTranslateLoader,
-                deps: [HttpClient],
-            },
-        })]),
-    ],
+  providers: [
+    provideAnimationsAsync(),
+    provideZoneChangeDetection({eventCoalescing: true}),
+    provideRouter(routes),
+    provideHttpClient(
+      withInterceptorsFromDi(),
+    ),
+    importProvidersFrom(CoreModule),
+    importProvidersFrom([TranslateModule.forRoot({
+      defaultLanguage: 'en',
+      loader: {
+        provide: TranslateLoader,
+        useFactory: createTranslateLoader,
+        deps: [HttpClient],
+      },
+    })]),
+  ],
 }

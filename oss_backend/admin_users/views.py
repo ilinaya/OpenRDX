@@ -207,6 +207,17 @@ class AdminGroupViewSet(viewsets.ModelViewSet):
             return AdminGroupCreateSerializer
         return self.serializer_class
 
+    @action(detail=True, methods=['get'])
+    def members(self, request, pk=None):
+        """
+        Return a list of all members (users) in this group.
+        """
+        group = self.get_object()
+        users = group.admin_users.all()
+        from .serializers import AdminUserSerializer
+        serializer = AdminUserSerializer(users, many=True)
+        return Response(serializer.data)
+
 
 @api_view(['POST'])
 @permission_classes([AllowAny])

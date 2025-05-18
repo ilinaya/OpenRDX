@@ -177,3 +177,37 @@ textarea.form-control {
     padding: 20px;
   }
 }
+
+.groups-container {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 10px;
+  background-color: #fff;
+
+  .group-item {
+    margin: 5px 0;
+    
+    .form-check {
+      display: flex;
+      align-items: center;
+      padding: 5px;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background-color: #f8f9fa;
+      }
+
+      .form-check-input {
+        margin-right: 8px;
+      }
+
+      .form-check-label {
+        margin-bottom: 0;
+        cursor: pointer;
+      }
+    }
+  }
+}

@@ -17,6 +17,7 @@ export class NasGroupFormComponent implements OnInit {
   submitting = false;
   error = '';
   parentGroups: NasGroup[] = [];
+  filteredParentGroups: NasGroup[] = [];
 
   constructor(
     private fb: FormBuilder,
@@ -27,7 +28,7 @@ export class NasGroupFormComponent implements OnInit {
     this.groupForm = this.fb.group({
       name: ['', [Validators.required, Validators.maxLength(255)]],
       description: [''],
-      parent: [null]
+      parent_id: [null],
     });
   }
 
@@ -35,10 +36,11 @@ export class NasGroupFormComponent implements OnInit {
     this.loading = true;
 
     // Load all NAS groups for parent selection
-    this.nasService.getAllNasGroups()
+    this.nasService.getNasGroupTree()
       .subscribe({
         next: (groups) => {
           this.parentGroups = groups;
+          this.filteredParentGroups = [...groups];
           
           // Check if we're in edit mode
           const id = this.route.snapshot.paramMap.get('id');
@@ -66,11 +68,11 @@ export class NasGroupFormComponent implements OnInit {
           this.groupForm.patchValue({
             name: group.name,
             description: group.description,
-            parent: group.parent
+            parent: group.parent_id,
+            is_active: group.is_active
           });
           
           // Filter out the current group and its children from parent options
-          // to prevent circular references
           this.filterParentOptions(id);
           
           this.loading = false;
@@ -84,53 +86,55 @@ export class NasGroupFormComponent implements OnInit {
   }
 
   filterParentOptions(currentGroupId: number): void {
-    // This is a simplified approach. In a real app, you would need to
-    // recursively filter out all descendants of the current group.
-    this.parentGroups = this.parentGroups.filter(group => group.id !== currentGroupId);
+    if (!this.parentGroups || !Array.isArray(this.parentGroups)) {
+      this.filteredParentGroups = [];
+      return;
+    }
+
+    // Filter out the current group and its children
+    this.filteredParentGroups = this.parentGroups.filter(group => {
+      // Don't include the current group
+      if (group.id === currentGroupId) {
+        return false;
+      }
+
+      // Check if the group is a child of the current group
+      let parent = group.parent;
+      while (parent) {
+        if (parent.id === currentGroupId) {
+          return false;
+        }
+        parent = parent.parent;
+      }
+
+      return true;
+    });
   }
 
   onSubmit(): void {
     if (this.groupForm.invalid) {
-      // Mark all fields as touched to trigger validation messages
-      Object.keys(this.groupForm.controls).forEach(key => {
-        const control = this.groupForm.get(key);
-        control?.markAsTouched();
-      });
       return;
     }
 
     this.submitting = true;
-    this.error = '';
+    const formData = this.groupForm.value;
 
-    const groupData = this.groupForm.value;
+    const request = this.isEditMode
+      ? this.nasService.updateNasGroup(this.groupId!, formData)
+      : this.nasService.createNasGroup(formData);
 
-    if (this.isEditMode && this.groupId) {
-      // Update existing group
-      this.nasService.updateNasGroup(this.groupId, groupData)
-        .subscribe({
-          next: () => {
-            this.router.navigate(['/devices/groups']);
-          },
-          error: (err) => {
-            this.error = 'Failed to update NAS group. Please try again later.';
-            console.error('Error updating NAS group:', err);
-            this.submitting = false;
-          }
-        });
-    } else {
-      // Create new group
-      this.nasService.createNasGroup(groupData)
-        .subscribe({
-          next: () => {
-            this.router.navigate(['/devices/groups']);
-          },
-          error: (err) => {
-            this.error = 'Failed to create NAS group. Please try again later.';
-            console.error('Error creating NAS group:', err);
-            this.submitting = false;
-          }
-        });
-    }
+    request.subscribe({
+      next: () => {
+        this.router.navigate(['/devices/groups']);
+      },
+      error: (err) => {
+        this.error = this.isEditMode
+          ? 'Failed to update NAS group. Please try again later.'
+          : 'Failed to create NAS group. Please try again later.';
+        console.error('Error saving NAS group:', err);
+        this.submitting = false;
+      }
+    });
   }
 
   cancel(): void {

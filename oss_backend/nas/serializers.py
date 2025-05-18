@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from mptt.models import TreeForeignKey
 from django.apps import apps
+
+from radius.serializers import SecretSerializer
 from .models import Nas, NasGroup, Vendor
 
 # Get Secret model dynamically to avoid circular imports
@@ -53,13 +55,15 @@ class NasSerializer(serializers.ModelSerializer):
         many=True,
         required=False
     )
-    secret_id = serializers.PrimaryKeyRelatedField(
-        queryset=Secret.objects.all(),
-        write_only=True,
-        source='secret',
+
+    vendor = VendorSerializer(read_only=True)
+    secret = SecretSerializer(read_only=True)
+    secret_id = serializers.IntegerField(
         required=False
     )
-    vendor = VendorSerializer(read_only=True)
+    vendor_id = serializers.IntegerField(
+        required=False
+    )
 
     class Meta:
         model = Nas
@@ -111,8 +115,11 @@ class NasUpdateSerializer(serializers.ModelSerializer):
         source='secret',
         required=False
     )
+    vendor_id = serializers.IntegerField(
+        required=False
+    )
 
     class Meta:
         model = Nas
         fields = ['name', 'description', 'ip_address', 'coa_enabled', 'coa_port', 
-                 'group_ids', 'secret_id', 'is_active']
+                 'group_ids', 'secret_id', 'is_active', 'vendor_id']

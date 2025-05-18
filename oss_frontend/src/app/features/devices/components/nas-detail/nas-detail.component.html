@@ -3,117 +3,90 @@
     <button class="btn btn-secondary" (click)="goBack()">
       <i class="material-icons">arrow_back</i> Back to List
     </button>
-    <h2>NAS Device Details</h2>
-    <div class="actions">
-      <button class="btn btn-warning" (click)="editNas()">Edit</button>
-      <button class="btn btn-danger" (click)="deleteNas()">Delete</button>
+    <h2>{{ 'devices.nas.detail.title' | translate }}</h2>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="editNas()">
+        <i class="fas fa-edit"></i> {{ 'common.edit' | translate }}
+      </button>
+      <button class="btn btn-danger" (click)="deleteNas()">
+        <i class="fas fa-trash"></i> {{ 'common.delete' | translate }}
+      </button>
     </div>
   </div>
 
   <div *ngIf="loading" class="loading">
     <div class="spinner"></div>
-    <p>Loading NAS details...</p>
+    <p>{{ 'common.loading' | translate }}</p>
   </div>
 
   <div *ngIf="error" class="alert alert-danger">
     {{ error }}
   </div>
 
-  <div *ngIf="!loading && nas" class="nas-details">
-    <div class="detail-card">
-      <h3>Basic Information</h3>
-      <div class="detail-row">
-        <div class="detail-label">Name:</div>
-        <div class="detail-value">{{ nas.name }}</div>
-      </div>
-      <div class="detail-row">
-        <div class="detail-label">IP Address:</div>
-        <div class="detail-value">{{ nas.ip_address }}</div>
-      </div>
-      <div class="detail-row">
-        <div class="detail-label">Status:</div>
-        <div class="detail-value">
-          <span class="status-badge" [ngClass]="{'active': nas.is_active, 'inactive': !nas.is_active}">
-            {{ nas.is_active ? 'Active' : 'Inactive' }}
-          </span>
+  <div *ngIf="!loading && !error && nas" class="nas-detail">
+    <div class="detail-section">
+      <h3>{{ 'devices.nas.detail.basicInfo' | translate }}</h3>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <label class="detail-label">{{ 'devices.nas.detail.name' | translate }}</label>
+          <span class="detail-value">{{ nas.name }}</span>
         </div>
-      </div>
-      <div class="detail-row">
-        <div class="detail-label">CoA Enabled:</div>
-        <div class="detail-value">{{ nas.coa_enabled ? 'Yes' : 'No' }}</div>
-      </div>
-      <div *ngIf="nas.coa_enabled" class="detail-row">
-        <div class="detail-label">CoA Port:</div>
-        <div class="detail-value">{{ nas.coa_port }}</div>
-      </div>
-      <div class="detail-row">
-        <div class="detail-label">Description:</div>
-        <div class="detail-value">{{ nas.description || 'No description provided' }}</div>
-      </div>
-      <div class="detail-row">
-        <div class="detail-label">Created:</div>
-        <div class="detail-value">{{ nas.created_at | date:'medium' }}</div>
-      </div>
-      <div class="detail-row">
-        <div class="detail-label">Last Updated:</div>
-        <div class="detail-value">{{ nas.updated_at | date:'medium' }}</div>
+        <div class="detail-item">
+          <label class="detail-label">{{ 'devices.nas.detail.ipAddress' | translate }}</label>
+          <span class="detail-value">{{ nas.ip_address }}</span>
+        </div>
+        <div class="detail-item">
+          <label class="detail-label">{{ 'devices.nas.detail.description' | translate }}</label>
+          <span class="detail-value">{{ nas.description || ('common.none' | translate) }}</span>
+        </div>
       </div>
     </div>
 
-    <div class="detail-card">
-      <h3>Groups</h3>
-      <div *ngIf="nas.groups && nas.groups.length > 0" class="groups-list">
+    <div class="detail-section">
+      <h3>{{ 'devices.nas.detail.coaSettings' | translate }}</h3>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <label class="detail-label">{{ 'devices.nas.detail.coaEnabled' | translate }}</label>
+          <span class="detail-value">{{ nas.coa_enabled ? ('common.yes' | translate) : ('common.no' | translate) }}</span>
+        </div>
+        <div class="detail-item" *ngIf="nas.coa_enabled">
+          <label class="detail-label">{{ 'devices.nas.detail.coaPort' | translate }}</label>
+          <span class="detail-value">{{ nas.coa_port }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <h3>{{ 'devices.nas.detail.groups' | translate }}</h3>
+      <div class="groups-list" *ngIf="nas.groups && nas.groups.length > 0">
         <div *ngFor="let group of nas.groups" class="group-item">
-          <span class="group-name">{{ group.name }}</span>
-          <span class="group-description" *ngIf="group.description">{{ group.description }}</span>
+          {{ group.name }}
         </div>
       </div>
-      <div *ngIf="!nas.groups || nas.groups.length === 0" class="empty-groups">
-        <p>This NAS device is not assigned to any groups.</p>
+      <p *ngIf="!nas.groups || nas.groups.length === 0">{{ 'devices.nas.detail.noGroups' | translate }}</p>
+    </div>
+
+    <div class="detail-section">
+      <h3>{{ 'devices.nas.detail.secret' | translate }}</h3>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <label class="detail-label">{{ 'devices.nas.detail.secretName' | translate }}</label>
+          <span class="detail-value">{{ nas.secret?.name || ('common.none' | translate) }}</span>
+        </div>
       </div>
     </div>
 
-    <div class="detail-card">
-      <h3>Secret</h3>
-      <div *ngIf="nas.secret" class="secret-info">
-        <div class="detail-row">
-          <div class="detail-label">Name:</div>
-          <div class="detail-value">{{ nas.secret.name }}</div>
+    <div class="detail-section">
+      <h3>{{ 'devices.nas.detail.timestamps' | translate }}</h3>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <label class="detail-label">{{ 'devices.nas.detail.createdAt' | translate }}</label>
+          <span class="detail-value">{{ nas.created_at | date:'medium' }}</span>
         </div>
-        <div class="detail-row">
-          <div class="detail-label">Secret:</div>
-          <div class="detail-value">
-            <span class="masked-secret">••••••••</span>
-          </div>
+        <div class="detail-item">
+          <label class="detail-label">{{ 'devices.nas.detail.updatedAt' | translate }}</label>
+          <span class="detail-value">{{ nas.updated_at | date:'medium' }}</span>
         </div>
-        <div class="detail-row">
-          <div class="detail-label">RadSec:</div>
-          <div class="detail-value">{{ nas.secret.rad_sec ? 'Yes' : 'No' }}</div>
-        </div>
-      </div>
-      <div *ngIf="!nas.secret" class="empty-secret">
-        <p>No secret assigned to this NAS device.</p>
-      </div>
-    </div>
-
-    <div class="detail-card">
-      <h3>Vendor</h3>
-      <div *ngIf="nas.vendor" class="vendor-info">
-        <div class="detail-row">
-          <div class="detail-label">Name:</div>
-          <div class="detail-value">{{ nas.vendor.name }}</div>
-        </div>
-        <div class="detail-row">
-          <div class="detail-label">Vendor ID:</div>
-          <div class="detail-value">{{ nas.vendor.vendor_id }}</div>
-        </div>
-        <div class="detail-row">
-          <div class="detail-label">Description:</div>
-          <div class="detail-value">{{ nas.vendor.description || 'No description provided' }}</div>
-        </div>
-      </div>
-      <div *ngIf="!nas.vendor" class="empty-vendor">
-        <p>No vendor assigned to this NAS device.</p>
       </div>
     </div>
   </div>

@@ -2,9 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NasService } from '../../../../shared/services/nas.service';
-import { Nas, NasGroup, Secret } from '../../../../shared/models/nas.model';
+import { SecretService } from '../../../../shared/services/secret.service';
+import { VendorService } from '../../../../shared/services/vendor.service';
+import { Nas, NasGroup, Secret, Vendor } from '../../../../shared/models/nas.model';
 import { forkJoin, of } from 'rxjs';
-import { catchError, switchMap } from 'rxjs/operators';
+import { catchError, switchMap, tap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-nas-form',
@@ -19,11 +21,15 @@ export class NasFormComponent implements OnInit {
   submitting = false;
   error = '';
   nasGroups: NasGroup[] = [];
+  flattenedGroups: NasGroup[] = [];
   secrets: Secret[] = [];
+  vendors: Vendor[] = [];
 
   constructor(
     private fb: FormBuilder,
     private nasService: NasService,
+    private secretService: SecretService,
+    private vendorService: VendorService,
     private route: ActivatedRoute,
     private router: Router
   ) {
@@ -34,23 +40,47 @@ export class NasFormComponent implements OnInit {
       coa_enabled: [false],
       coa_port: [3799, [Validators.min(1), Validators.max(65535)]],
       group_ids: [[]],
-      secret_id: [null],
-      is_active: [true]
+      secret_id: [null, [Validators.required]],
+      vendor_id: [null, [Validators.required]]
     });
   }
 
   ngOnInit(): void {
     this.loading = true;
+    console.log('Loading NAS form data...');
 
-    // Load NAS groups and secrets
+    // Load NAS groups, secrets, and vendors
     forkJoin({
-      groups: this.nasService.getAllNasGroups().pipe(catchError(() => of([]))),
-      // We would need to create a service for secrets, but for now we'll use an empty array
-      secrets: of([])
+      groups: this.nasService.getNasGroupTree().pipe(
+        tap(groups => {
+          console.log('Loaded NAS groups:', groups);
+          this.nasGroups = groups;
+          this.flattenGroups(groups);
+        }),
+        catchError(error => {
+          console.error('Error loading NAS groups:', error);
+          return of([]);
+        })
+      ),
+      secrets: this.secretService.listSecrets().pipe(
+        tap(secrets => console.log('Loaded secrets:', secrets)),
+        catchError(error => {
+          console.error('Error loading secrets:', error);
+          return of([]);
+        })
+      ),
+      vendors: this.vendorService.getAllVendorsList().pipe(
+        tap(vendors => console.log('Loaded vendors:', vendors)),
+        catchError(error => {
+          console.error('Error loading vendors:', error);
+          return of([]);
+        })
+      )
     }).subscribe({
       next: (result) => {
-        this.nasGroups = result.groups;
+        console.log('Form data loaded successfully:', result);
         this.secrets = result.secrets;
+        this.vendors = result.vendors;
         
         // Check if we're in edit mode
         const id = this.route.snapshot.paramMap.get('id');
@@ -63,9 +93,24 @@ export class NasFormComponent implements OnInit {
         }
       },
       error: (err) => {
+        console.error('Error in forkJoin:', err);
         this.error = 'Failed to load form data. Please try again later.';
-        console.error('Error loading form data:', err);
         this.loading = false;
+      }
+    });
+  }
+
+  private flattenGroups(groups: NasGroup[], level: number = 0): void {
+    groups.forEach(group => {
+      // Add the current group with its level
+      this.flattenedGroups.push({
+        ...group,
+        level: level // Explicitly set level to ensure it's not undefined
+      });
+      
+      // Recursively add children if they exist
+      if (group.children && group.children.length > 0) {
+        this.flattenGroups(group.children, level + 1);
       }
     });
   }
@@ -82,8 +127,8 @@ export class NasFormComponent implements OnInit {
             coa_enabled: nas.coa_enabled,
             coa_port: nas.coa_port,
             group_ids: nas.groups.map(g => g.id),
-            secret_id: nas.secret?.id || null,
-            is_active: nas.is_active
+            secret_id: nas.secret_id || null,
+            vendor_id: nas.vendor_id || null
           });
           this.loading = false;
         },
@@ -109,30 +154,51 @@ export class NasFormComponent implements OnInit {
     this.error = '';
 
     const nasData = this.nasForm.value;
+    console.log('Submitting NAS data:', nasData);
 
     if (this.isEditMode && this.nasId) {
-      // Update existing NAS
-      this.nasService.updateNas(this.nasId, nasData)
-        .subscribe({
-          next: () => {
-            this.router.navigate(['/devices/nas', this.nasId]);
-          },
-          error: (err) => {
-            this.error = 'Failed to update NAS. Please try again later.';
-            console.error('Error updating NAS:', err);
-            this.submitting = false;
+      // Update existing NAS - send all form values
+      this.nasService.updateNas(this.nasId, {
+        name: nasData.name,
+        description: nasData.description,
+        ip_address: nasData.ip_address,
+        coa_enabled: nasData.coa_enabled,
+        coa_port: nasData.coa_port,
+        group_ids: nasData.group_ids,
+        secret_id: nasData.secret_id,
+        vendor_id: nasData.vendor_id
+      }).subscribe({
+        next: (nas) => {
+          console.log('NAS updated successfully:', nas);
+          this.submitting = false;
+          if (nas && nas.id) {
+            this.router.navigate(['/devices/nas', nas.id]);
+          } else {
+            this.router.navigate(['/devices/nas']);
           }
-        });
+        },
+        error: (err) => {
+          console.error('Error updating NAS:', err);
+          this.error = err.error?.message || 'Failed to update NAS. Please try again later.';
+          this.submitting = false;
+        }
+      });
     } else {
       // Create new NAS
       this.nasService.createNas(nasData)
         .subscribe({
           next: (nas) => {
-            this.router.navigate(['/devices/nas', nas.id]);
+            console.log('NAS created successfully:', nas);
+            this.submitting = false;
+            if (nas && nas.id) {
+              this.router.navigate(['/devices/nas', nas.id]);
+            } else {
+              this.router.navigate(['/devices/nas']);
+            }
           },
           error: (err) => {
-            this.error = 'Failed to create NAS. Please try again later.';
             console.error('Error creating NAS:', err);
+            this.error = err.error?.message || 'Failed to create NAS. Please try again later.';
             this.submitting = false;
           }
         });
@@ -144,6 +210,25 @@ export class NasFormComponent implements OnInit {
       this.router.navigate(['/devices/nas', this.nasId]);
     } else {
       this.router.navigate(['/devices/nas']);
+    }
+  }
+
+  onGroupSelectionChange(event: Event, groupId: number): void {
+    const checkbox = event.target as HTMLInputElement;
+    const currentValue = this.nasForm.get('group_ids')?.value || [];
+    
+    if (checkbox.checked) {
+      // Add the group ID if it's not already in the array
+      if (!currentValue.includes(groupId)) {
+        this.nasForm.patchValue({
+          group_ids: [...currentValue, groupId]
+        });
+      }
+    } else {
+      // Remove the group ID from the array
+      this.nasForm.patchValue({
+        group_ids: currentValue.filter((id: number) => id !== groupId)
+      });
     }
   }
 }

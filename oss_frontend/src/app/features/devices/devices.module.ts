@@ -10,6 +10,7 @@ import { NasDetailComponent } from './components/nas-detail/nas-detail.component
 import { NasFormComponent } from './components/nas-form/nas-form.component';
 import { NasGroupListComponent } from './components/nas-group-list/nas-group-list.component';
 import { NasGroupFormComponent } from './components/nas-group-form/nas-group-form.component';
+import {TranslatePipe} from "@ngx-translate/core";
 
 const routes: Routes = [
   { 
@@ -41,7 +42,8 @@ const routes: Routes = [
     CommonModule,
     ReactiveFormsModule,
     RouterModule.forChild(routes),
-    SharedModule
+    SharedModule,
+    TranslatePipe
   ]
 })
 export class DevicesModule { }

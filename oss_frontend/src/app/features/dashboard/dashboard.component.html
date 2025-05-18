@@ -5,6 +5,8 @@
     <div class="header">
       <h1>OSS Frontend</h1>
       <div class="user-info">
+
+
         <div class="user-menu" [class.active]="isUserMenuOpen">
           <div class="user-menu-trigger" (click)="toggleUserMenu()">
             <span class="user-email">{{ currentUser?.email }}</span>
@@ -18,6 +20,13 @@
             </a>
           </div>
         </div>
+
+          <div class="language-switcher">
+              <select #langSelect (change)="switchLanguage(langSelect.value)" [value]="currentLang">
+                  <option value="en">English</option>
+                  <option value="es">Español</option>
+              </select>
+          </div>
 
         <button class="logout-btn" (click)="logout()">Logout</button>
       </div>

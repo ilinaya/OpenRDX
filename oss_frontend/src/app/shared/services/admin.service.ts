@@ -25,11 +25,11 @@ export class AdminService {
       .set('page', (params.page || 1).toString())
       .set('page_size', (params.page_size || 10).toString());
 
-    return this.http.get<PagedResponse<AdminUser>>(`${this.apiUrl}/users`, { params: httpParams });
+    return this.http.get<PagedResponse<AdminUser>>(`${this.apiUrl}/users/`, { params: httpParams });
   }
 
   getAdmin(id: number): Observable<AdminUser> {
-    return this.http.get<AdminUser>(`${this.apiUrl}/users/${id}`);
+    return this.http.get<AdminUser>(`${this.apiUrl}/users/${id}/`);
   }
 
   createAdmin(admin: Partial<AdminUser>): Observable<AdminUser> {
@@ -37,11 +37,11 @@ export class AdminService {
   }
 
   updateAdmin(id: number, admin: Partial<AdminUser>): Observable<AdminUser> {
-    return this.http.patch<AdminUser>(`${this.apiUrl}/users/${id}`, admin);
+    return this.http.patch<AdminUser>(`${this.apiUrl}/users/${id}/`, admin);
   }
 
   deleteAdmin(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/users/${id}`);
+    return this.http.delete<void>(`${this.apiUrl}/users/${id}/`);
   }
 
   activateAdminUser(id: number): Observable<AdminUser> {
@@ -70,7 +70,7 @@ export class AdminService {
   }
 
   getAdminGroup(id: number): Observable<AdminGroup> {
-    return this.http.get<AdminGroup>(`${this.apiUrl}/groups/${id}`);
+    return this.http.get<AdminGroup>(`${this.apiUrl}/groups/${id}/`);
   }
 
   createAdminGroup(group: Partial<AdminGroup>): Observable<AdminGroup> {
@@ -78,19 +78,19 @@ export class AdminService {
   }
 
   updateAdminGroup(id: number, group: Partial<AdminGroup>): Observable<AdminGroup> {
-    return this.http.patch<AdminGroup>(`${this.apiUrl}/groups/${id}`, group);
+    return this.http.patch<AdminGroup>(`${this.apiUrl}/groups/${id}/`, group);
   }
 
   deleteAdminGroup(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/groups/${id}`);
+    return this.http.delete<void>(`${this.apiUrl}/groups/${id}/`);
   }
 
-  getGroupMembers(groupId: number): Observable<PagedResponse<AdminUser>> {
-    return this.http.get<PagedResponse<AdminUser>>(`${this.apiUrl}/groups/${groupId}/members`);
+  getGroupMembers(groupId: number): Observable<AdminUser[]> {
+    return this.http.get<AdminUser[]>(`${this.apiUrl}/groups/${groupId}/members/`);
   }
 
   addMemberToGroup(groupId: number, userId: number): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}/groups/${groupId}/members`, { user_id: userId });
+    return this.http.post<void>(`${this.apiUrl}/groups/${groupId}/members/`, { user_id: userId });
   }
 
   removeMemberFromGroup(groupId: number, userId: number): Observable<void> {

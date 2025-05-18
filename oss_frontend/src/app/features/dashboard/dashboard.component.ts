@@ -1,37 +1,62 @@
-import { Component, HostListener } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
+import { AdminUser } from '../../shared/models/admin.model';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
-export class DashboardComponent {
-  currentUser: any;
+export class DashboardComponent implements OnInit {
+  currentUser: AdminUser | null = null;
   isUserMenuOpen = false;
+  currentLang: string;
 
-  
   constructor(
+    private router: Router,
     private authService: AuthService,
-    private router: Router
+    private translate: TranslateService
   ) {
+    this.currentLang = this.translate.currentLang;
+  }
+
+  ngOnInit(): void {
     this.currentUser = this.authService.getCurrentUser();
+    this.initializeLanguage();
+  }
+
+  private initializeLanguage(): void {
+    const savedLang = localStorage.getItem('preferred_language');
+    if (savedLang) {
+      this.setLanguage(savedLang);
+    } else {
+      const browserLang = navigator.language.split('-')[0];
+      if (['en', 'es'].includes(browserLang)) {
+        this.setLanguage(browserLang);
+      } else {
+        this.setLanguage('en');
+      }
+    }
+  }
+
+  switchLanguage(lang: string): void {
+    this.setLanguage(lang);
+    localStorage.setItem('preferred_language', lang);
+  }
+
+  private setLanguage(lang: string): void {
+    this.translate.use(lang);
+    this.currentLang = lang;
+  }
+
+  toggleUserMenu(): void {
+    this.isUserMenuOpen = !this.isUserMenuOpen;
   }
 
   logout(): void {
     this.authService.logout();
-  }
-
-  toggleUserMenu() {
-    this.isUserMenuOpen = !this.isUserMenuOpen;
-  }
-
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent) {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.user-menu')) {
-      this.isUserMenuOpen = false;
-    }
+    this.router.navigate(['/login']);
   }
 }

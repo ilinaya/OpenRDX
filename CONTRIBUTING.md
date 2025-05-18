@@ -13,7 +13,7 @@ By participating in this project, you agree to abide by our Code of Conduct. Ple
 1. Fork the repository on GitHub
 2. Clone your fork:
    ```bash
-   git clone https://github.com/your-username/OpenRDX.git
+   git clone https://github.com/ilinaya/OpenRDX.git
    cd OpenRDX
    ```
 
@@ -123,7 +123,7 @@ Types:
 
 1. Keep your fork up to date:
    ```bash
-   git remote add upstream https://github.com/original-owner/OpenRDX.git
+   git remote add upstream https://github.com/ilinaya/OpenRDX.git
    git fetch upstream
    git checkout main
    git merge upstream/main

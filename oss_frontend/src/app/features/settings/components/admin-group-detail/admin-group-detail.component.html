@@ -41,10 +41,10 @@
 
     <div class="detail-section">
       <h3>Group Members</h3>
-      <div *ngIf="members.length === 0" class="empty-state">
+      <div *ngIf="!members || members.length === 0" class="empty-state">
         <p>No members in this group yet.</p>
       </div>
-      <div *ngIf="members.length > 0" class="members-list">
+      <div *ngIf="members && members.length > 0" class="members-list">
         <div class="member-item" *ngFor="let member of members">
           <div class="member-info">
             <span class="member-name">{{ member.first_name }} {{ member.last_name }}</span>

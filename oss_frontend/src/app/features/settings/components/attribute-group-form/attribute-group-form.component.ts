@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { TranslateService } from '@ngx-translate/core';
 import { AttributeGroupService } from '../../../../shared/services/attribute-group.service';
 import { RadiusAttributeService } from '../../../../shared/services/radius-attribute.service';
-import { AttributeGroup } from '../../../../shared/models/attribute-group.model';
 import { RadiusAttribute, AttributeType } from '../../../../shared/models/radius-attribute.model';
 
 @Component({
@@ -26,7 +26,8 @@ export class AttributeGroupFormComponent implements OnInit {
     private attributeGroupService: AttributeGroupService,
     private radiusAttributeService: RadiusAttributeService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private translate: TranslateService
   ) {
     this.groupForm = this.fb.group({
       name: ['', [Validators.required, Validators.maxLength(255)]],
@@ -62,7 +63,7 @@ export class AttributeGroupFormComponent implements OnInit {
         this.loading = false;
       },
       error: (error) => {
-        this.error = 'Failed to load group';
+        this.error = this.translate.instant('settings.attributeGroups.errors.loadFailed');
         this.loading = false;
       }
     });
@@ -74,7 +75,7 @@ export class AttributeGroupFormComponent implements OnInit {
         this.attributes = attributes;
       },
       error: (error) => {
-        this.error = 'Failed to load attributes';
+        this.error = this.translate.instant('settings.attributeGroups.errors.loadFailed');
       }
     });
   }
@@ -103,7 +104,7 @@ export class AttributeGroupFormComponent implements OnInit {
           this.submitting = false;
         },
         error: (error) => {
-          this.error = 'Failed to save group';
+          this.error = this.translate.instant('settings.attributeGroups.errors.saveFailed');
           this.submitting = false;
         }
       });
@@ -114,7 +115,7 @@ export class AttributeGroupFormComponent implements OnInit {
     if (this.attributeForm.valid) {
       const groupId = this.route.snapshot.paramMap.get('id');
       if (!groupId) {
-        this.error = 'Please save the group first before adding attributes';
+        this.error = this.translate.instant('settings.attributeGroups.radiusAttributes.saveGroupFirst');
         return;
       }
 
@@ -132,20 +133,20 @@ export class AttributeGroupFormComponent implements OnInit {
           });
         },
         error: (error) => {
-          this.error = 'Failed to add attribute';
+          this.error = this.translate.instant('settings.attributeGroups.errors.addAttributeFailed');
         }
       });
     }
   }
 
   onDeleteAttribute(id: number): void {
-    if (confirm('Are you sure you want to delete this attribute?')) {
+    if (confirm(this.translate.instant('common.confirmDelete'))) {
       this.radiusAttributeService.deleteAttribute(id).subscribe({
         next: () => {
           this.attributes = this.attributes.filter(attr => attr.id !== id);
         },
         error: (error) => {
-          this.error = 'Failed to delete attribute';
+          this.error = this.translate.instant('settings.attributeGroups.errors.deleteAttributeFailed');
         }
       });
     }
@@ -165,10 +166,10 @@ export class AttributeGroupFormComponent implements OnInit {
     if (!field) return '';
 
     if (field.errors?.['required']) {
-      return `${fieldName} is required`;
+      return this.translate.instant('common.errors.required', { field: fieldName });
     }
     if (field.errors?.['maxlength']) {
-      return `${fieldName} must be less than 255 characters`;
+      return this.translate.instant('common.errors.maxLength', { field: fieldName, length: 255 });
     }
     return '';
   }

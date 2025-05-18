@@ -1,0 +1,221 @@
+{
+  "common": {
+    "actions": "Actions",
+    "create": "Create",
+    "update": "Update",
+    "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "loading": "Loading...",
+    "notAvailable": "N/A",
+    "none": "None",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page",
+    "of": "of",
+    "entries": "entries",
+    "showing": "Showing",
+    "to": "to",
+    "active": "Active",
+    "parent_group": "Parent",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "settings": {
+    "title": "Settings",
+    "navigation": {
+      "adminUsers": "Admin Users",
+      "adminGroups": "Admin Groups",
+      "userGroups": "User Groups",
+      "secrets": "Secrets",
+      "vendors": "Vendors",
+      "attributeGroups": "Attribute Groups"
+    },
+    "userGroups": {
+      "title": "User Groups",
+      "create": "Create Group",
+      "edit": "Edit User Group",
+      "name": "Name",
+      "description": "Description",
+      "parentGroup": "Parent Group",
+      "createdAt": "Created At",
+      "updatedAt": "Updated At",
+      "noGroups": "No user groups found",
+      "namePlaceholder": "Enter group name",
+      "descriptionPlaceholder": "Enter group description"
+    },
+    "attributeGroups": {
+      "title": "Attribute Groups",
+      "create": "Create Group",
+      "edit": "Edit Attribute Group",
+      "name": "Name",
+      "description": "Description",
+      "createdAt": "Created At",
+      "updatedAt": "Updated At",
+      "noGroups": "No attribute groups found",
+      "namePlaceholder": "Enter group name",
+      "descriptionPlaceholder": "Enter group description",
+      "radiusAttributes": {
+        "title": "RADIUS Attributes",
+        "vendorId": "Vendor ID",
+        "attributeId": "Attribute ID",
+        "attributeName": "Attribute Name",
+        "attributeType": "Attribute Type",
+        "types": {
+          "string": "String",
+          "integer": "Integer",
+          "octets": "Octets",
+          "ipaddr": "IP Address",
+          "date": "Date",
+          "ifid": "Interface ID",
+          "ipv6addr": "IPv6 Address",
+          "ipv6prefix": "IPv6 Prefix",
+          "ether": "Ethernet",
+          "abinary": "ABinary",
+          "byte": "Byte",
+          "short": "Short",
+          "signed": "Signed",
+          "tlv": "TLV",
+          "extended": "Extended"
+        },
+        "addAttribute": "Add Attribute",
+        "deleteAttribute": "Delete Attribute",
+        "noAttributes": "No attributes found",
+        "saveGroupFirst": "Please save the group first before adding attributes"
+      },
+      "errors": {
+        "loadFailed": "Failed to load attribute groups",
+        "saveFailed": "Failed to save group",
+        "deleteFailed": "Failed to delete group",
+        "addAttributeFailed": "Failed to add attribute",
+        "deleteAttributeFailed": "Failed to delete attribute"
+      }
+    },
+    "changePassword": {
+      "title": "Change Password",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm New Password",
+      "submit": "Change Password",
+      "success": "Password changed successfully. Redirecting..."
+    }
+  },
+  "devices": {
+    "title": "Network Devices",
+    "nav": {
+      "nasDevices": "NAS Devices",
+      "nasGroups": "NAS Groups"
+    },
+    "nas": {
+      "title": "NAS Devices",
+      "list": {
+        "vendor": "Vendor",
+        "title": "NAS Devices",
+        "create": "Add New NAS",
+        "name": "Name",
+        "ipAddress": "IP Address",
+        "description": "Description",
+        "coaEnabled": "CoA Enabled",
+        "coaPort": "CoA Port",
+        "groups": "NAS Groups",
+        "secret": "Secret",
+        "active": "Active",
+        "createdAt": "Created At",
+        "updatedAt": "Updated At",
+        "noDevices": "No NAS devices found",
+        "viewDetails": "View Details",
+        "edit": "Edit",
+        "status": "Status",
+        "delete": "Delete",
+        "deleteConfirm": "Are you sure you want to delete this NAS device?",
+        "errors": {
+          "loadFailed": "Failed to load NAS devices",
+          "deleteFailed": "Failed to delete NAS device"
+        }
+      },
+      "form": {
+        "create": "Create NAS Device",
+        "edit": "Edit NAS Device",
+        "name": "Name",
+        "nameRequired": "Name is required",
+        "nameMaxLength": "Name cannot exceed 255 characters",
+        "ipAddress": "IP Address",
+        "ipAddressRequired": "IP Address is required",
+        "ipAddressInvalid": "Please enter a valid IP address",
+        "description": "Description",
+        "coaEnabled": "CoA Enabled",
+        "coaPort": "CoA Port",
+        "coaPortMin": "Port must be at least 1",
+        "coaPortMax": "Port cannot exceed 65535",
+        "groups": "NAS Groups",
+        "secret": "Secret",
+        "secretRequired": "Secret is required",
+        "vendor": "Vendor",
+        "vendorRequired": "Vendor is required",
+        "active": "Active",
+        "errors": {
+          "createFailed": "Failed to create NAS device",
+          "updateFailed": "Failed to update NAS device"
+        }
+      },
+      "detail": {
+        "title": "NAS Device Details",
+        "edit": "Edit",
+        "delete": "Delete",
+        "deleteConfirm": "Are you sure you want to delete this NAS device?",
+        "basicInfo": "Basic Information",
+        "name": "Name",
+        "ipAddress": "IP Address",
+        "description": "Description",
+        "coaSettings": "CoA Settings",
+        "coaEnabled": "CoA Enabled",
+        "coaPort": "CoA Port",
+        "groups": "NAS Groups",
+        "secret": "Secret",
+        "secretName": "Secret Name",
+        "timestamps": "Timestamps",
+        "createdAt": "Created At",
+        "updatedAt": "Updated At",
+        "errors": {
+          "loadFailed": "Failed to load NAS details",
+          "deleteFailed": "Failed to delete NAS device"
+        }
+      }
+    },
+    "nasGroups": {
+      "title": "NAS Groups",
+      "list": {
+        "title": "NAS Groups",
+        "create": "Add New Group",
+        "name": "Name",
+        "description": "Description",
+        "parentGroup": "Parent Group",
+        "createdAt": "Created At",
+        "updatedAt": "Updated At",
+        "noGroups": "No NAS groups found",
+        "viewNas": "View NAS",
+        "edit": "Edit",
+        "delete": "Delete",
+        "deleteConfirm": "Are you sure you want to delete this NAS group?",
+        "errors": {
+          "loadFailed": "Failed to load NAS groups",
+          "deleteFailed": "Failed to delete NAS group"
+        }
+      },
+      "form": {
+        "create": "Create NAS Group",
+        "edit": "Edit NAS Group",
+        "name": "Name",
+        "nameRequired": "Name is required",
+        "nameMaxLength": "Name cannot exceed 255 characters",
+        "description": "Description",
+        "parentGroup": "Parent Group",
+        "parentGroupHelp": "Select a parent group to create a hierarchical structure",
+        "errors": {
+          "createFailed": "Failed to create NAS group",
+          "updateFailed": "Failed to update NAS group"
+        }
+      }
+    }
+  }
+} 

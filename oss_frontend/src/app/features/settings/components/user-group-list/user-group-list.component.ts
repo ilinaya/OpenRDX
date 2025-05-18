@@ -3,11 +3,17 @@ import { Router } from '@angular/router';
 import { UserGroupService } from '../../../../shared/services/user-group.service';
 import { UserGroup } from '../../../../shared/models/user-group.model';
 import { PagedResponse, PaginationParams } from '../../../../shared/models/pagination.model';
+import {TranslatePipe} from '@ngx-translate/core';
+import {DatePipe} from '@angular/common';
 
 @Component({
   selector: 'app-user-group-list',
   templateUrl: './user-group-list.component.html',
-  styleUrls: ['./user-group-list.component.scss']
+  imports: [
+    TranslatePipe,
+    DatePipe,
+  ],
+  styleUrls: ['./user-group-list.component.scss'],
 })
 export class UserGroupListComponent implements OnInit {
   groups: UserGroup[] = [];
@@ -92,4 +98,4 @@ export class UserGroupListComponent implements OnInit {
       });
     }
   }
-} 
+}

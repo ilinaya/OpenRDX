@@ -3,35 +3,44 @@
     <h2>{{ 'devices.nasGroups.list.title' | translate }}</h2>
     <div class="header-actions">
 
-      <button class="btn btn-primary" (click)="createNewGroup()">
+      <button class="btn btn-primary"
+              (click)="createNewGroup()">
         <i class="fas fa-plus"></i> {{ 'devices.nasGroups.list.create' | translate }}
       </button>
     </div>
   </div>
 
-  <div *ngIf="loading" class="loading">
-    <div class="spinner"></div>
-    <p>{{ 'common.loading' | translate }}</p>
-  </div>
+  @if (loading) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>{{ 'common.loading' | translate }}</p>
+    </div>
+  }
 
-  <div *ngIf="error" class="alert alert-danger">
-    {{ error }}
-  </div>
+  @if (error) {
+    <div class="alert alert-danger">
+      {{ error }}
+    </div>
+  }
 
-  <div *ngIf="!loading && nasGroups.length === 0" class="empty-state">
-    <p>{{ 'devices.nasGroups.list.noGroups' | translate }}</p>
-  </div>
-
+  @if (!loading && nasGroups.length === 0) {
+    <div class="empty-state">
+      <p>{{ 'devices.nasGroups.list.noGroups' | translate }}</p>
+    </div>
+  }
   <!-- Tree View -->
-  <div *ngIf="!loading && nasGroups.length > 0 && treeView" class="tree-view">
-    <ng-container *ngTemplateOutlet="groupTree; context: { $implicit: nasGroups }"></ng-container>
-  </div>
+  @if (!loading && nasGroups.length > 0 && treeView) {
+    <div class="tree-view">
+      <ng-container *ngTemplateOutlet="groupTree; context: { $implicit: nasGroups }"></ng-container>
+    </div>
+  }
 
   <!-- List View -->
-  <div *ngIf="!loading && nasGroups.length > 0 && !treeView" class="list-view">
-    <div class="table-responsive">
-      <table class="table">
-        <thead>
+  @if (!loading && nasGroups.length > 0 && !treeView) {
+    <div class="list-view">
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
           <tr>
             <th>{{ 'devices.nasGroups.list.name' | translate }}</th>
             <th>{{ 'devices.nasGroups.list.description' | translate }}</th>
@@ -39,50 +48,66 @@
             <th>{{ 'devices.nasGroups.list.status' | translate }}</th>
             <th>{{ 'common.actions' | translate }}</th>
           </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let group of nasGroups">
-            <td>{{ group.name }}</td>
-            <td>{{ group.description || ('common.none' | translate) }}</td>
-            <td>{{ group.parent?.name || ('common.none' | translate) }}</td>
+          </thead>
+          <tbody>
+            @for (group of nasGroups; track group.id) {
+              <tr>
+                <td>{{ group.name }}</td>
+                <td>{{ group.description || ('common.none' | translate) }}</td>
+                <td>{{ group.parent?.name || ('common.none' | translate) }}</td>
 
-            <td>
-              <div class="btn-group">
-                <button class="btn btn-sm btn-info" (click)="viewNasInGroup(group.id)">
-                  <i class="fas fa-eye"></i>
-                </button>
-                <button class="btn btn-sm btn-primary" (click)="editGroup(group.id, $event)">
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-sm btn-danger" (click)="deleteGroup(group.id, $event)">
-                  <i class="fas fa-trash"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+                <td>
+                  <div class="btn-group">
+                    <button class="btn btn-sm btn-info"
+                            (click)="viewNasInGroup(group.id)">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-primary"
+                            (click)="editGroup(group.id, $event)">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger"
+                            (click)="deleteGroup(group.id, $event)">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
+  }
 </div>
 
 <!-- Template for recursive tree rendering -->
-<ng-template #groupTree let-groups>
+<ng-template #groupTree
+             let-groups>
   <ul class="group-tree">
-    <li *ngFor="let group of groups" class="group-item" (click)="viewNasInGroup(group.id)">
-      <div class="group-content">
-        <div class="group-info">
-          <span class="group-name">{{ group.name }}</span>
-          <span class="group-description" *ngIf="group.description">{{ group.description }}</span>
+    @for (group of groups; track group.id) {
+      <li class="group-item"
+          (click)="viewNasInGroup(group.id)">
+        <div class="group-content">
+          <div class="group-info">
+            <span class="group-name">{{ group.name }}</span>
+            @if (group.description) {
+              <span class="group-description">{{ group.description }}</span>
+            }
+          </div>
+          <div class="group-actions">
+            <button class="btn btn-sm btn-warning"
+                    (click)="editGroup(group.id, $event)">Edit
+            </button>
+            <button class="btn btn-sm btn-danger"
+                    (click)="deleteGroup(group.id, $event)">Delete
+            </button>
+          </div>
         </div>
-        <div class="group-actions">
-          <button class="btn btn-sm btn-warning" (click)="editGroup(group.id, $event)">Edit</button>
-          <button class="btn btn-sm btn-danger" (click)="deleteGroup(group.id, $event)">Delete</button>
-        </div>
-      </div>
-      <ng-container *ngIf="group.children && group.children.length > 0">
-        <ng-container *ngTemplateOutlet="groupTree; context: { $implicit: group.children }"></ng-container>
-      </ng-container>
-    </li>
+        @if (group.children && group.children.length > 0) {
+          <ng-container *ngTemplateOutlet="groupTree; context: { $implicit: group.children }"></ng-container>
+        }
+      </li>
+    }
   </ul>
 </ng-template>

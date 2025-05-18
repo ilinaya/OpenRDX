@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AdminService } from '../../../../shared/services/admin.service';
 import { AdminGroup } from '../../../../shared/models/admin.model';
@@ -7,7 +7,10 @@ import { AdminGroup } from '../../../../shared/models/admin.model';
 @Component({
   selector: 'app-admin-group-form',
   templateUrl: './admin-group-form.component.html',
-  styleUrls: ['./admin-group-form.component.scss']
+  imports: [
+    ReactiveFormsModule,
+  ],
+  styleUrls: ['./admin-group-form.component.scss'],
 })
 export class AdminGroupFormComponent implements OnInit {
   groupForm: FormGroup;
@@ -82,4 +85,4 @@ export class AdminGroupFormComponent implements OnInit {
   cancel(): void {
     this.router.navigate(['../'], { relativeTo: this.route });
   }
-} 
+}

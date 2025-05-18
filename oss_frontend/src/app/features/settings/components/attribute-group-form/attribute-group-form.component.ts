@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { TranslateService } from '@ngx-translate/core';
+import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import { AttributeGroupService } from '../../../../shared/services/attribute-group.service';
 import { RadiusAttributeService } from '../../../../shared/services/radius-attribute.service';
 import { RadiusAttribute, AttributeType } from '../../../../shared/models/radius-attribute.model';
@@ -9,7 +9,11 @@ import { RadiusAttribute, AttributeType } from '../../../../shared/models/radius
 @Component({
   selector: 'app-attribute-group-form',
   templateUrl: './attribute-group-form.component.html',
-  styleUrls: ['./attribute-group-form.component.scss']
+  imports: [
+    TranslatePipe,
+    ReactiveFormsModule,
+  ],
+  styleUrls: ['./attribute-group-form.component.scss'],
 })
 export class AttributeGroupFormComponent implements OnInit {
   groupForm: FormGroup;
@@ -173,4 +177,4 @@ export class AttributeGroupFormComponent implements OnInit {
     }
     return '';
   }
-} 
+}

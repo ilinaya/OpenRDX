@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { VendorService } from '../../../../shared/services/vendor.service';
 import { Vendor } from '../../../../shared/models/vendor.model';
@@ -7,7 +7,10 @@ import { Vendor } from '../../../../shared/models/vendor.model';
 @Component({
   selector: 'app-vendor-form',
   templateUrl: './vendor-form.component.html',
-  styleUrls: ['./vendor-form.component.scss']
+  imports: [
+    ReactiveFormsModule,
+  ],
+  styleUrls: ['./vendor-form.component.scss'],
 })
 export class VendorFormComponent implements OnInit {
   vendorForm: FormGroup;
@@ -102,4 +105,4 @@ export class VendorFormComponent implements OnInit {
   onCancel(): void {
     this.router.navigate(['/settings/vendors']);
   }
-} 
+}

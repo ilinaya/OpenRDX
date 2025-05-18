@@ -2,106 +2,131 @@
   <div class="header">
     <h2>Administrator Details</h2>
     <div class="actions">
-      <button class="btn btn-warning" (click)="editAdmin()">Edit</button>
-      <button class="btn btn-danger" (click)="deleteAdmin()">Delete</button>
+      <button class="btn btn-warning"
+              (click)="editAdmin()">Edit
+      </button>
+      <button class="btn btn-danger"
+              (click)="deleteAdmin()">Delete
+      </button>
     </div>
   </div>
 
-  <div *ngIf="loading" class="loading-container">
-    <div class="spinner"></div>
-    <p>Loading administrator details...</p>
-  </div>
+  @if (loading) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading administrator details...</p>
+    </div>
+  }
 
-  <div *ngIf="error" class="alert alert-danger">
-    {{ error }}
-  </div>
+  @if (error) {
+    <div class="alert alert-danger">
+      {{ error }}
+    </div>
+  }
 
-  <div *ngIf="!loading && admin" class="admin-details">
-    <div class="detail-section">
-      <h3>Personal Information</h3>
-      <div class="detail-grid">
-        <div class="detail-item">
-          <label>Name</label>
-          <p>{{ admin.first_name }} {{ admin.last_name }}</p>
-        </div>
-        <div class="detail-item">
-          <label>Email</label>
-          <p>{{ admin.email }}</p>
-        </div>
-        <div class="detail-item">
-          <label>Position</label>
-          <p>{{ admin.position || 'N/A' }}</p>
-        </div>
-        <div class="detail-item">
-          <label>Phone Number</label>
-          <p>{{ admin.phone_number || 'N/A' }}</p>
+  @if (!loading && admin) {
+    <div class="admin-details">
+      <div class="detail-section">
+        <h3>Personal Information</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <label>Name</label>
+            <p>{{ admin.first_name }} {{ admin.last_name }}</p>
+          </div>
+          <div class="detail-item">
+            <label>Email</label>
+            <p>{{ admin.email }}</p>
+          </div>
+          <div class="detail-item">
+            <label>Position</label>
+            <p>{{ admin.position || 'N/A' }}</p>
+          </div>
+          <div class="detail-item">
+            <label>Phone Number</label>
+            <p>{{ admin.phone_number || 'N/A' }}</p>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="detail-section">
-      <h3>Account Status</h3>
-      <div class="detail-grid">
-        <div class="detail-item">
-          <label>Status</label>
-          <span class="status-badge" [ngClass]="{'active': admin.is_active, 'inactive': !admin.is_active}">
+      <div class="detail-section">
+        <h3>Account Status</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <label>Status</label>
+            <span class="status-badge"
+                  [class.active]="admin.is_active"
+                  [class.inactive]="!admin.is_active">
             {{ admin.is_active ? 'Active' : 'Inactive' }}
           </span>
-        </div>
-        <div class="detail-item">
-          <label>Staff Member</label>
-          <span class="status-badge" [ngClass]="{'active': admin.is_staff, 'inactive': !admin.is_staff}">
+          </div>
+          <div class="detail-item">
+            <label>Staff Member</label>
+            <span class="status-badge"
+                  [class.active]="admin.is_staff"
+                  [class.inactive]="!admin.is_staff">
             {{ admin.is_staff ? 'Yes' : 'No' }}
           </span>
-        </div>
-        <div class="detail-item">
-          <label>Superuser</label>
-          <span class="status-badge" [ngClass]="{'active': admin.is_superuser, 'inactive': !admin.is_superuser}">
+          </div>
+          <div class="detail-item">
+            <label>Superuser</label>
+            <span class="status-badge"
+                  [class.active]="admin.is_superuser"
+                  [class.inactive]="!admin.is_superuser">
             {{ admin.is_superuser ? 'Yes' : 'No' }}
           </span>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="detail-section">
-      <h3>Groups</h3>
-      <div class="groups-list" *ngIf="admin.groups.length > 0">
-        <div class="group-item" *ngFor="let group of admin.groups">
-          <span class="group-name">{{ group.name }}</span>
-          <span class="group-description" *ngIf="group.description">{{ group.description }}</span>
-        </div>
+      <div class="detail-section">
+        <h3>Groups</h3>
+        @if (admin.groups.length > 0) {
+          <div class="groups-list">
+            @for (group of admin.groups; track group.id) {
+              <div class="group-item">
+                <span class="group-name">{{ group.name }}</span>
+                @if (group.description) {
+                  <span class="group-description">{{ group.description }}</span>
+                }
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="no-groups">No groups assigned</p>
+        }
       </div>
-      <p *ngIf="admin.groups.length === 0" class="no-groups">No groups assigned</p>
-    </div>
 
-    <div class="detail-section">
-      <h3>Account Management</h3>
-      <div class="management-actions">
-        <button 
-          class="btn" 
-          [ngClass]="{'btn-success': !admin.is_active, 'btn-warning': admin.is_active}"
-          (click)="admin.is_active ? deactivateAdmin() : activateAdmin()"
-        >
-          {{ admin.is_active ? 'Deactivate' : 'Activate' }} Account
-        </button>
-        <button class="btn btn-info" (click)="sendPasswordReset()">
-          Send Password Reset
-        </button>
+      <div class="detail-section">
+        <h3>Account Management</h3>
+        <div class="management-actions">
+          <button
+            class="btn"
+            [class.btn-success]="!admin.is_active"
+            [class.btn-warning]="admin.is_active"
+            (click)="admin.is_active ? deactivateAdmin() : activateAdmin()"
+          >
+            {{ admin.is_active ? 'Deactivate' : 'Activate' }} Account
+          </button>
+          <button class="btn btn-info"
+                  (click)="sendPasswordReset()">
+            Send Password Reset
+          </button>
+        </div>
       </div>
-    </div>
 
-    <div class="detail-section">
-      <h3>Account Information</h3>
-      <div class="detail-grid">
-        <div class="detail-item">
-          <label>Created At</label>
-          <p>{{ admin.created_at | date:'medium' }}</p>
-        </div>
-        <div class="detail-item">
-          <label>Last Updated</label>
-          <p>{{ admin.updated_at | date:'medium' }}</p>
+      <div class="detail-section">
+        <h3>Account Information</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <label>Created At</label>
+            <p>{{ admin.created_at | date:'medium' }}</p>
+          </div>
+          <div class="detail-item">
+            <label>Last Updated</label>
+            <p>{{ admin.updated_at | date:'medium' }}</p>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</div> 
+  }
+</div>

@@ -3,11 +3,17 @@ import { Router } from '@angular/router';
 import { AttributeGroupService } from '../../../../shared/services/attribute-group.service';
 import { AttributeGroup } from '../../../../shared/models/attribute-group.model';
 import { PagedResponse, PaginationParams } from '../../../../shared/models/pagination.model';
+import {TranslatePipe} from '@ngx-translate/core';
+import {DatePipe} from '@angular/common';
 
 @Component({
   selector: 'app-attribute-group-list',
   templateUrl: './attribute-group-list.component.html',
-  styleUrls: ['./attribute-group-list.component.scss']
+  imports: [
+    TranslatePipe,
+    DatePipe,
+  ],
+  styleUrls: ['./attribute-group-list.component.scss'],
 })
 export class AttributeGroupListComponent implements OnInit {
   groups: AttributeGroup[] = [];
@@ -74,4 +80,4 @@ export class AttributeGroupListComponent implements OnInit {
       });
     }
   }
-} 
+}

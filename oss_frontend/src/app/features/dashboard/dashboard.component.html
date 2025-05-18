@@ -1,37 +1,46 @@
 <div class="dashboard-container">
   <app-navbar></app-navbar>
-  
+
   <div class="content-container">
     <div class="header">
       <h1>OSS Frontend</h1>
       <div class="user-info">
 
 
-        <div class="user-menu" [class.active]="isUserMenuOpen">
-          <div class="user-menu-trigger" (click)="toggleUserMenu()">
+        <div class="user-menu"
+             [class.active]="isUserMenuOpen">
+          <div class="user-menu-trigger"
+               (click)="toggleUserMenu()">
             <span class="user-email">{{ currentUser?.email }}</span>
             <i class="fas fa-chevron-down"></i>
           </div>
-          
-          <div class="dropdown-menu" *ngIf="isUserMenuOpen">
-            <a class="dropdown-item" routerLink="/settings/change-password">
-              <i class="fas fa-key"></i>
-              Change Password
-            </a>
-          </div>
+
+          @if (isUserMenuOpen) {
+            <div class="dropdown-menu">
+              <a class="dropdown-item"
+                 routerLink="/settings/change-password">
+                <i class="fas fa-key"></i>
+                Change Password
+              </a>
+            </div>
+          }
         </div>
 
-          <div class="language-switcher">
-              <select #langSelect (change)="switchLanguage(langSelect.value)" [value]="currentLang">
-                  <option value="en">English</option>
-                  <option value="es">Español</option>
-              </select>
-          </div>
+        <div class="language-switcher">
+          <select #langSelect
+                  (change)="switchLanguage(langSelect.value)"
+                  [value]="currentLang">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+          </select>
+        </div>
 
-        <button class="logout-btn" (click)="logout()">Logout</button>
+        <button class="logout-btn"
+                (click)="logout()">Logout
+        </button>
       </div>
     </div>
-    
+
     <div class="content">
       <router-outlet></router-outlet>
     </div>

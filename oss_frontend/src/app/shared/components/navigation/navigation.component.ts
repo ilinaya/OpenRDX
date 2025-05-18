@@ -1,17 +1,23 @@
-import { Component, OnInit, HostListener } from '@angular/core';
-import { AuthService } from '../../services/auth.service';
-import { Admin } from '../../models/admin.model';
+import {Component, HostListener, OnInit} from '@angular/core';
+import {Admin} from '../../models/admin.model';
+import {RouterLink, RouterLinkActive} from '@angular/router';
+import {AuthService} from '../../../core/auth/auth.service';
 
 @Component({
   selector: 'app-navigation',
   templateUrl: './navigation.component.html',
-  styleUrls: ['./navigation.component.scss']
+  imports: [
+    RouterLink,
+    RouterLinkActive,
+  ],
+  styleUrls: ['./navigation.component.scss'],
 })
 export class NavigationComponent implements OnInit {
   currentUser: Admin | null = null;
   isUserMenuOpen = false;
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) {
+  }
 
   ngOnInit() {
     this.currentUser = this.authService.getCurrentUser();
@@ -28,4 +34,4 @@ export class NavigationComponent implements OnInit {
       this.isUserMenuOpen = false;
     }
   }
-} 
+}

@@ -2,11 +2,15 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { VendorService } from '../../../../shared/services/vendor.service';
 import { Vendor } from '../../../../shared/models/vendor.model';
+import {DatePipe} from '@angular/common';
 
 @Component({
   selector: 'app-vendor-detail',
   templateUrl: './vendor-detail.component.html',
-  styleUrls: ['./vendor-detail.component.scss']
+  imports: [
+    DatePipe,
+  ],
+  styleUrls: ['./vendor-detail.component.scss'],
 })
 export class VendorDetailComponent implements OnInit {
   vendor?: Vendor;
@@ -66,4 +70,4 @@ export class VendorDetailComponent implements OnInit {
   goBack(): void {
     this.router.navigate(['../'], { relativeTo: this.route });
   }
-} 
+}

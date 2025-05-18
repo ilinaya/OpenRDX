@@ -1,44 +1,64 @@
 <div class="login-container">
   <div class="login-card">
     <h2 class="login-title">Login</h2>
-    
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+
+    <form [formGroup]="loginForm"
+          (ngSubmit)="onSubmit()"
+          class="login-form">
       <div class="form-group">
         <label for="email">Email</label>
-        <input 
-          type="email" 
-          id="email" 
-          formControlName="email" 
-          class="form-control" 
-          [ngClass]="{ 'is-invalid': f['email'].touched && f['email'].errors }"
+        <input
+          type="email"
+          id="email"
+          formControlName="email"
+          class="form-control"
+          [class.is-invalid]="f['email'].touched && f['email'].errors"
         />
-        <div *ngIf="f['email'].touched && f['email'].errors" class="error-message">
-          <div *ngIf="f['email'].errors['required']">Email is required</div>
-          <div *ngIf="f['email'].errors['email']">Please enter a valid email address</div>
-        </div>
+
+        @if (f['email'].touched && f['email'].errors) {
+          <div class="error-message">
+            @if (f['email'].errors['required']) {
+              <div>Email is required</div>
+            }
+
+            @if (f['email'].errors['email']) {
+              <div>Please enter a valid email address</div>
+            }
+          </div>
+        }
       </div>
-      
+
       <div class="form-group">
         <label for="password">Password</label>
-        <input 
-          type="password" 
-          id="password" 
-          formControlName="password" 
-          class="form-control" 
-          [ngClass]="{ 'is-invalid': f['password'].touched && f['password'].errors }"
+        <input
+          type="password"
+          id="password"
+          formControlName="password"
+          class="form-control"
+          [class.is-invalid]="f['password'].touched && f['password'].errors"
         />
-        <div *ngIf="f['password'].touched && f['password'].errors" class="error-message">
-          <div *ngIf="f['password'].errors['required']">Password is required</div>
+        @if (f['password'].touched && f['password'].errors) {
+          <div class="error-message">
+            @if (f['password'].errors['required']) {
+              <div>Password is required</div>
+            }
+          </div>
+        }
+      </div>
+
+      @if (error) {
+        <div class="alert alert-danger mt-3">
+          {{ error }}
         </div>
-      </div>
-      
-      <div *ngIf="error" class="alert alert-danger mt-3">
-        {{ error }}
-      </div>
-      
+      }
+
       <div class="form-group">
-        <button type="submit" [disabled]="loading || loginForm.invalid" class="btn btn-primary">
-          <span *ngIf="loading" class="spinner"></span>
+        <button type="submit"
+                [disabled]="loading || loginForm.invalid"
+                class="btn btn-primary">
+          @if (loading) {
+            <span class="spinner"></span>
+          }
           Login
         </button>
       </div>

@@ -3,60 +3,83 @@
     <h2>{{ isEditMode ? ('devices.nasGroups.form.edit' | translate) : ('devices.nasGroups.form.create' | translate) }}</h2>
   </div>
 
-  <div *ngIf="loading" class="loading">
-    <div class="spinner"></div>
-    <p>{{ 'common.loading' | translate }}</p>
-  </div>
+  @if (loading) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>{{ 'common.loading' | translate }}</p>
+    </div>
+  }
 
-  <div *ngIf="error" class="alert alert-danger">
-    {{ error }}
-  </div>
+  @if (error) {
+    <div class="alert alert-danger">
+      {{ error }}
+    </div>
+  }
 
-  <form *ngIf="!loading" [formGroup]="groupForm" (ngSubmit)="onSubmit()" class="group-form">
-    <div class="form-group">
-      <label for="name">{{ 'devices.nasGroups.form.name' | translate }} *</label>
-      <input 
-        type="text" 
-        id="name" 
-        formControlName="name" 
-        class="form-control" 
-        [ngClass]="{'is-invalid': groupForm.get('name')?.touched && groupForm.get('name')?.invalid}"
-      >
-      <div *ngIf="groupForm.get('name')?.touched && groupForm.get('name')?.invalid" class="error-message">
-        <div *ngIf="groupForm.get('name')?.errors?.['required']">{{ 'devices.nasGroups.form.nameRequired' | translate }}</div>
-        <div *ngIf="groupForm.get('name')?.errors?.['maxlength']">{{ 'devices.nasGroups.form.nameMaxLength' | translate }}</div>
+  @if (!loading) {
+    <form [formGroup]="groupForm"
+          (ngSubmit)="onSubmit()"
+          class="group-form">
+      <div class="form-group">
+        <label for="name">{{ 'devices.nasGroups.form.name' | translate }} *</label>
+        <input
+          type="text"
+          id="name"
+          formControlName="name"
+          class="form-control"
+          [class.is-invalid]="groupForm.get('name')?.touched && groupForm.get('name')?.invalid"
+        >
+        @if (groupForm.get('name')?.touched && groupForm.get('name')?.invalid) {
+          <div class="error-message">
+            @if (groupForm.get('name')?.errors?.['required']) {
+              <div>{{ 'devices.nasGroups.form.nameRequired' | translate }}</div>
+            }
+            @if (groupForm.get('name')?.errors?.['maxlength']) {
+              <div>{{ 'devices.nasGroups.form.nameMaxLength' | translate }}</div>
+            }
+          </div>
+        }
       </div>
-    </div>
 
-    <div class="form-group">
-      <label for="description">{{ 'devices.nasGroups.form.description' | translate }}</label>
-      <textarea 
-        id="description" 
-        formControlName="description" 
-        class="form-control" 
-        rows="3"
-      ></textarea>
-    </div>
+      <div class="form-group">
+        <label for="description">{{ 'devices.nasGroups.form.description' | translate }}</label>
+        <textarea
+          id="description"
+          formControlName="description"
+          class="form-control"
+          rows="3"
+        ></textarea>
+      </div>
 
-    <div class="form-group">
-      <label for="parent">{{ 'devices.nasGroups.form.parentGroup' | translate }}</label>
-      <select 
-        id="parent" 
-        formControlName="parent_id"
-        class="form-control"
-      >
-        <option [value]="null">{{ 'common.none' | translate }}</option>
-        <option *ngFor="let group of filteredParentGroups" [value]="group.id">{{ group.name }}</option>
-      </select>
-      <small class="form-text text-muted">{{ 'devices.nasGroups.form.parentGroupHelp' | translate }}</small>
-    </div>
+      <div class="form-group">
+        <label for="parent">{{ 'devices.nasGroups.form.parentGroup' | translate }}</label>
+        <select
+          id="parent"
+          formControlName="parent_id"
+          class="form-control"
+        >
+          <option [value]="null">{{ 'common.none' | translate }}</option>
+          @for (group of filteredParentGroups; track group.id) {
+            <option [value]="group.id">{{ group.name }}</option>
+          }
+        </select>
+        <small class="form-text text-muted">{{ 'devices.nasGroups.form.parentGroupHelp' | translate }}</small>
+      </div>
 
-    <div class="form-actions">
-      <button type="button" class="btn btn-secondary" (click)="cancel()">{{ 'common.cancel' | translate }}</button>
-      <button type="submit" class="btn btn-primary" [disabled]="submitting">
-        <span *ngIf="submitting" class="spinner-sm"></span>
-        {{ isEditMode ? ('common.update' | translate) : ('common.create' | translate) }}
-      </button>
-    </div>
-  </form>
+      <div class="form-actions">
+        <button type="button"
+                class="btn btn-secondary"
+                (click)="cancel()">{{ 'common.cancel' | translate }}
+        </button>
+        <button type="submit"
+                class="btn btn-primary"
+                [disabled]="submitting">
+          @if (submitting) {
+            <span class="spinner-sm"></span>
+          }
+          {{ isEditMode ? ('common.update' | translate) : ('common.create' | translate) }}
+        </button>
+      </div>
+    </form>
+  }
 </div>

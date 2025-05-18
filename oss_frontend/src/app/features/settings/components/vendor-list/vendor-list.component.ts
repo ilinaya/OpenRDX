@@ -1,13 +1,18 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import {Router, RouterLink} from '@angular/router';
 import { VendorService } from '../../../../shared/services/vendor.service';
 import { Vendor } from '../../../../shared/models/vendor.model';
 import { PagedResponse } from '../../../../shared/models/pagination.model';
+import {DatePipe} from '@angular/common';
 
 @Component({
   selector: 'app-vendor-list',
   templateUrl: './vendor-list.component.html',
-  styleUrls: ['./vendor-list.component.scss']
+  imports: [
+    RouterLink,
+    DatePipe,
+  ],
+  styleUrls: ['./vendor-list.component.scss'],
 })
 export class VendorListComponent implements OnInit {
   vendors: Vendor[] = [];
@@ -77,4 +82,4 @@ export class VendorListComponent implements OnInit {
       });
     }
   }
-} 
+}

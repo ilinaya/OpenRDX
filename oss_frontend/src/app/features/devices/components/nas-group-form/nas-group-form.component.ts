@@ -1,13 +1,18 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NasService } from '../../../../shared/services/nas.service';
 import { NasGroup } from '../../../../shared/models/nas.model';
+import {TranslatePipe} from '@ngx-translate/core';
 
 @Component({
   selector: 'app-nas-group-form',
   templateUrl: './nas-group-form.component.html',
-  styleUrls: ['./nas-group-form.component.scss']
+  imports: [
+    TranslatePipe,
+    ReactiveFormsModule,
+  ],
+  styleUrls: ['./nas-group-form.component.scss'],
 })
 export class NasGroupFormComponent implements OnInit {
   groupForm: FormGroup;
@@ -41,7 +46,7 @@ export class NasGroupFormComponent implements OnInit {
         next: (groups) => {
           this.parentGroups = groups;
           this.filteredParentGroups = [...groups];
-          
+
           // Check if we're in edit mode
           const id = this.route.snapshot.paramMap.get('id');
           if (id && id !== 'new') {
@@ -71,10 +76,10 @@ export class NasGroupFormComponent implements OnInit {
             parent: group.parent_id,
             is_active: group.is_active
           });
-          
+
           // Filter out the current group and its children from parent options
           this.filterParentOptions(id);
-          
+
           this.loading = false;
         },
         error: (err) => {

@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SecretService } from '../../../../shared/services/secret.service';
 import { Secret } from '../../../../shared/models/secret.model';
@@ -7,7 +7,10 @@ import { Secret } from '../../../../shared/models/secret.model';
 @Component({
   selector: 'app-secret-form',
   templateUrl: './secret-form.component.html',
-  styleUrls: ['./secret-form.component.scss']
+  imports: [
+    ReactiveFormsModule,
+  ],
+  styleUrls: ['./secret-form.component.scss'],
 })
 export class SecretFormComponent implements OnInit {
   secretForm: FormGroup;
@@ -85,4 +88,4 @@ export class SecretFormComponent implements OnInit {
   cancel(): void {
     this.router.navigate(['../'], { relativeTo: this.route });
   }
-} 
+}

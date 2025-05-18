@@ -3,159 +3,185 @@
     <h2>{{ (isEditMode ? 'settings.attributeGroups.edit' : 'settings.attributeGroups.create') | translate }}</h2>
   </div>
 
-  <div class="alert alert-danger" *ngIf="error">
-    {{ error }}
-  </div>
-
-  <div class="spinner-container" *ngIf="loading">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">{{ 'common.loading' | translate }}</span>
+  @if (error) {
+    <div class="alert alert-danger">
+      {{ error }}
     </div>
-  </div>
+  }
 
-  <div class="group-form" *ngIf="!loading">
-    <form [formGroup]="groupForm" (ngSubmit)="onSubmit()">
-      <div class="form-group">
-        <label for="name">{{ 'settings.attributeGroups.name' | translate }}</label>
-        <input
-          type="text"
-          id="name"
-          formControlName="name"
-          class="form-control"
-          [ngClass]="{ 'is-invalid': isFieldInvalid('name') }"
-        >
-        <div class="invalid-feedback" *ngIf="isFieldInvalid('name')">
-          {{ getErrorMessage('name') }}
+  @if (loading) {
+    <div class="spinner-container">
+      <div class="spinner-border text-primary"
+           role="status">
+        <span class="visually-hidden">{{ 'common.loading' | translate }}</span>
+      </div>
+    </div>
+  }
+
+  @if (!loading) {
+    <div class="group-form">
+      <form [formGroup]="groupForm"
+            (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label for="name">{{ 'settings.attributeGroups.name' | translate }}</label>
+          <input
+            type="text"
+            id="name"
+            formControlName="name"
+            class="form-control"
+            [class.is-invalid]="isFieldInvalid('name')">
+
+          @if (isFieldInvalid('name')) {
+            <div class="invalid-feedback">
+              {{ getErrorMessage('name') }}
+            </div>
+          }
         </div>
-      </div>
 
-      <div class="form-group">
-        <label for="description">{{ 'settings.attributeGroups.description' | translate }}</label>
-        <textarea
-          id="description"
-          formControlName="description"
-          class="form-control"
-          rows="3"
-        ></textarea>
-      </div>
-
-      <div class="form-actions">
-        <button type="submit" class="btn btn-primary" [disabled]="submitting">
-          {{ (isEditMode ? 'common.update' : 'common.create') | translate }}
-        </button>
-        <button type="button" class="btn btn-secondary" (click)="onCancel()">
-          {{ 'common.cancel' | translate }}
-        </button>
-      </div>
-    </form>
-  </div>
-
-  <div class="attributes-section" *ngIf="isEditMode && !loading">
-    <h3>{{ 'settings.attributeGroups.radiusAttributes.title' | translate }}</h3>
-    
-    <div class="attribute-form">
-      <form [formGroup]="attributeForm" (ngSubmit)="onAddAttribute()">
-        <div class="form-row">
-          <div class="form-group col-md-2">
-            <label for="vendor_id">{{ 'settings.attributeGroups.radiusAttributes.vendorId' | translate }}</label>
-            <input
-              type="number"
-              id="vendor_id"
-              formControlName="vendor_id"
-              class="form-control"
-              min="0"
-            >
-          </div>
-
-          <div class="form-group col-md-2">
-            <label for="attribute_id">{{ 'settings.attributeGroups.radiusAttributes.attributeId' | translate }}</label>
-            <input
-              type="number"
-              id="attribute_id"
-              formControlName="attribute_id"
-              class="form-control"
-              min="1"
-            >
-          </div>
-
-          <div class="form-group col-md-3">
-            <label for="attribute_name">{{ 'settings.attributeGroups.radiusAttributes.attributeName' | translate }}</label>
-            <input
-              type="text"
-              id="attribute_name"
-              formControlName="attribute_name"
-              class="form-control"
-            >
-          </div>
-
-          <div class="form-group col-md-2">
-            <label for="attribute_type">{{ 'settings.attributeGroups.radiusAttributes.attributeType' | translate }}</label>
-            <select
-              id="attribute_type"
-              formControlName="attribute_type"
-              class="form-control"
-            >
-              <option *ngFor="let type of attributeTypes" [value]="type">
-                {{ 'settings.attributeGroups.radiusAttributes.types.' + type | translate }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group col-md-3">
-            <label for="attribute_value">{{ 'settings.attributeGroups.radiusAttributes.attributeValue' | translate }}</label>
-            <input
-              type="text"
-              id="attribute_value"
-              formControlName="attribute_value"
-              class="form-control"
-            >
-          </div>
+        <div class="form-group">
+          <label for="description">{{ 'settings.attributeGroups.description' | translate }}</label>
+          <textarea
+            id="description"
+            formControlName="description"
+            class="form-control"
+            rows="3"
+          ></textarea>
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="btn btn-primary">
-            {{ 'settings.attributeGroups.radiusAttributes.addAttribute' | translate }}
+          <button type="submit"
+                  class="btn btn-primary"
+                  [disabled]="submitting">
+            {{ (isEditMode ? 'common.update' : 'common.create') | translate }}
+          </button>
+          <button type="button"
+                  class="btn btn-secondary"
+                  (click)="onCancel()">
+            {{ 'common.cancel' | translate }}
           </button>
         </div>
       </form>
     </div>
+  }
 
-    <div class="attributes-table" *ngIf="attributes.length > 0">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>{{ 'settings.attributeGroups.radiusAttributes.vendorId' | translate }}</th>
-            <th>{{ 'settings.attributeGroups.radiusAttributes.attributeId' | translate }}</th>
-            <th>{{ 'settings.attributeGroups.radiusAttributes.attributeName' | translate }}</th>
-            <th>{{ 'settings.attributeGroups.radiusAttributes.attributeType' | translate }}</th>
-            <th>{{ 'settings.attributeGroups.radiusAttributes.attributeValue' | translate }}</th>
-            <th class="actions-column">{{ 'common.actions.title' | translate }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let attr of attributes">
-            <td>{{ attr.vendor_id }}</td>
-            <td>{{ attr.attribute_id }}</td>
-            <td>{{ attr.attribute_name }}</td>
-            <td>{{ 'settings.attributeGroups.radiusAttributes.types.' + attr.attribute_type | translate }}</td>
-            <td>{{ attr.attribute_value }}</td>
-            <td class="actions">
-              <button
-                class="btn btn-sm btn-outline-danger"
-                (click)="onDeleteAttribute(attr.id)"
-                [title]="'settings.attributeGroups.radiusAttributes.deleteAttribute' | translate"
+  @if (isEditMode && !loading) {
+    <div class="attributes-section">
+      <h3>{{ 'settings.attributeGroups.radiusAttributes.title' | translate }}</h3>
+
+      <div class="attribute-form">
+        <form [formGroup]="attributeForm"
+              (ngSubmit)="onAddAttribute()">
+          <div class="form-row">
+            <div class="form-group col-md-2">
+              <label for="vendor_id">{{ 'settings.attributeGroups.radiusAttributes.vendorId' | translate }}</label>
+              <input
+                type="number"
+                id="vendor_id"
+                formControlName="vendor_id"
+                class="form-control"
+                min="0"
               >
-                <i class="fas fa-trash"></i> {{ 'common.delete' | translate }}
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+            </div>
 
-    <div class="no-data" *ngIf="attributes.length === 0">
-      <i class="fas fa-tags"></i>
-      <p>{{ 'settings.attributeGroups.radiusAttributes.noAttributes' | translate }}</p>
+            <div class="form-group col-md-2">
+              <label for="attribute_id">{{ 'settings.attributeGroups.radiusAttributes.attributeId' | translate }}</label>
+              <input
+                type="number"
+                id="attribute_id"
+                formControlName="attribute_id"
+                class="form-control"
+                min="1"
+              >
+            </div>
+
+            <div class="form-group col-md-3">
+              <label for="attribute_name">{{ 'settings.attributeGroups.radiusAttributes.attributeName' | translate }}</label>
+              <input
+                type="text"
+                id="attribute_name"
+                formControlName="attribute_name"
+                class="form-control"
+              >
+            </div>
+
+            <div class="form-group col-md-2">
+              <label for="attribute_type">{{ 'settings.attributeGroups.radiusAttributes.attributeType' | translate }}</label>
+              <select
+                id="attribute_type"
+                formControlName="attribute_type"
+                class="form-control"
+              >
+                @for (type of attributeTypes; track type) {
+                  <option [value]="type">
+                    {{ 'settings.attributeGroups.radiusAttributes.types.' + type | translate }}
+                  </option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group col-md-3">
+              <label for="attribute_value">{{ 'settings.attributeGroups.radiusAttributes.attributeValue' | translate }}</label>
+              <input
+                type="text"
+                id="attribute_value"
+                formControlName="attribute_value"
+                class="form-control"
+              >
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit"
+                    class="btn btn-primary">
+              {{ 'settings.attributeGroups.radiusAttributes.addAttribute' | translate }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      @if (attributes.length > 0) {
+        <div class="attributes-table">
+          <table class="table">
+            <thead>
+            <tr>
+              <th>{{ 'settings.attributeGroups.radiusAttributes.vendorId' | translate }}</th>
+              <th>{{ 'settings.attributeGroups.radiusAttributes.attributeId' | translate }}</th>
+              <th>{{ 'settings.attributeGroups.radiusAttributes.attributeName' | translate }}</th>
+              <th>{{ 'settings.attributeGroups.radiusAttributes.attributeType' | translate }}</th>
+              <th>{{ 'settings.attributeGroups.radiusAttributes.attributeValue' | translate }}</th>
+              <th class="actions-column">{{ 'common.actions.title' | translate }}</th>
+            </tr>
+            </thead>
+            <tbody>
+              @for (attr of attributes; track attr.id) {
+                <tr>
+                  <td>{{ attr.vendor_id }}</td>
+                  <td>{{ attr.attribute_id }}</td>
+                  <td>{{ attr.attribute_name }}</td>
+                  <td>{{ 'settings.attributeGroups.radiusAttributes.types.' + attr.attribute_type | translate }}</td>
+                  <td>{{ attr.attribute_value }}</td>
+                  <td class="actions">
+                    <button
+                      class="btn btn-sm btn-outline-danger"
+                      (click)="onDeleteAttribute(attr.id)"
+                      [title]="'settings.attributeGroups.radiusAttributes.deleteAttribute' | translate"
+                    >
+                      <i class="fas fa-trash"></i> {{ 'common.delete' | translate }}
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      @if (attributes.length === 0) {
+        <div class="no-data">
+          <i class="fas fa-tags"></i>
+          <p>{{ 'settings.attributeGroups.radiusAttributes.noAttributes' | translate }}</p>
+        </div>
+      }
     </div>
-  </div>
-</div> 
+  }
+</div>

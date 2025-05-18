@@ -1,21 +1,12 @@
-import { NgModule } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
-import { ReactiveFormsModule, FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
-
+import {NgModule} from '@angular/core';
+import {DatePipe} from '@angular/common';
+import {provideRouter} from '@angular/router';
+import {routes} from './users.routes';
 
 @NgModule({
-  declarations: [
-    
-  ],
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    FormsModule,
-    RouterModule,
-  ],
   providers: [
-    DatePipe
-  ]
+    DatePipe, provideRouter(routes),
+  ],
 })
-export class UsersModule { }
+export class UsersModule {
+}

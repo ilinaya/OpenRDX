@@ -90,6 +90,26 @@
       </div>
 
       <div class="detail-section">
+        <h3>{{ 'devices.nas.detail.vendor' | translate }}</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <label class="detail-label">{{ 'devices.nas.detail.vendorName' | translate }}</label>
+            <span class="detail-value">{{ nas.vendor?.name || ('common.none' | translate) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h3>{{ 'devices.nas.detail.timezone' | translate }}</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <label class="detail-label">{{ 'devices.nas.detail.timezoneName' | translate }}</label>
+            <span class="detail-value">{{ nas.timezone?.name || ('common.none' | translate) }} ({{ nas.timezone?.offset_formatted || '' }})</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section">
         <h3>{{ 'devices.nas.detail.timestamps' | translate }}</h3>
         <div class="detail-grid">
           <div class="detail-item">

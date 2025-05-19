@@ -4,7 +4,9 @@ import {ActivatedRoute, Router} from '@angular/router';
 import {NasService} from '../../../../shared/services/nas.service';
 import {SecretService} from '../../../../shared/services/secret.service';
 import {VendorService} from '../../../../shared/services/vendor.service';
+import {TimezoneService} from '../../../../shared/services/timezone.service';
 import {NasGroup, Secret, Vendor} from '../../../../shared/models/nas.model';
+import {Timezone} from '../../../../shared/models/timezone.model';
 import {forkJoin, of} from 'rxjs';
 import {catchError, tap} from 'rxjs/operators';
 import {TranslatePipe} from '@ngx-translate/core';
@@ -29,12 +31,14 @@ export class NasFormComponent implements OnInit {
   flattenedGroups: NasGroup[] = [];
   secrets: Secret[] = [];
   vendors: Vendor[] = [];
+  timezones: Timezone[] = [];
 
   constructor(
     private fb: FormBuilder,
     private nasService: NasService,
     private secretService: SecretService,
     private vendorService: VendorService,
+    private timezoneService: TimezoneService,
     private route: ActivatedRoute,
     private router: Router,
   ) {
@@ -47,6 +51,7 @@ export class NasFormComponent implements OnInit {
       group_ids: [[]],
       secret_id: [null, [Validators.required]],
       vendor_id: [null, [Validators.required]],
+      timezone_id: [null, [Validators.required]],
     });
   }
 
@@ -81,11 +86,19 @@ export class NasFormComponent implements OnInit {
           return of([]);
         }),
       ),
+      timezones: this.timezoneService.getTimezones().pipe(
+        tap(timezones => console.log('Loaded timezones:', timezones)),
+        catchError(error => {
+          console.error('Error loading timezones:', error);
+          return of([]);
+        }),
+      ),
     }).subscribe({
       next: (result) => {
         console.log('Form data loaded successfully:', result);
         this.secrets = result.secrets;
         this.vendors = result.vendors;
+        this.timezones = result.timezones;
 
         // Check if we're in edit mode
         const id = this.route.snapshot.paramMap.get('id');
@@ -134,6 +147,7 @@ export class NasFormComponent implements OnInit {
             group_ids: nas.groups.map(g => g.id),
             secret_id: nas.secret_id || null,
             vendor_id: nas.vendor_id || null,
+            timezone_id: nas.timezone_id || null,
           });
           this.loading = false;
         },
@@ -172,6 +186,7 @@ export class NasFormComponent implements OnInit {
         group_ids: nasData.group_ids,
         secret_id: nasData.secret_id,
         vendor_id: nasData.vendor_id,
+        timezone_id: nasData.timezone_id,
       }).subscribe({
         next: (nas) => {
           console.log('NAS updated successfully:', nas);
@@ -190,7 +205,10 @@ export class NasFormComponent implements OnInit {
       });
     } else {
       // Create new NAS
-      this.nasService.createNas(nasData)
+      this.nasService.createNas({
+        ...nasData,
+        timezone_id: nasData.timezone_id,
+      })
         .subscribe({
           next: (nas) => {
             console.log('NAS created successfully:', nas);

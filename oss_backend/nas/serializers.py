@@ -3,6 +3,7 @@ from mptt.models import TreeForeignKey
 from django.apps import apps
 
 from radius.serializers import SecretSerializer
+from shared.serializers import TimezoneSerializer
 from .models import Nas, NasGroup, Vendor
 
 # Get Secret model dynamically to avoid circular imports
@@ -58,20 +59,22 @@ class NasSerializer(serializers.ModelSerializer):
 
     vendor = VendorSerializer(read_only=True)
     secret = SecretSerializer(read_only=True)
+    timezone = TimezoneSerializer(read_only=True)
     secret_id = serializers.IntegerField(
         required=False
     )
     vendor_id = serializers.IntegerField(
         required=False
     )
+    timezone_id = serializers.IntegerField()
 
     class Meta:
         model = Nas
         fields = ['id', 'name', 'description', 'ip_address', 'coa_enabled', 'coa_port', 
                  'groups', 'group_ids', 'secret', 'secret_id', 'created_at', 'updated_at', 'is_active',
-                  'vendor', 'vendor_id']
+                  'vendor', 'vendor_id', 'timezone_id', 'timezone']
 
-        read_only_fields = ['created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at', 'timezone']
 
 
 class NasCreateSerializer(serializers.ModelSerializer):
@@ -91,11 +94,17 @@ class NasCreateSerializer(serializers.ModelSerializer):
         source='secret',
         required=False
     )
+    timezone_id = serializers.IntegerField(
+        required=True
+    )
+    vendor_id = serializers.IntegerField(
+        required=True
+    )
 
     class Meta:
         model = Nas
         fields = ['name', 'description', 'ip_address', 'coa_enabled', 'coa_port', 
-                 'group_ids', 'secret_id', 'is_active']
+                 'group_ids', 'secret_id', 'is_active', 'timezone_id', 'vendor_id']
 
 
 class NasUpdateSerializer(serializers.ModelSerializer):
@@ -116,10 +125,14 @@ class NasUpdateSerializer(serializers.ModelSerializer):
         required=False
     )
     vendor_id = serializers.IntegerField(
-        required=False
+        required=True
     )
+    timezone_id = serializers.IntegerField(
+        required=True
+    )
+
 
     class Meta:
         model = Nas
         fields = ['name', 'description', 'ip_address', 'coa_enabled', 'coa_port', 
-                 'group_ids', 'secret_id', 'is_active', 'vendor_id']
+                 'group_ids', 'secret_id', 'is_active', 'vendor_id', 'timezone_id']

@@ -98,6 +98,8 @@ class Nas(models.Model):
     created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated At"), auto_now=True)
     is_active = models.BooleanField(_("Is Active"), default=True)
+    timezone = models.ForeignKey('shared.Timezone', on_delete=models.SET_NULL, null=True, blank=True)
+
 
     class Meta:
         verbose_name = _("NAS")

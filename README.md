@@ -5,13 +5,13 @@ OpenRDX is a modern, scalable platform for managing and processing RADIUS authen
 ## Technology Stack
 
 ### Frontend
-- **Angular 16+**: Modern, component-based UI framework
+- **Angular 19+**: Modern, component-based UI framework
 - **Material Design**: For consistent and responsive UI components
 - **TypeScript**: For type-safe development
 - **RxJS**: For reactive programming and state management
 
 ### Backend
-- **Django 4.2+**: High-level Python web framework
+- **Django 5+**: High-level Python web framework
 - **Django REST Framework**: For building RESTful APIs
 - **Celery**: For asynchronous task processing
 - **Redis**: For caching and message broker
@@ -49,8 +49,8 @@ OpenRDX is a modern, scalable platform for managing and processing RADIUS authen
 - Docker and Docker Compose
 - Kubernetes cluster (for k8s deployment)
 - Rust toolchain (for local development)
-- Python 3.8+ (for local development)
-- Node.js 16+ (for local development)
+- Python 3.12+ (for local development)
+- Node.js 22+ (for local development)
 - mkcert (for local SSL certificates)
 - MongoDB 6.0+ (for accounting data)
 

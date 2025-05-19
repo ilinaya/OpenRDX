@@ -47,6 +47,7 @@ urlpatterns = [
     path('api/users/', include('users.urls')),
     path('api/accounting/', include('accounting.urls')),
     path('api/radius/', include('radius.urls')),
+    path('api/shared/', include('shared.urls')),
 ]
 
 # Serve static files in development

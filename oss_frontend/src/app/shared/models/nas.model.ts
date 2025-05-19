@@ -1,3 +1,5 @@
+import {Timezone} from "./timezone.model";
+
 export interface Vendor {
   id: number;
   name: string;
@@ -54,6 +56,8 @@ export interface Nas {
   secret?: Secret;
   vendor?: Vendor;
   vendor_id: number;
+  timezone_id?: number;
+  timezone?: Timezone;
   created_at: string;
   updated_at: string;
 }
@@ -78,4 +82,5 @@ export interface NasUpdate {
   group_ids?: number[];
   secret_id?: number;
   vendor_id?: number;
+  timezone_id?: number;
 }

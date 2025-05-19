@@ -169,6 +169,28 @@
         }
       </div>
 
+      <div class="form-group">
+        <label for="timezone_id">{{ 'devices.nas.form.timezone' | translate }} *</label>
+        <select
+          id="timezone_id"
+          formControlName="timezone_id"
+          class="form-control"
+          [class.is-invalid]="nasForm.get('timezone_id')?.touched && nasForm.get('timezone_id')?.invalid"
+        >
+          <option [value]="null">{{ 'common.none' | translate }}</option>
+          @for (timezone of timezones; track timezone.id) {
+            <option [value]="timezone.id">{{ timezone.name }} ({{ timezone.offset_formatted }})</option>
+          }
+        </select>
+        @if (nasForm.get('timezone_id')?.touched && nasForm.get('timezone_id')?.invalid) {
+          <div class="error-message">
+            @if (nasForm.get('timezone_id')?.errors?.['required']) {
+              <div>{{ 'devices.nas.form.timezoneRequired' | translate }}</div>
+            }
+          </div>
+        }
+      </div>
+
       <div class="form-actions">
         <button type="button"
                 class="btn btn-secondary"

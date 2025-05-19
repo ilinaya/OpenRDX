@@ -155,6 +155,8 @@
         "vendor": "Marca",
         "vendorRequired": "La Marca es requerida",
         "active": "Activo",
+        "timezone": "Zona horaria",
+        "timezoneRequired": "La zona horaria es requerida",
         "errors": {
           "createFailed": "Error al crear el dispositivo NAS",
           "updateFailed": "Error al actualizar el dispositivo NAS"
@@ -175,6 +177,10 @@
         "groups": "Grupos NAS",
         "secret": "Secreto",
         "secretName": "Nombre del Secreto",
+        "vendor": "Marca",
+        "vendorName": "Nombre de la Marca",
+        "timezone": "Zona horaria",
+        "timezoneName": "Nombre de la Zona horaria",
         "timestamps": "Marcas de Tiempo",
         "createdAt": "Creado",
         "updatedAt": "Actualizado",

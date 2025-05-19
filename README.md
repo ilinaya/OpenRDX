@@ -1,4 +1,4 @@
-# OpenRDX
+![OpenRDX Logo](logo_openrdx.png)
 
 OpenRDX is a modern, scalable platform for managing and processing RADIUS authentication and accounting data. Built with a microservices architecture, it provides a robust solution for network access control and accounting.
 
@@ -58,7 +58,7 @@ OpenRDX is a modern, scalable platform for managing and processing RADIUS authen
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/OpenRDX.git
+   git clone https://github.com/ilinaya/OpenRDX.git
    cd OpenRDX
    ```
 

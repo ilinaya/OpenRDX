@@ -32,6 +32,15 @@ class UserGroupViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
+    @action(detail=False, methods=['get'])
+    def list_all(self, request):
+        """
+        Return a list of all admin users without pagination.
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
     @swagger_auto_schema(
         operation_description="Create a new user group",
         request_body=UserGroupSerializer,
@@ -86,6 +95,15 @@ class UserIdentifierTypeViewSet(viewsets.ModelViewSet):
     queryset = UserIdentifierType.objects.all()
     serializer_class = UserIdentifierTypeSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    @action(detail=False, methods=['get'])
+    def list_all(self, request):
+        """
+        Return a list of all admin users without pagination.
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 class UserIdentifierViewSet(viewsets.ModelViewSet):
     serializer_class = UserIdentifierSerializer

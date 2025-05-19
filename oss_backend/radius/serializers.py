@@ -24,7 +24,7 @@ class AuthAttributeGroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AuthAttributeGroup
-        fields = ['id', 'name', 'description', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'description', 'created_at', 'updated_at', 'attributes']
         read_only_fields = ['created_at', 'updated_at']
 
 

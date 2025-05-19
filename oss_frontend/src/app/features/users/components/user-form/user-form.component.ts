@@ -9,14 +9,18 @@ import { UserIdentifierType } from "../../../../shared/models/user-identifier-ty
 import { UserIdentifier } from "../../../../shared/models/user-identifier.model";
 import { UserService } from "../../../../shared/services/user.service";
 import { UserIdentifierTypeService } from "../../../../shared/services/user-identifier-type.service";
+import { AttributeGroup } from 'src/app/shared/models/attribute-group.model';
+import { AttributeGroupService } from 'src/app/shared/services/attribute-group.service';
 
 interface LoadDataResult {
   groups: UserGroup[];
   identifierTypes: UserIdentifierType[];
+  authAttributeGroups: AttributeGroup[];
 }
 
 interface UserResponse {
   email: string;
+  external_id: string;
   first_name: string;
   last_name: string;
   phone_number: string;
@@ -45,6 +49,7 @@ export class UserFormComponent implements OnInit {
   userId: number | null = null;
   userGroups: UserGroup[] = [];
   identifierTypes: UserIdentifierType[] = [];
+  authAttributeGroups: AttributeGroup[] = [];
   identifiers: Partial<UserIdentifier>[] = [];
   loading = true;
   submitting = false;
@@ -54,6 +59,7 @@ export class UserFormComponent implements OnInit {
     private fb: FormBuilder,
     private userService: UserService,
     private identifierTypeService: UserIdentifierTypeService,
+    private authAttributeGroupService:AttributeGroupService,
     private route: ActivatedRoute,
     private router: Router,
     private translate: TranslateService
@@ -62,6 +68,7 @@ export class UserFormComponent implements OnInit {
       email: ['', [Validators.required, Validators.email]],
       first_name: [''],
       last_name: [''],
+      external_id: [null],
       phone_number: [''],
       is_active: [true],
       groups: [[]]
@@ -74,7 +81,8 @@ export class UserFormComponent implements OnInit {
 
     const loadData$: Observable<LoadDataResult> = forkJoin({
       groups: this.userService.getUserGroupList(),
-      identifierTypes: this.identifierTypeService.getIdentifierTypes()
+      identifierTypes: this.identifierTypeService.getIdentifierTypes(),
+      authAttributeGroups: this.authAttributeGroupService.getAllGroupsList()
     });
 
     this.route.params.pipe(
@@ -85,35 +93,42 @@ export class UserFormComponent implements OnInit {
           return forkJoin({
             user: this.userService.getUser(this.userId),
             groups: this.userService.getUserGroupList(),
-            identifierTypes: this.identifierTypeService.getIdentifierTypes()
+            identifierTypes: this.identifierTypeService.getIdentifierTypes(),
+            authAttributeGroups: this.authAttributeGroupService.getAllGroupsList()
           }) as Observable<EditModeResult>;
         }
         return loadData$;
       }),
       catchError(error => {
         this.error = error.message || 'An error occurred while loading data';
-        return of(null);
-      }),
-      finalize(() => {
         this.loading = false;
+        return of(null);
       })
-    ).subscribe(result => {
-      if (result) {
-        if (this.isEditMode && 'user' in result) {
-          const editResult = result as EditModeResult;
-          const userData = {
-            email: editResult.user.email,
-            first_name: editResult.user.first_name,
-            last_name: editResult.user.last_name,
-            phone_number: editResult.user.phone_number,
-            is_active: editResult.user.is_active,
-            groups: editResult.user.groups.map(g => g.id)
-          };
-          this.userForm.patchValue(userData);
-          this.identifiers = editResult.user.identifiers || [];
+    ).subscribe({
+      next: (result) => {
+        if (result) {
+          if (this.isEditMode && 'user' in result) {
+            const editResult = result as EditModeResult;
+            const userData = {
+              email: editResult.user.email,
+              first_name: editResult.user.first_name,
+              last_name: editResult.user.last_name,
+              phone_number: editResult.user.phone_number,
+              is_active: editResult.user.is_active,
+              groups: editResult.user.groups.map(g => g.id)
+            };
+            this.userForm.patchValue(userData);
+            this.identifiers = editResult.user.identifiers || [];
+          }
+          this.userGroups = result.groups;
+          this.identifierTypes = result.identifierTypes;
+          this.authAttributeGroups = result.authAttributeGroups;
         }
-        this.userGroups = result.groups;
-        this.identifierTypes = result.identifierTypes;
+        this.loading = false;
+      },
+      error: (error) => {
+        this.error = error.message || 'An error occurred while loading data';
+        this.loading = false;
       }
     });
   }
@@ -139,7 +154,11 @@ export class UserFormComponent implements OnInit {
       identifier_type: this.identifierTypes[0],
       value: '',
       is_enabled: true,
-      expiration_date: null
+      reject_expired: false,
+      auth_attribute_group: null,
+      expired_auth_attribute_group: null,
+      expiration_date: null,
+      comment: ''
     });
   }
 
@@ -174,12 +193,12 @@ export class UserFormComponent implements OnInit {
       })
     ).subscribe(result => {
       if (result) {
-        this.router.navigate(['/users']);
+        this.router.navigate(['/users/users']);
       }
     });
   }
 
   goBack(): void {
-    this.router.navigate(['/users']);
+    this.router.navigate(['/users/users']);
   }
 }

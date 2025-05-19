@@ -14,7 +14,7 @@ import { AdminUser } from '../../../../shared/models/admin.model';
 export class NavbarComponent implements OnInit {
   navItems = [
     { name: 'Devices', icon: 'devices', route: '/devices' },
-    { name: 'Users', icon: 'devices', route: '/users' },
+    { name: 'Users', icon: 'devices', route: '/users/users' },
     { name: 'Settings', icon: 'settings', route: '/settings' },
   ];
 

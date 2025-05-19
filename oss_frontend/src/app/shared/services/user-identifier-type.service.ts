@@ -8,11 +8,11 @@ import { UserIdentifierType } from '../models/user-identifier-type.model';
   providedIn: 'root'
 })
 export class UserIdentifierTypeService {
-  private apiUrl = `${environment.apiUrl}/user-identifier-types`;
+  private apiUrl = `${environment.apiUrl}/users/identifier-types`;
 
   constructor(private http: HttpClient) {}
 
   getIdentifierTypes(): Observable<UserIdentifierType[]> {
-    return this.http.get<UserIdentifierType[]>(`${this.apiUrl}/`);
+    return this.http.get<UserIdentifierType[]>(`${this.apiUrl}/list_all/`);
   }
-} 
+}

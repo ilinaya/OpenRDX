@@ -42,10 +42,16 @@ class User(models.Model):
     updated_at = models.DateTimeField(_("Updated At"), auto_now=True)
     last_login = models.DateTimeField(_("Last Login"), null=True, blank=True)
 
+    external_id = models.CharField(_("External ID"), max_length=50, blank=True, unique=True)
+
     class Meta:
         verbose_name = _("User")
         verbose_name_plural = _("Users")
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['email'], name='user_email_idx'),
+            models.Index(fields=['external_id']),
+        ]
         db_table = 'users'
 
     def __str__(self):

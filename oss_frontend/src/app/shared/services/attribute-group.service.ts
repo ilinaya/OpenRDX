@@ -17,12 +17,16 @@ export class AttributeGroupService {
     return this.http.get<PagedResponse<AttributeGroup>>(this.apiUrl, { params: params as any });
   }
 
+  getAllGroupsList(): Observable<AttributeGroup[]> {
+    return this.http.get<AttributeGroup[]>(this.apiUrl + '/list_all/');
+  }
+
   getGroup(id: number): Observable<AttributeGroup> {
     return this.http.get<AttributeGroup>(`${this.apiUrl}/${id}/`);
   }
 
   createGroup(group: AttributeGroupCreate): Observable<AttributeGroup> {
-    return this.http.post<AttributeGroup>(this.apiUrl, group);
+    return this.http.post<AttributeGroup>(this.apiUrl + '/', group);
   }
 
   updateGroup(id: number, group: AttributeGroupUpdate): Observable<AttributeGroup> {
@@ -32,4 +36,4 @@ export class AttributeGroupService {
   deleteGroup(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}/`);
   }
-} 
+}

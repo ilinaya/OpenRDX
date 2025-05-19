@@ -249,24 +249,29 @@
       }
     },
     "form": {
+      "externalId": "External ID",
       "create": "Create User",
       "edit": "Edit User",
-      "basicInfo": "Basic Information",
-      "email": "Email",
-      "emailRequired": "Email is required",
-      "emailInvalid": "Please enter a valid email",
       "firstName": "First Name",
       "lastName": "Last Name",
+      "email": "Email",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Please enter a valid email address",
       "phone": "Phone Number",
       "active": "Active",
       "groups": "Groups",
       "identifiers": "Identifiers",
-      "addIdentifier": "Add Identifier",
-      "removeIdentifier": "Remove Identifier",
       "identifierType": "Type",
       "identifierValue": "Value",
-      "identifierEnabled": "Enabled",
-      "identifierExpiration": "Expiration Date",
+      "enabled": "Enabled",
+      "rejectExpired": "Reject Expired",
+      "authAttributeGroup": "Auth Attribute Group",
+      "expiredAuthAttributeGroup": "Expired Auth Attribute Group",
+      "expirationDate": "Expiration Date",
+      "comment": "Comment",
+      "actions": "Actions",
+      "addIdentifier": "Add Identifier",
+      "selectGroup": "Select Group",
       "errors": {
         "createFailed": "Failed to create user",
         "updateFailed": "Failed to update user"
@@ -300,4 +305,4 @@
       }
     }
   }
-} 
+}

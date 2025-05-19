@@ -36,6 +36,12 @@
         <div class="col-md-6">
           <h5 class="card-title">Basic Information</h5>
           <dl class="row">
+            @if (user.external_id) {
+            <dt class="col-sm-4">External ID</dt>
+            <dd class="col-sm-8">{{ user.external_id }}</dd>
+            }
+
+
             <dt class="col-sm-4">Email</dt>
             <dd class="col-sm-8">{{ user.email }}</dd>
 

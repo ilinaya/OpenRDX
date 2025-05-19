@@ -18,48 +18,29 @@
     <form [formGroup]="userForm"
           (ngSubmit)="onSubmit()"
           class="user-form">
-      <div class="form-row">
-        <div class="form-group">
-          <label for="email">{{ 'users.form.email' | translate }} *</label>
-          <input
-            type="email"
-            id="email"
-            formControlName="email"
-            class="form-control"
-            [class.is-invalid]="userForm.get('email')?.touched && userForm.get('email')?.invalid"
-          >
-          @if (userForm.get('email')?.touched && userForm.get('email')?.invalid) {
-            <div class="error-message">
-              @if (userForm.get('email')?.errors?.['required']) {
-                <div>{{ 'users.form.emailRequired' | translate }}</div>
-              }
-              @if (userForm.get('email')?.errors?.['email']) {
-                <div>{{ 'users.form.emailInvalid' | translate }}</div>
-              }
+      <div class="form-group row">
+
+        <div class="col-md-4">
+          <label for="external_id" class="form-label">{{ 'users.form.externalId' | translate }}</label>
+          <input type="text" class="form-control" id="external_id" formControlName="external_id">
+        </div>
+
+        <div class="col-md-4">
+          <label for="first_name" class="form-label">{{ 'users.form.firstName' | translate }}</label>
+          <input type="text" class="form-control" id="first_name" formControlName="first_name">
+        </div>
+        <div class="col-md-4">
+          <label for="last_name" class="form-label">{{ 'users.form.lastName' | translate }}</label>
+          <input type="text" class="form-control" id="last_name" formControlName="last_name">
+        </div>
+        <div class="col-md-4">
+          <label for="email" class="form-label">{{ 'users.form.email' | translate }}</label>
+          <input type="email" class="form-control" id="email" formControlName="email">
+          @if (userForm.get('email')?.invalid && userForm.get('email')?.touched) {
+            <div class="invalid-feedback">
+              {{ 'users.form.emailRequired' | translate }}
             </div>
           }
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="firstName">{{ 'users.form.firstName' | translate }}</label>
-          <input
-            type="text"
-            id="firstName"
-            formControlName="first_name"
-            class="form-control"
-          >
-        </div>
-
-        <div class="form-group">
-          <label for="lastName">{{ 'users.form.lastName' | translate }}</label>
-          <input
-            type="text"
-            id="lastName"
-            formControlName="last_name"
-            class="form-control"
-          >
         </div>
       </div>
 
@@ -103,67 +84,82 @@
         </div>
       </div>
 
-      <div class="form-group">
-        <label>{{ 'users.form.identifiers' | translate }}</label>
-        <div class="identifiers-container">
+      <div class="identifiers-section">
+        <h3>{{ 'users.form.identifiers' | translate }}</h3>
+        <div class="table-responsive">
           <table class="table">
             <thead>
-              <tr>
-                <th>{{ 'users.form.identifierType' | translate }}</th>
-                <th>{{ 'users.form.identifierValue' | translate }}</th>
-                <th>{{ 'users.form.identifierEnabled' | translate }}</th>
-                <th>{{ 'users.form.identifierExpiration' | translate }}</th>
-                <th>{{ 'common.actions' | translate }}</th>
-              </tr>
+            <tr>
+              <th>{{ 'users.form.identifierType' | translate }}</th>
+              <th>{{ 'users.form.identifierValue' | translate }}</th>
+              <th>{{ 'users.form.enabled' | translate }}</th>
+              <th>{{ 'users.form.rejectExpired' | translate }}</th>
+              <th>{{ 'users.form.authAttributeGroup' | translate }}</th>
+              <th>{{ 'users.form.expiredAuthAttributeGroup' | translate }}</th>
+              <th>{{ 'users.form.expirationDate' | translate }}</th>
+              <th>{{ 'users.form.comment' | translate }}</th>
+              <th>{{ 'users.form.actions' | translate }}</th>
+            </tr>
             </thead>
             <tbody>
-              @for (identifier of identifiers; track $index) {
+              @for (identifier of identifiers; track identifier.id; let i = $index) {
+
                 <tr>
                   <td>
-                    <select class="form-control"
-                            [(ngModel)]="identifier.identifier_type"
-                            [ngModelOptions]="{standalone: true}">
+                    <select class="form-select" [(ngModel)]="identifier.identifier_type" [ngModelOptions]="{standalone: true}">
                       @for (type of identifierTypes; track type.id) {
-                        <option [value]="type">{{ type.name }}</option>
+                        <option [ngValue]="type">{{type.name}}</option>
                       }
                     </select>
                   </td>
                   <td>
-                    <input type="text"
-                           class="form-control"
-                           [(ngModel)]="identifier.value"
-                           [ngModelOptions]="{standalone: true}">
+                    <input type="text" class="form-control" [(ngModel)]="identifier.value" [ngModelOptions]="{standalone: true}">
                   </td>
                   <td>
-                    <div class="checkbox-container">
-                      <input type="checkbox"
-                             [(ngModel)]="identifier.is_enabled"
-                             [ngModelOptions]="{standalone: true}">
+                    <div class="form-check">
+                      <input type="checkbox" class="form-check-input" [(ngModel)]="identifier.is_enabled" [ngModelOptions]="{standalone: true}">
                     </div>
                   </td>
                   <td>
-                    <input type="datetime-local"
-                           class="form-control"
-                           [(ngModel)]="identifier.expiration_date"
-                           [ngModelOptions]="{standalone: true}">
+                    <div class="form-check">
+                      <input type="checkbox" class="form-check-input" [(ngModel)]="identifier.reject_expired" [ngModelOptions]="{standalone: true}">
+                    </div>
                   </td>
                   <td>
-                    <button type="button"
-                            class="btn btn-danger"
-                            (click)="removeIdentifier($index)">
-                      <i class="fas fa-trash"></i>
+                    <select class="form-select" [(ngModel)]="identifier.auth_attribute_group" [ngModelOptions]="{standalone: true}">
+                      <option [ngValue]="null">{{ 'users.form.selectGroup' | translate }}</option>
+                      @for (group of authAttributeGroups; track group.id) {
+                        <option [ngValue]="group">{{group.name}}</option>
+                      }
+                    </select>
+                  </td>
+                  <td>
+                    <select class="form-select" [(ngModel)]="identifier.expired_auth_attribute_group" [ngModelOptions]="{standalone: true}">
+                      <option [ngValue]="null">{{ 'users.form.selectGroup' | translate }}</option>
+                      @for (group of authAttributeGroups; track group.id) {
+                        <option [ngValue]="group">{{group.name}}</option>
+                      }
+                    </select>
+                  </td>
+                  <td>
+                    <input type="date" class="form-control" [(ngModel)]="identifier.expiration_date" [ngModelOptions]="{standalone: true}">
+                  </td>
+                  <td>
+                    <input type="text" class="form-control" [(ngModel)]="identifier.comment" [ngModelOptions]="{standalone: true}">
+                  </td>
+                  <td>
+                    <button type="button" class="btn btn-danger btn-sm" (click)="removeIdentifier(i)">
+                      <i class="bi bi-trash"></i>
                     </button>
                   </td>
                 </tr>
               }
             </tbody>
           </table>
-          <button type="button"
-                  class="btn btn-primary"
-                  (click)="addIdentifier()">
-            <i class="fas fa-plus"></i> {{ 'users.form.addIdentifier' | translate }}
-          </button>
         </div>
+        <button type="button" class="btn btn-secondary" (click)="addIdentifier()">
+          {{ 'users.form.addIdentifier' | translate }}
+        </button>
       </div>
 
       <div class="form-actions">
@@ -182,4 +178,4 @@
       </div>
     </form>
   }
-</div> 
+</div>

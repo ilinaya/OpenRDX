@@ -250,24 +250,29 @@
       }
     },
     "form": {
+      "externalId": "ID Externo",
       "create": "Crear Usuario",
       "edit": "Editar Usuario",
-      "basicInfo": "Información Básica",
+      "firstName": "Nombre",
+      "lastName": "Apellido",
       "email": "Correo Electrónico",
       "emailRequired": "El correo electrónico es requerido",
       "emailInvalid": "Por favor ingrese un correo electrónico válido",
-      "firstName": "Nombre",
-      "lastName": "Apellido",
       "phone": "Número de Teléfono",
       "active": "Activo",
       "groups": "Grupos",
       "identifiers": "Identificadores",
-      "addIdentifier": "Agregar Identificador",
-      "removeIdentifier": "Eliminar Identificador",
       "identifierType": "Tipo",
       "identifierValue": "Valor",
-      "identifierEnabled": "Habilitado",
-      "identifierExpiration": "Fecha de Expiración",
+      "enabled": "Habilitado",
+      "rejectExpired": "Rechazar Expirado",
+      "authAttributeGroup": "Grupo de Atributos de Autenticación",
+      "expiredAuthAttributeGroup": "Grupo de Atributos de Autenticación Expirado",
+      "expirationDate": "Fecha de Expiración",
+      "comment": "Comentario",
+      "actions": "Acciones",
+      "addIdentifier": "Agregar Identificador",
+      "selectGroup": "Seleccionar Grupo",
       "errors": {
         "createFailed": "Error al crear usuario",
         "updateFailed": "Error al actualizar usuario"
@@ -301,4 +306,4 @@
       }
     }
   }
-} 
+}

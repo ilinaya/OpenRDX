@@ -110,7 +110,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name', 'full_name', 'phone_number', 
+        fields = ['id', 'email', 'first_name', 'last_name', 'full_name', 'phone_number', 'external_id',
                   'is_active', 'groups', 'group_ids', 'created_at', 'updated_at', 'last_login', 'identifiers']
         read_only_fields = ['created_at', 'updated_at', 'last_login']
 
@@ -129,7 +129,9 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email', 'first_name', 'last_name', 'phone_number', 'is_active', 'group_ids']
+        fields = ['email', 'first_name', 'last_name', 'phone_number',
+                  'external_id', 'email',
+                  'is_active', 'group_ids']
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
@@ -146,4 +148,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'phone_number', 'is_active', 'group_ids']
+        fields = ['first_name',
+                  'external_id',
+                  'email',
+                  'last_name', 'phone_number', 'is_active', 'group_ids']

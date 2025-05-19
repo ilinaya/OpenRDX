@@ -13,8 +13,6 @@ import {VendorListComponent} from './components/vendor-list/vendor-list.componen
 import {VendorFormComponent} from './components/vendor-form/vendor-form.component';
 import {VendorDetailComponent} from './components/vendor-detail/vendor-detail.component';
 import {ChangePasswordComponent} from './components/change-password/change-password.component';
-import {UserGroupListComponent} from './components/user-group-list/user-group-list.component';
-import {UserGroupFormComponent} from './components/user-group-form/user-group-form.component';
 import {AttributeGroupListComponent} from './components/attribute-group-list/attribute-group-list.component';
 import {AttributeGroupFormComponent} from './components/attribute-group-form/attribute-group-form.component';
 
@@ -62,14 +60,6 @@ export const routes: Routes = [
       {
         path: 'change-password',
         component: ChangePasswordComponent,
-      },
-      {
-        path: 'user-groups',
-        children: [
-          {path: '', component: UserGroupListComponent},
-          {path: 'create', component: UserGroupFormComponent},
-          {path: ':id/edit', component: UserGroupFormComponent},
-        ],
       },
       {
         path: 'attribute-groups',

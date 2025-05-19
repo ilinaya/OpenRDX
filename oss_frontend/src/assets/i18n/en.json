@@ -223,5 +223,82 @@
         }
       }
     }
+  },
+  "users": {
+    "title": "Users",
+    "nav": {
+      "users": "Users",
+      "userGroups": "User Groups"
+    },
+    "list": {
+      "title": "Users",
+      "create": "Add User",
+      "email": "Email",
+      "fullName": "Full Name",
+      "phone": "Phone",
+      "groups": "Groups",
+      "status": "Status",
+      "lastLogin": "Last Login",
+      "noUsers": "No users found",
+      "view": "View",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteConfirm": "Are you sure you want to delete user {{email}}?",
+      "errors": {
+        "loadFailed": "Failed to load users",
+        "deleteFailed": "Failed to delete user"
+      }
+    },
+    "form": {
+      "create": "Create User",
+      "edit": "Edit User",
+      "basicInfo": "Basic Information",
+      "email": "Email",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Please enter a valid email",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "phone": "Phone Number",
+      "active": "Active",
+      "groups": "Groups",
+      "identifiers": "Identifiers",
+      "addIdentifier": "Add Identifier",
+      "removeIdentifier": "Remove Identifier",
+      "identifierType": "Type",
+      "identifierValue": "Value",
+      "identifierEnabled": "Enabled",
+      "identifierExpiration": "Expiration Date",
+      "errors": {
+        "createFailed": "Failed to create user",
+        "updateFailed": "Failed to update user"
+      }
+    },
+    "detail": {
+      "title": "User Details",
+      "backToList": "Back to List",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteConfirm": "Are you sure you want to delete this user?",
+      "basicInfo": "Basic Information",
+      "email": "Email",
+      "fullName": "Full Name",
+      "phone": "Phone",
+      "status": "Status",
+      "additionalInfo": "Additional Information",
+      "groups": "Groups",
+      "lastLogin": "Last Login",
+      "createdAt": "Created At",
+      "updatedAt": "Updated At",
+      "identifiers": "Identifiers",
+      "identifierType": "Type",
+      "identifierValue": "Value",
+      "identifierStatus": "Status",
+      "identifierExpiration": "Expiration",
+      "identifierAuthGroup": "Auth Group",
+      "errors": {
+        "loadFailed": "Failed to load user details",
+        "deleteFailed": "Failed to delete user"
+      }
+    }
   }
 } 

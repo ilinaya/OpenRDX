@@ -1,6 +1,6 @@
 export const environment = {
     production: true,
-    apiUrl: ENV.apiUrl,
+    apiUrl: '/api',
     commitVersion: ENV.commitVersion,
     buildTimestamp: ENV.buildTimestamp,
 };

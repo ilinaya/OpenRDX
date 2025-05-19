@@ -1,9 +1,7 @@
-export interface UserGroup {
+export interface UserIdentifierType {
   id: number;
   name: string;
   description: string;
-  parent?: UserGroup;
   created_at: string;
   updated_at: string;
-  selected?: boolean;
 } 

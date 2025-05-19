@@ -1,0 +1,185 @@
+<div class="user-form-container">
+  <div class="header">
+    <h2>{{ isEditMode ? ('users.form.edit' | translate) : ('users.form.create' | translate) }}</h2>
+  </div>
+
+  @if (loading) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>{{ 'common.loading' | translate }}</p>
+    </div>
+  }
+
+  @if (error) {
+    <div class="alert alert-danger">{{ error }}</div>
+  }
+
+  @if (!loading) {
+    <form [formGroup]="userForm"
+          (ngSubmit)="onSubmit()"
+          class="user-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="email">{{ 'users.form.email' | translate }} *</label>
+          <input
+            type="email"
+            id="email"
+            formControlName="email"
+            class="form-control"
+            [class.is-invalid]="userForm.get('email')?.touched && userForm.get('email')?.invalid"
+          >
+          @if (userForm.get('email')?.touched && userForm.get('email')?.invalid) {
+            <div class="error-message">
+              @if (userForm.get('email')?.errors?.['required']) {
+                <div>{{ 'users.form.emailRequired' | translate }}</div>
+              }
+              @if (userForm.get('email')?.errors?.['email']) {
+                <div>{{ 'users.form.emailInvalid' | translate }}</div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="firstName">{{ 'users.form.firstName' | translate }}</label>
+          <input
+            type="text"
+            id="firstName"
+            formControlName="first_name"
+            class="form-control"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="lastName">{{ 'users.form.lastName' | translate }}</label>
+          <input
+            type="text"
+            id="lastName"
+            formControlName="last_name"
+            class="form-control"
+          >
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="phone">{{ 'users.form.phone' | translate }}</label>
+        <input
+          type="tel"
+          id="phone"
+          formControlName="phone_number"
+          class="form-control"
+        >
+      </div>
+
+      <div class="form-group checkbox-group">
+        <label class="checkbox-container">
+          <input type="checkbox"
+                 formControlName="is_active">
+          <span class="checkbox-label">{{ 'users.form.active' | translate }}</span>
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label>{{ 'users.form.groups' | translate }}</label>
+        <div class="groups-container">
+          @for (group of userGroups; track group.id) {
+            <div class="group-item">
+              <div class="form-check">
+                <input type="checkbox"
+                       class="form-check-input"
+                       [id]="'group-' + group.id"
+                       [value]="group.id"
+                       [checked]="userForm.get('groups')?.value?.includes(group.id)"
+                       (change)="onGroupChange($event, group)">
+                <label class="form-check-label"
+                       [for]="'group-' + group.id">
+                  {{ group.name }}
+                </label>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>{{ 'users.form.identifiers' | translate }}</label>
+        <div class="identifiers-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>{{ 'users.form.identifierType' | translate }}</th>
+                <th>{{ 'users.form.identifierValue' | translate }}</th>
+                <th>{{ 'users.form.identifierEnabled' | translate }}</th>
+                <th>{{ 'users.form.identifierExpiration' | translate }}</th>
+                <th>{{ 'common.actions' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (identifier of identifiers; track $index) {
+                <tr>
+                  <td>
+                    <select class="form-control"
+                            [(ngModel)]="identifier.identifier_type"
+                            [ngModelOptions]="{standalone: true}">
+                      @for (type of identifierTypes; track type.id) {
+                        <option [value]="type">{{ type.name }}</option>
+                      }
+                    </select>
+                  </td>
+                  <td>
+                    <input type="text"
+                           class="form-control"
+                           [(ngModel)]="identifier.value"
+                           [ngModelOptions]="{standalone: true}">
+                  </td>
+                  <td>
+                    <div class="checkbox-container">
+                      <input type="checkbox"
+                             [(ngModel)]="identifier.is_enabled"
+                             [ngModelOptions]="{standalone: true}">
+                    </div>
+                  </td>
+                  <td>
+                    <input type="datetime-local"
+                           class="form-control"
+                           [(ngModel)]="identifier.expiration_date"
+                           [ngModelOptions]="{standalone: true}">
+                  </td>
+                  <td>
+                    <button type="button"
+                            class="btn btn-danger"
+                            (click)="removeIdentifier($index)">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          <button type="button"
+                  class="btn btn-primary"
+                  (click)="addIdentifier()">
+            <i class="fas fa-plus"></i> {{ 'users.form.addIdentifier' | translate }}
+          </button>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button"
+                class="btn btn-secondary"
+                (click)="goBack()">{{ 'common.cancel' | translate }}
+        </button>
+        <button type="submit"
+                class="btn btn-primary"
+                [disabled]="userForm.invalid || submitting">
+          @if (submitting) {
+            <span class="spinner-sm"></span>
+          }
+          {{ isEditMode ? ('common.update' | translate) : ('common.create' | translate) }}
+        </button>
+      </div>
+    </form>
+  }
+</div> 

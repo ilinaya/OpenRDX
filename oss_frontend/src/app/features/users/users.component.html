@@ -1,4 +1,24 @@
 <div class="users-container">
-  <h2>Users</h2>
-  <p>This is a placeholder for the Users section. In a real application, this would display a list of users and user management functionality.</p>
+  <div class="users-header">
+    <h2>{{ 'users.title' | translate }}</h2>
+  </div>
+
+  <div class="users-content">
+    <div class="users-nav">
+      <ul>
+        <li>
+          <a routerLink="/users/users"
+             routerLinkActive="active">{{ 'users.nav.users' | translate }}</a>
+        </li>
+        <li>
+          <a routerLink="/users/groups"
+             routerLinkActive="active">{{ 'users.nav.userGroups' | translate }}</a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="users-main">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
 </div>

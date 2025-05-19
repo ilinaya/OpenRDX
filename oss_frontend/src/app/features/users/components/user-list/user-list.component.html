@@ -1,0 +1,95 @@
+<div class="user-list-container">
+  <div class="header">
+    <h2>{{ 'users.list.title' | translate }}</h2>
+    <button class="btn btn-primary" (click)="createUser()">
+      <i class="bi bi-plus"></i> {{ 'users.list.create' | translate }}
+    </button>
+  </div>
+
+  @if (loading) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>{{ 'common.loading' | translate }}</p>
+    </div>
+  }
+
+  @if (error) {
+    <div class="alert alert-danger">
+      {{ error }}
+    </div>
+  }
+
+  @if (!loading && !error) {
+    <div class="user-list">
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{{ 'users.list.email' | translate }}</th>
+              <th>{{ 'users.list.fullName' | translate }}</th>
+              <th>{{ 'users.list.phone' | translate }}</th>
+              <th>{{ 'users.list.groups' | translate }}</th>
+              <th>{{ 'users.list.status' | translate }}</th>
+              <th>{{ 'users.list.lastLogin' | translate }}</th>
+              <th>{{ 'common.actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of users; track user.id) {
+              <tr>
+                <td>{{ user.email }}</td>
+                <td>{{ user.full_name }}</td>
+                <td>{{ user.phone_number }}</td>
+                <td>
+                  @for (group of user.groups; track group; let last = $last) {
+                    <span class="badge bg-secondary me-1">{{ group.name }}</span>
+                  }
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="user.is_active ? 'bg-success' : 'bg-danger'">
+                    {{ user.is_active ? ('common.active' | translate) : ('common.inactive' | translate) }}
+                  </span>
+                </td>
+                <td>{{ user.last_login | date:'medium' }}</td>
+                <td>
+                  <div class="btn-group">
+                    <button class="btn btn-info" (click)="viewUser(user)">
+                      <i class="bi bi-eye"></i> {{ 'users.list.view' | translate }}
+                    </button>
+                    <button class="btn btn-primary" (click)="editUser(user)">
+                      <i class="bi bi-pencil"></i> {{ 'users.list.edit' | translate }}
+                    </button>
+                    <button class="btn btn-danger" (click)="deleteUser(user)">
+                      <i class="bi bi-trash"></i> {{ 'users.list.delete' | translate }}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+            @if (users.length === 0) {
+              <tr>
+                <td colspan="7" class="text-center">{{ 'users.list.noUsers' | translate }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination">
+        <button class="pagination-btn" 
+                [disabled]="currentPage === 1"
+                (click)="changePage(currentPage - 1)">
+          {{ 'common.previous' | translate }}
+        </button>
+        <span class="pagination-info">
+          {{ 'common.page' | translate }} {{ currentPage }} {{ 'common.of' | translate }} {{ totalPages }}
+        </span>
+        <button class="pagination-btn"
+                [disabled]="currentPage === totalPages"
+                (click)="changePage(currentPage + 1)">
+          {{ 'common.next' | translate }}
+        </button>
+      </div>
+    </div>
+  }
+</div> 

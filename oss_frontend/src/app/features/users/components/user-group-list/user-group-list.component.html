@@ -1,16 +1,16 @@
-<div class="user-group-list-container">
-  <div class="list-header">
-    <h2>User Groups</h2>
-    <a class="btn btn-primary"
-       routerLink="create">
-      <i class="fas fa-plus"></i> Create Group
-    </a>
+<div class="admin-group-list-container">
+  <div class="header">
+    <h2>Admin Groups</h2>
+    <button class="btn btn-primary"
+            (click)="createNewGroup()">
+      Create New Group
+    </button>
   </div>
 
   @if (loading) {
     <div class="loading-container">
       <div class="spinner"></div>
-      <p>Loading user groups...</p>
+      <p>Loading admin groups...</p>
     </div>
   }
 
@@ -20,72 +20,67 @@
     </div>
   }
 
-  @if (!loading && !error) {
-    <div class="list-content">
-      @if (groups.length === 0) {
-        <div class="empty-state">
-          <i class="fas fa-users"></i>
-          <p>No user groups found</p>
-          <a class="btn btn-primary"
-             routerLink="create">
-            <i class="fas fa-plus"></i> Create Group
-          </a>
-        </div>
-      } @else {
-        <div class="table-container">
-          <table class="table">
-            <thead>
-            <tr>
-              <th>Name</th>
-              <th>Description</th>
-              <th>Parent Group</th>
-              <th>Created At</th>
-              <th>Actions</th>
-            </tr>
-            </thead>
-            <tbody>
-              @for (group of groups; track group.id) {
-                <tr>
-                  <td>{{ group.name }}</td>
-                  <td>{{ group.description || 'No description provided' }}</td>
-                  <td>{{ group.parent_details?.name || 'None' }}</td>
-                  <td>{{ group.created_at | date:'medium' }}</td>
-                  <td class="actions">
-                    <a class="btn btn-sm btn-primary"
-                       [routerLink]="[group.id, 'edit']"
-                       title="Edit">
-                      <i class="fas fa-edit"></i> Edit
-                    </a>
-                    <button class="btn btn-sm btn-danger"
-                            (click)="onDeleteGroup(group.id)"
-                            title="Delete">
-                      <i class="fas fa-trash"></i> Delete
-                    </button>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
+  @if (!loading && groups.length === 0) {
+    <div class="empty-state">
+      <p>No admin groups found. Create your first group to get started.</p>
+    </div>
+  }
 
-          @if (totalItems > pageSize) {
-            <div class="pagination">
-              <button
-                class="btn btn-outline-primary"
-                [disabled]="currentPage === 1"
-                (click)="onPageChange(currentPage - 1)"
-              >
-                <i class="fas fa-chevron-left"></i> Previous
-              </button>
-              <span class="page-info">Page {{ currentPage }} of {{ Math.ceil(totalItems / pageSize) }}</span>
-              <button
-                class="btn btn-outline-primary"
-                [disabled]="currentPage >= Math.ceil(totalItems / pageSize)"
-                (click)="onPageChange(currentPage + 1)"
-              >
-                Next <i class="fas fa-chevron-right"></i>
-              </button>
-            </div>
+  @if (!loading && groups.length > 0) {
+    <div class="groups-table-container">
+      <table class="groups-table">
+        <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Created At</th>
+          <th>Updated At</th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+          @for (group of groups; track group) {
+            <tr>
+              <td>{{ group.name }}</td>
+              <td>{{ group.description || 'N/A' }}</td>
+              <td>{{ group.created_at | date:'medium' }}</td>
+              <td>{{ group.updated_at | date:'medium' }}</td>
+              <td class="actions">
+                <button class="btn btn-info"
+                        (click)="viewGroupDetails(group.id)">
+                  View
+                </button>
+                <button class="btn btn-warning"
+                        (click)="editGroup(group.id)">
+                  Edit
+                </button>
+                <button class="btn btn-danger"
+                        (click)="deleteGroup(group.id)">
+                  Delete
+                </button>
+              </td>
+            </tr>
           }
+        </tbody>
+      </table>
+
+      @if (totalPages > 1) {
+        <div class="pagination">
+          <button
+            class="btn btn-secondary"
+            [disabled]="currentPage === 1"
+            (click)="changePage(currentPage - 1)">
+            Previous
+          </button>
+          <span class="page-info">
+        Page {{ currentPage }} of {{ totalPages }}
+      </span>
+          <button
+            class="btn btn-secondary"
+            [disabled]="currentPage === totalPages"
+            (click)="changePage(currentPage + 1)">
+            Next
+          </button>
         </div>
       }
     </div>

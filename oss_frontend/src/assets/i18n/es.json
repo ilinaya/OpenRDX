@@ -17,31 +17,31 @@
     "showing": "Mostrando",
     "to": "a",
     "active": "Activo",
-    "parent_group": "Pariente",
-    "yes": "Si",
+    "inactive": "Inactivo",
+    "parent_group": "Padre",
+    "yes": "Sí",
     "no": "No"
-
   },
   "settings": {
     "title": "Configuración",
     "navigation": {
-      "adminUsers": "Usuarios Administradores",
-      "adminGroups": "Grupos de Administradores",
-      "userGroups": "Grupos de Usuarios",
+      "adminUsers": "Usuarios Admin",
+      "adminGroups": "Grupos Admin",
+      "userGroups": "Grupos de Usuario",
       "secrets": "Secretos",
-      "vendors": "Marcas",
+      "vendors": "Vendedores",
       "attributeGroups": "Grupos de Atributos"
     },
     "userGroups": {
-      "title": "Grupos de Usuarios",
+      "title": "Grupos de Usuario",
       "create": "Crear Grupo",
       "edit": "Editar Grupo de Usuario",
       "name": "Nombre",
       "description": "Descripción",
       "parentGroup": "Grupo Padre",
-      "createdAt": "Creado",
-      "updatedAt": "Actualizado",
-      "noGroups": "No se encontraron grupos de usuarios",
+      "createdAt": "Creado En",
+      "updatedAt": "Actualizado En",
+      "noGroups": "No se encontraron grupos de usuario",
       "namePlaceholder": "Ingrese el nombre del grupo",
       "descriptionPlaceholder": "Ingrese la descripción del grupo"
     },
@@ -51,14 +51,14 @@
       "edit": "Editar Grupo de Atributos",
       "name": "Nombre",
       "description": "Descripción",
-      "createdAt": "Creado",
-      "updatedAt": "Actualizado",
+      "createdAt": "Creado En",
+      "updatedAt": "Actualizado En",
       "noGroups": "No se encontraron grupos de atributos",
       "namePlaceholder": "Ingrese el nombre del grupo",
       "descriptionPlaceholder": "Ingrese la descripción del grupo",
       "radiusAttributes": {
         "title": "Atributos RADIUS",
-        "vendorId": "ID del Marca",
+        "vendorId": "ID del Vendedor",
         "attributeId": "ID del Atributo",
         "attributeName": "Nombre del Atributo",
         "attributeType": "Tipo de Atributo",
@@ -85,11 +85,11 @@
         "saveGroupFirst": "Por favor guarde el grupo antes de agregar atributos"
       },
       "errors": {
-        "loadFailed": "Error al cargar los grupos de atributos",
-        "saveFailed": "Error al guardar el grupo",
-        "deleteFailed": "Error al eliminar el grupo",
-        "addAttributeFailed": "Error al agregar el atributo",
-        "deleteAttributeFailed": "Error al eliminar el atributo"
+        "loadFailed": "Error al cargar grupos de atributos",
+        "saveFailed": "Error al guardar grupo",
+        "deleteFailed": "Error al eliminar grupo",
+        "addAttributeFailed": "Error al agregar atributo",
+        "deleteAttributeFailed": "Error al eliminar atributo"
       }
     },
     "changePassword": {
@@ -110,9 +110,7 @@
     "nas": {
       "title": "Dispositivos NAS",
       "list": {
-        "vendor": "Marca",
-        "status": "Estatus",
-
+        "vendor": "Vendedor",
         "title": "Dispositivos NAS",
         "create": "Agregar Nuevo NAS",
         "name": "Nombre",
@@ -123,16 +121,17 @@
         "groups": "Grupos NAS",
         "secret": "Secreto",
         "active": "Activo",
-        "createdAt": "Creado",
-        "updatedAt": "Actualizado",
+        "createdAt": "Creado En",
+        "updatedAt": "Actualizado En",
         "noDevices": "No se encontraron dispositivos NAS",
         "viewDetails": "Ver Detalles",
         "edit": "Editar",
+        "status": "Estado",
         "delete": "Eliminar",
         "deleteConfirm": "¿Está seguro de que desea eliminar este dispositivo NAS?",
         "errors": {
-          "loadFailed": "Error al cargar los dispositivos NAS",
-          "deleteFailed": "Error al eliminar el dispositivo NAS"
+          "loadFailed": "Error al cargar dispositivos NAS",
+          "deleteFailed": "Error al eliminar dispositivo NAS"
         }
       },
       "form": {
@@ -152,14 +151,14 @@
         "groups": "Grupos NAS",
         "secret": "Secreto",
         "secretRequired": "El secreto es requerido",
-        "vendor": "Marca",
-        "vendorRequired": "La Marca es requerida",
-        "active": "Activo",
-        "timezone": "Zona horaria",
+        "vendor": "Vendedor",
+        "vendorRequired": "El vendedor es requerido",
+        "timezone": "Zona Horaria",
         "timezoneRequired": "La zona horaria es requerida",
+        "active": "Activo",
         "errors": {
-          "createFailed": "Error al crear el dispositivo NAS",
-          "updateFailed": "Error al actualizar el dispositivo NAS"
+          "createFailed": "Error al crear dispositivo NAS",
+          "updateFailed": "Error al actualizar dispositivo NAS"
         }
       },
       "detail": {
@@ -177,16 +176,16 @@
         "groups": "Grupos NAS",
         "secret": "Secreto",
         "secretName": "Nombre del Secreto",
-        "vendor": "Marca",
-        "vendorName": "Nombre de la Marca",
-        "timezone": "Zona horaria",
-        "timezoneName": "Nombre de la Zona horaria",
+        "vendor": "Vendedor",
+        "vendorName": "Nombre del Vendedor",
+        "timezone": "Zona Horaria",
+        "timezoneName": "Nombre de la Zona Horaria",
         "timestamps": "Marcas de Tiempo",
-        "createdAt": "Creado",
-        "updatedAt": "Actualizado",
+        "createdAt": "Creado En",
+        "updatedAt": "Actualizado En",
         "errors": {
-          "loadFailed": "Error al cargar los detalles del NAS",
-          "deleteFailed": "Error al eliminar el dispositivo NAS"
+          "loadFailed": "Error al cargar detalles del NAS",
+          "deleteFailed": "Error al eliminar dispositivo NAS"
         }
       }
     },
@@ -198,16 +197,16 @@
         "name": "Nombre",
         "description": "Descripción",
         "parentGroup": "Grupo Padre",
-        "createdAt": "Creado",
-        "updatedAt": "Actualizado",
+        "createdAt": "Creado En",
+        "updatedAt": "Actualizado En",
         "noGroups": "No se encontraron grupos NAS",
         "viewNas": "Ver NAS",
         "edit": "Editar",
         "delete": "Eliminar",
         "deleteConfirm": "¿Está seguro de que desea eliminar este grupo NAS?",
         "errors": {
-          "loadFailed": "Error al cargar los grupos NAS",
-          "deleteFailed": "Error al eliminar el grupo NAS"
+          "loadFailed": "Error al cargar grupos NAS",
+          "deleteFailed": "Error al eliminar grupo NAS"
         }
       },
       "form": {
@@ -220,9 +219,86 @@
         "parentGroup": "Grupo Padre",
         "parentGroupHelp": "Seleccione un grupo padre para crear una estructura jerárquica",
         "errors": {
-          "createFailed": "Error al crear el grupo NAS",
-          "updateFailed": "Error al actualizar el grupo NAS"
+          "createFailed": "Error al crear grupo NAS",
+          "updateFailed": "Error al actualizar grupo NAS"
         }
+      }
+    }
+  },
+  "users": {
+    "title": "Usuarios",
+    "nav": {
+      "users": "Usuarios",
+      "userGroups": "Grupos de Usuario"
+    },
+    "list": {
+      "title": "Usuarios",
+      "create": "Agregar Usuario",
+      "email": "Correo Electrónico",
+      "fullName": "Nombre Completo",
+      "phone": "Teléfono",
+      "groups": "Grupos",
+      "status": "Estado",
+      "lastLogin": "Último Inicio de Sesión",
+      "noUsers": "No se encontraron usuarios",
+      "view": "Ver",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "deleteConfirm": "¿Está seguro de que desea eliminar el usuario {{email}}?",
+      "errors": {
+        "loadFailed": "Error al cargar usuarios",
+        "deleteFailed": "Error al eliminar usuario"
+      }
+    },
+    "form": {
+      "create": "Crear Usuario",
+      "edit": "Editar Usuario",
+      "basicInfo": "Información Básica",
+      "email": "Correo Electrónico",
+      "emailRequired": "El correo electrónico es requerido",
+      "emailInvalid": "Por favor ingrese un correo electrónico válido",
+      "firstName": "Nombre",
+      "lastName": "Apellido",
+      "phone": "Número de Teléfono",
+      "active": "Activo",
+      "groups": "Grupos",
+      "identifiers": "Identificadores",
+      "addIdentifier": "Agregar Identificador",
+      "removeIdentifier": "Eliminar Identificador",
+      "identifierType": "Tipo",
+      "identifierValue": "Valor",
+      "identifierEnabled": "Habilitado",
+      "identifierExpiration": "Fecha de Expiración",
+      "errors": {
+        "createFailed": "Error al crear usuario",
+        "updateFailed": "Error al actualizar usuario"
+      }
+    },
+    "detail": {
+      "title": "Detalles del Usuario",
+      "backToList": "Volver a la Lista",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "deleteConfirm": "¿Está seguro de que desea eliminar este usuario?",
+      "basicInfo": "Información Básica",
+      "email": "Correo Electrónico",
+      "fullName": "Nombre Completo",
+      "phone": "Teléfono",
+      "status": "Estado",
+      "additionalInfo": "Información Adicional",
+      "groups": "Grupos",
+      "lastLogin": "Último Inicio de Sesión",
+      "createdAt": "Creado En",
+      "updatedAt": "Actualizado En",
+      "identifiers": "Identificadores",
+      "identifierType": "Tipo",
+      "identifierValue": "Valor",
+      "identifierStatus": "Estado",
+      "identifierExpiration": "Expiración",
+      "identifierAuthGroup": "Grupo de Autenticación",
+      "errors": {
+        "loadFailed": "Error al cargar detalles del usuario",
+        "deleteFailed": "Error al eliminar usuario"
       }
     }
   }

@@ -3,6 +3,7 @@ import {Router} from '@angular/router';
 import {NasService} from '../../../../shared/services/nas.service';
 import {NasGroup} from '../../../../shared/models/nas.model';
 import {TranslatePipe} from '@ngx-translate/core';
+import {PaginationParams} from "../../../../shared/models/pagination.model";
 
 @Component({
   selector: 'app-nas-group-list',
@@ -14,9 +15,13 @@ import {TranslatePipe} from '@ngx-translate/core';
 })
 export class NasGroupListComponent implements OnInit {
   nasGroups: NasGroup[] = [];
-  treeView = true;
   loading = false;
   error = '';
+
+  currentPage = 1;
+  pageSize = 10;
+  totalItems = 0;
+  totalPages = 0;
 
   constructor(
     private nasService: NasService,
@@ -32,38 +37,23 @@ export class NasGroupListComponent implements OnInit {
     this.loading = true;
     this.error = '';
 
-    if (this.treeView) {
-      this.nasService.getNasGroupTree()
-        .subscribe({
-          next: (groups) => {
-            this.nasGroups = groups;
-            this.loading = false;
-          },
-          error: (err) => {
-            this.error = 'Failed to load NAS groups. Please try again later.';
-            console.error('Error loading NAS groups:', err);
-            this.loading = false;
-          },
-        });
-    } else {
-      this.nasService.getAllNasGroups()
-        .subscribe({
-          next: (groups) => {
-            this.nasGroups = groups;
-            this.loading = false;
-          },
-          error: (err) => {
-            this.error = 'Failed to load NAS groups. Please try again later.';
-            console.error('Error loading NAS groups:', err);
-            this.loading = false;
-          },
-        });
-    }
-  }
+    const params: PaginationParams = {
+      page: this.currentPage,
+      page_size: this.pageSize
+    };
 
-  toggleView(): void {
-    this.treeView = !this.treeView;
-    this.loadNasGroups();
+    this.nasService.getAllNasGroups(params)
+      .subscribe({
+        next: (groups) => {
+          this.nasGroups = groups.results;
+          this.loading = false;
+        },
+        error: (err) => {
+          this.error = 'Failed to load NAS groups. Please try again later.';
+          console.error('Error loading NAS groups:', err);
+          this.loading = false;
+        },
+      });
   }
 
   viewNasInGroup(groupId: number): void {

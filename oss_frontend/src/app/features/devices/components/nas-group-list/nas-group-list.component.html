@@ -28,15 +28,9 @@
       <p>{{ 'devices.nasGroups.list.noGroups' | translate }}</p>
     </div>
   }
-  <!-- Tree View -->
-  @if (!loading && nasGroups.length > 0 && treeView) {
-    <div class="tree-view">
-      <ng-container *ngTemplateOutlet="groupTree; context: { $implicit: nasGroups }"></ng-container>
-    </div>
-  }
 
   <!-- List View -->
-  @if (!loading && nasGroups.length > 0 && !treeView) {
+  @if (!loading && nasGroups.length > 0) {
     <div class="list-view">
       <div class="table-responsive">
         <table class="table">
@@ -60,15 +54,15 @@
                   <div class="btn-group">
                     <button class="btn btn-sm btn-info"
                             (click)="viewNasInGroup(group.id)">
-                      <i class="fas fa-eye"></i>
+                      <i class="fas fa-eye"></i> {{ 'devices.nasGroups.list.viewNas' | translate }}
                     </button>
                     <button class="btn btn-sm btn-primary"
                             (click)="editGroup(group.id, $event)">
-                      <i class="fas fa-edit"></i>
+                      <i class="fas fa-edit"></i> {{ 'common.edit' | translate }}
                     </button>
                     <button class="btn btn-sm btn-danger"
                             (click)="deleteGroup(group.id, $event)">
-                      <i class="fas fa-trash"></i>
+                      <i class="fas fa-trash"></i> {{ 'common.delete' | translate }}
                     </button>
                   </div>
                 </td>
@@ -89,12 +83,7 @@
       <li class="group-item"
           (click)="viewNasInGroup(group.id)">
         <div class="group-content">
-          <div class="group-info">
-            <span class="group-name">{{ group.name }}</span>
-            @if (group.description) {
-              <span class="group-description">{{ group.description }}</span>
-            }
-          </div>
+
           <div class="group-actions">
             <button class="btn btn-sm btn-warning"
                     (click)="editGroup(group.id, $event)">Edit

@@ -14,8 +14,12 @@ export class NasService {
   constructor(private http: HttpClient) { }
 
   // NAS Groups
-  getAllNasGroups(): Observable<NasGroup[]> {
-    return this.http.get<NasGroup[]>(`${this.apiUrl}/groups`);
+  getAllNasGroups(params: PaginationParams): Observable<PagedResponse<NasGroup>> {
+    const httpParams = new HttpParams()
+      .set('page', (params.page || 1).toString())
+      .set('page_size', (params.page_size || 10).toString());
+
+    return this.http.get<PagedResponse<NasGroup>>(`${this.apiUrl}/groups/`, { params: httpParams });
   }
 
   getNasGroupById(id: number): Observable<NasGroup> {

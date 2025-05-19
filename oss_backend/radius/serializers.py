@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from .models import AuthAttributeGroup, RadiusAttribute, UserNasRelationship, Secret
+
 from users.serializers import UserSerializer
+from .models import AuthAttributeGroup, RadiusAttribute, UserNasRelationship, Secret
 
 
 
@@ -23,9 +24,8 @@ class AuthAttributeGroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AuthAttributeGroup
-        fields = ['id', 'name', 'description', 'is_system', 'attributes', 
-                 'created_at', 'updated_at']
-        read_only_fields = ['is_system', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'description', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
 
 
 class AuthAttributeGroupCreateSerializer(serializers.ModelSerializer):

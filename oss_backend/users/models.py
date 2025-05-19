@@ -1,8 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from mptt.models import MPTTModel, TreeForeignKey
-from django.db.models.signals import post_migrate
-from django.dispatch import receiver
+from django.utils import timezone
 
 
 class UserGroup(MPTTModel):
@@ -22,7 +21,7 @@ class UserGroup(MPTTModel):
     class Meta:
         verbose_name = _("User Group")
         verbose_name_plural = _("User Groups")
-        db_table = 'users_user_group'
+        db_table = 'user_groups'
 
     def __str__(self):
         return self.name
@@ -47,7 +46,7 @@ class User(models.Model):
         verbose_name = _("User")
         verbose_name_plural = _("Users")
         ordering = ['-created_at']
-        db_table = 'users_user'
+        db_table = 'users'
 
     def __str__(self):
         return self.email
@@ -60,4 +59,66 @@ class User(models.Model):
         if self.first_name and self.last_name:
             return f"{self.first_name} {self.last_name}"
         return self.email
+
+
+class UserIdentifierType(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _('User Identifier Type')
+        verbose_name_plural = _('User Identifier Types')
+        ordering = ['name']
+        db_table = 'user_identifier_types'
+
+
+    def __str__(self):
+        return self.name
+
+
+class UserIdentifier(models.Model):
+    user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='identifiers')
+    identifier_type = models.ForeignKey(UserIdentifierType, on_delete=models.PROTECT)
+    value = models.CharField(max_length=255)
+    is_enabled = models.BooleanField(default=True)
+    comment = models.TextField(blank=True)
+    auth_attribute_group = models.ForeignKey(
+        'radius.AuthAttributeGroup',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+    expiration_date = models.DateTimeField(null=True, blank=True)
+    reject_expired = models.BooleanField(default=False)
+    expired_auth_attribute_group = models.ForeignKey(
+        'radius.AuthAttributeGroup',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='expired_identifiers'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _('User Identifier')
+        verbose_name_plural = _('User Identifiers')
+        ordering = ['-created_at']
+        unique_together = ['user', 'identifier_type', 'value']
+        db_table = 'user_identifiers'
+
+    def __str__(self):
+        return f"{self.user.id} - {self.identifier_type.name}: {self.value}"
+
+    def is_expired(self):
+        if not self.expiration_date:
+            return False
+        return self.expiration_date < timezone.now()
+
+    def get_attribute_group(self):
+        if self.is_expired() and not self.reject_expired and self.expired_auth_attribute_group:
+            return self.expired_auth_attribute_group
+        return self.auth_attribute_group
 

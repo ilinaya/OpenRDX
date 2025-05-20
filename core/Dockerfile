@@ -1,40 +1,45 @@
-# Stage 1: Build the application
-FROM rust:1.86 as builder
+# Build stage
+FROM rust:1.75-slim-bullseye as builder
 
-# Set the working directory inside the container
 WORKDIR /usr/src/app
 
-# Copy the cargo manifest and lock to properly cache dependencies
-COPY Cargo.toml Cargo.lock ./
-
-# Fetch dependencies (useful for caching)
-RUN cargo fetch
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy the source code
 COPY . .
 
-# Build the application in release mode
+# Build the application
 RUN cargo build --release
 
-# Stage 2: Create minimal runtime container with the built app
+# Runtime stage
 FROM debian:bullseye-slim
 
-# Install necessary dependencies (if any)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  ca-certificates && rm -rf /var/lib/apt/lists/*
+WORKDIR /usr/local/bin
 
-# Set working directory
-WORKDIR /usr/app
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    libssl1.1 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy the compiled binary from the builder stage
-COPY --from=builder /usr/src/app/target/release/MobileOffloadRadius /usr/app/
+# Copy the binary from builder
+COPY --from=builder /usr/src/app/target/release/radius-server .
 
-# Ensure the binary is executable
-RUN chmod +x /usr/app/MobileOffloadRadius
+# Create a non-root user
+RUN useradd -m -u 1000 radius
 
-# Expose RADIUS standard ports
-EXPOSE 1812/udp
-EXPOSE 1813/udp
+# Switch to non-root user
+USER radius
 
-# Define default command
-CMD ["./MobileOffloadRadius"]
+# Set environment variables
+ENV RUST_LOG=info
+
+# The entrypoint script will determine which service to run
+COPY --from=builder /usr/src/app/docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["docker-entrypoint.sh"]

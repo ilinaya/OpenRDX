@@ -17,22 +17,43 @@ services:
       - openrdx-network
     restart: unless-stopped
 
-  core:
+  core-auth:
     build:
       context: ./core
       dockerfile: Dockerfile
-    environment:
-      - COA_TOPIC=radius_coa
-    networks:
-      - openrdx-network
-    depends_on:
-      - redis
-      - postgres
-      - mongodb
     ports:
       - "1812:1812/udp"
+    environment:
+      - DATABASE_URL=postgres://radius:radius@postgres/radius
+      - REDIS_URL=redis://redis:6379/
+      - RADIUS_BIND_ADDR=0.0.0.0:1812
+      - RADIUS_SECRET_TTL=300
+      - SUBSCRIBER_CACHE_TTL=3600
+      - LOG_LEVEL=info
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - openrdx-network
+
+  core-acct:
+    build:
+      context: ./core
+      dockerfile: Dockerfile
+    ports:
       - "1813:1813/udp"
-    restart: unless-stopped
+    environment:
+      - MONGO_URL=mongodb://mongodb:27017
+      - REDIS_URL=redis://redis:6379/
+      - RADIUS_BIND_ADDR=0.0.0.0:1813
+      - QUOTA_CHECK_INTERVAL=60
+      - LOG_LEVEL=info
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - openrdx-network
+
 
   oss_backend:
     build:

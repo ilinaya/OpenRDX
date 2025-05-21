@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from mptt.models import TreeForeignKey
-from .models import User, UserGroup, UserIdentifierType, UserIdentifier
+from .models import User, UserGroup, UserIdentifierType, UserIdentifier, UserIdentifierNasAuthorization
 from django.apps import apps
 
 
@@ -152,3 +152,27 @@ class UserUpdateSerializer(serializers.ModelSerializer):
                   'external_id',
                   'email',
                   'last_name', 'phone_number', 'is_active', 'group_ids']
+
+
+class UserIdentifierNasAuthorizationSerializer(serializers.ModelSerializer):
+    nas_name = serializers.CharField(source='nas.name', read_only=True)
+    attribute_group_name = serializers.CharField(source='attribute_group.name', read_only=True)
+
+    class Meta:
+        model = UserIdentifierNasAuthorization
+        fields = ['id', 'nas', 'nas_name', 'attribute_group',
+                  'nas_id', 'attribute_group_id',
+                  'attribute_group_name', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
+
+
+class UserIdentifierNasAuthorizationCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserIdentifierNasAuthorization
+        fields = ['nas', 'attribute_group', 'nas_id', 'attribute_group_id']
+
+
+class UserIdentifierNasAuthorizationUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserIdentifierNasAuthorization
+        fields = ['attribute_group', 'attribute_group_id']

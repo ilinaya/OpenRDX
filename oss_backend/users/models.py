@@ -139,3 +139,24 @@ class UserIdentifier(models.Model):
             return self.expired_auth_attribute_group
         return self.auth_attribute_group
 
+
+class UserIdentifierNasAuthorization(models.Model):
+    user_identifier = models.ForeignKey('UserIdentifier', on_delete=models.CASCADE, related_name='nas_authorizations')
+    nas = models.ForeignKey('nas.Nas', on_delete=models.CASCADE, related_name='user_identifier_authorizations')
+    attribute_group = models.ForeignKey('radius.AuthAttributeGroup', on_delete=models.SET_NULL, null=True, related_name='user_identifier_nas_authorizations')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user_identifier', 'nas')
+        verbose_name = 'User Identifier NAS Authorization'
+        verbose_name_plural = 'User Identifier NAS Authorizations'
+        indexes = [
+            models.Index(fields=['user_identifier']),
+            models.Index(fields=['nas']),
+        ]
+        db_table = 'user_identifier_authorizations'
+
+    def __str__(self):
+        return f"{self.user_identifier} - {self.nas.name}"
+

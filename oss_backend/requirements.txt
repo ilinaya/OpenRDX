@@ -16,3 +16,4 @@ pymongo==4.13.0
 redis==6.1.0
 setuptools==80.7.1
 whitenoise==6.6.0
+drf-nested-routers

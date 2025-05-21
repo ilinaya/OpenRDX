@@ -6,14 +6,38 @@ import { UserService } from "../../../../shared/services/user.service";
 import { User } from "../../../../shared/models/user.model";
 import { catchError, finalize } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { NasAuthorizationModalComponent } from '../nas-authorization-modal/nas-authorization-modal.component';
+import { MatIcon } from "@angular/material/icon";
+import { MatError } from "@angular/material/select";
+import { MatChip } from "@angular/material/chips";
+import { MatCard, MatCardContent, MatCardHeader } from "@angular/material/card";
+import { MatProgressSpinner } from "@angular/material/progress-spinner";
+import { MatTableModule } from '@angular/material/table';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatCardModule } from '@angular/material/card';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
   selector: 'app-user-detail',
   templateUrl: './user-detail.component.html',
   imports: [
     DatePipe,
-    NgClass,
-    TranslatePipe
+    MatIcon,
+    MatError,
+    TranslatePipe,
+    MatChip,
+    MatCard,
+    MatCardContent,
+    MatProgressSpinner,
+    MatTableModule,
+    MatButtonModule,
+    MatIconModule,
+    MatChipsModule,
+    MatCardModule,
+    MatProgressSpinnerModule
   ],
   styleUrls: ['./user-detail.component.scss']
 })
@@ -26,7 +50,8 @@ export class UserDetailComponent implements OnInit {
     private route: ActivatedRoute,
     private userService: UserService,
     private router: Router,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
@@ -91,5 +116,17 @@ export class UserDetailComponent implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/users/users']);
+  }
+
+  openNasAuthorizationModal(identifier: any): void {
+    if (!this.user) return;
+
+    this.dialog.open(NasAuthorizationModalComponent, {
+      width: '900px',
+      data: {
+        userId: this.user.id,
+        identifierId: identifier.id
+      }
+    });
   }
 }

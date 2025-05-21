@@ -305,7 +305,23 @@
       "invalidId": "Invalid user ID",
       "loadError": "Failed to load user details",
       "deleteConfirm": "Are you sure you want to delete this user?",
-      "deleteError": "Failed to delete user"
+      "deleteError": "Failed to delete user",
+      "nasAuth": {
+        "title": "NAS Authorizations",
+        "authorized": "Authorized NAS",
+        "available": "Available NAS",
+        "nasDevice": "NAS Device",
+        "attributeGroup": "Attribute Group",
+        "authorize": "Authorize",
+        "authorizeSelected": "Authorize Selected",
+        "selectGroup": "Select Attribute Group",
+        "manage": "Manage NAS Authorizations",
+        "loadError": "Failed to load NAS authorizations",
+        "updateError": "Failed to update authorization",
+        "deleteError": "Failed to delete authorization",
+        "authorizeError": "Failed to authorize NAS devices",
+        "deleteConfirm": "Are you sure you want to delete this authorization?"
+      }
     }
   }
 }

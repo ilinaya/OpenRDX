@@ -4,13 +4,19 @@ from rest_framework import status
 from rest_framework import permissions
 
 from drf_yasg.utils import swagger_auto_schema
-from .models import User, UserGroup, UserIdentifierType, UserIdentifier
+
+from nas.models import Nas
+from nas.serializers import NasSerializer
+from .models import User, UserGroup, UserIdentifierType, UserIdentifier, UserIdentifierNasAuthorization
 from .serializers import (
     UserSerializer, UserCreateSerializer, UserUpdateSerializer, UserGroupSerializer,
-    UserGroupTreeSerializer, UserIdentifierTypeSerializer, UserIdentifierSerializer
+    UserGroupTreeSerializer, UserIdentifierTypeSerializer, UserIdentifierSerializer,
+    UserIdentifierNasAuthorizationSerializer, UserIdentifierNasAuthorizationCreateSerializer,
+    UserIdentifierNasAuthorizationUpdateSerializer
 )
 from rest_framework.decorators import action
 from rest_framework import serializers
+from rest_framework.views import APIView
 
 class UserGroupViewSet(viewsets.ModelViewSet):
     """
@@ -291,3 +297,36 @@ class UserViewSet(viewsets.ModelViewSet):
         self._handle_identifiers(instance, identifiers_data)
 
         return instance
+
+class UserIdentifierNasAuthorizationViewSet(viewsets.ModelViewSet):
+    queryset = UserIdentifierNasAuthorization.objects.all()
+    serializer_class = UserIdentifierNasAuthorizationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        identifier_id = self.kwargs.get('identifier_pk')
+        return self.queryset.filter(user_identifier_id=identifier_id)
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return UserIdentifierNasAuthorizationCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return UserIdentifierNasAuthorizationUpdateSerializer
+        return self.serializer_class
+
+    def perform_create(self, serializer):
+        identifier_id = self.kwargs.get('identifier_pk')
+        serializer.save(user_identifier_id=identifier_id)
+
+class AvailableNasDevicesView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, identifier_pk):
+        # Get all NAS devices that are not authorized for this identifier
+        authorized_nas_ids = UserIdentifierNasAuthorization.objects.filter(
+            user_identifier_id=identifier_pk
+        ).values_list('nas_id', flat=True)
+        
+        available_nas = Nas.objects.exclude(id__in=authorized_nas_ids)
+        serializer = NasSerializer(available_nas, many=True)
+        return Response(serializer.data)

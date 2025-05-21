@@ -72,4 +72,28 @@ export class NasService {
       params: new HttpParams().set('group_id', groupId.toString())
     });
   }
+
+  getAuthorizedNas(userId: number, identifierId: number): Observable<Nas[]> {
+    return this.http.get<Nas[]>(`${this.apiUrl}/authorized/${userId}/${identifierId}`);
+  }
+
+  getAvailableNas(userId: number, identifierId: number): Observable<Nas[]> {
+    return this.http.get<Nas[]>(`${this.apiUrl}/available/${userId}/${identifierId}`);
+  }
+
+  authorizeNas(userId: number, identifierId: number, nasId: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/authorize/${userId}/${identifierId}/${nasId}`, {});
+  }
+
+  revokeAuthorization(userId: number, identifierId: number, nasId: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/authorize/${userId}/${identifierId}/${nasId}`);
+  }
+
+  authorizeAllNas(userId: number, identifierId: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/authorize-all/${userId}/${identifierId}`, {});
+  }
+
+  revokeAllAuthorizations(userId: number, identifierId: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/authorize-all/${userId}/${identifierId}`);
+  }
 }

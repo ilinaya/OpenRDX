@@ -1,0 +1,146 @@
+.modal-body {
+  padding: 20px;
+
+  .nav-tabs {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #dee2e6;
+
+    .nav-link {
+      color: #495057;
+      border: none;
+      padding: 10px 20px;
+      font-weight: 500;
+
+      &.active {
+        color: #007bff;
+        border-bottom: 2px solid #007bff;
+        background: none;
+      }
+
+      &:hover:not(.active) {
+        border-color: transparent;
+        color: #007bff;
+      }
+    }
+  }
+
+  .table-actions {
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .table {
+    margin-bottom: 0;
+
+    th {
+      font-weight: 500;
+      color: #666;
+      border-top: none;
+      background-color: #f8f9fa;
+      padding: 12px 16px;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      vertical-align: middle;
+      padding: 12px 16px;
+      border-bottom: 1px solid #e9ecef;
+      color: #333;
+      font-size: 0.95rem;
+    }
+
+    tbody tr {
+      transition: background-color 0.2s ease;
+
+      &:hover {
+        background-color: #f8f9fa;
+      }
+
+      &:last-child td {
+        border-bottom: none;
+      }
+    }
+  }
+
+  .form-select {
+    width: 100%;
+    padding: 6px 12px;
+    font-size: 0.95rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background-color: #fff;
+    transition: border-color 0.15s ease-in-out;
+
+    &:focus {
+      border-color: #80bdff;
+      outline: 0;
+      box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+  }
+
+  .form-check {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .form-check-input {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      cursor: pointer;
+    }
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 16px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+
+    &:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    &.btn-sm {
+      padding: 4px 8px;
+      font-size: 0.875rem;
+    }
+  }
+
+  .loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+
+    p {
+      color: #666;
+      margin: 0;
+    }
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+} 

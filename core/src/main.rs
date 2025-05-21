@@ -1,7 +1,8 @@
 use dotenv::dotenv;
 use std::path::Path;
-use tracing::{info, error, Level};
+use tracing::{info, error, Level, debug};
 use tracing_subscriber::{EnvFilter, fmt::format::FmtSpan, FmtSubscriber};
+use std::sync::Arc;
 
 mod auth;
 mod accounting;
@@ -12,42 +13,44 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
 
     // Initialize logging with more detailed configuration
-    let subscriber = FmtSubscriber::builder()
-        .with_max_level(Level::DEBUG)
-        .with_env_filter(EnvFilter::try_from_default_env()
-            .or_else(|_| EnvFilter::try_new("info,radius_server=debug"))?)
+    let filter = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("debug"))?;
+
+    tracing_subscriber::fmt()
+        .with_env_filter(filter)
         .with_span_events(FmtSpan::CLOSE)
-        .with_target(true)
         .with_thread_ids(true)
         .with_file(true)
         .with_line_number(true)
-        .with_thread_names(true)
-        .with_level(true)
-        .with_ansi(true)
-        .finish();
+        .with_target(true)
+        .init();
 
-    tracing::subscriber::set_global_default(subscriber)?;
-
-    // Determine which service to run based on the environment
+    // Determine which service to run based on environment
     let service_type = std::env::var("SERVICE_TYPE").unwrap_or_else(|_| "auth".to_string());
+    debug!("Starting service type: {}", service_type);
 
     match service_type.as_str() {
         "auth" => {
             // Load auth configuration
             let config = if let Ok(config_path) = std::env::var("CONFIG_PATH") {
+                debug!("Loading config from file: {}", config_path);
                 auth::Config::from_file(Path::new(&config_path))?
             } else {
+                debug!("Loading config from environment variables");
                 auth::Config::from_env()?
             };
 
             info!("Starting RADIUS authorization service");
-            info!("Configuration loaded: {:?}", config);
+            debug!("Configuration loaded: {:?}", config);
+            debug!("RADIUS bind address: {}", config.radius_bind_addr);
 
             // Create and start the auth server
-            let server = auth::AuthServer::new(config).await?;
+            let auth_server = Arc::new(auth::AuthServer::new(config.clone()).await?);
             
             // Start the RADIUS server
-            let radius_server = auth::RadiusAuthServer::new(server.config.radius_bind_addr.clone());
+            debug!("Initializing RADIUS server");
+            let radius_server = auth::RadiusAuthServer::new(config.radius_bind_addr, auth_server).await?;
+            debug!("Starting RADIUS server loop");
             radius_server.run().await?;
         }
         "acct" => {

@@ -42,7 +42,8 @@ class User(models.Model):
     updated_at = models.DateTimeField(_("Updated At"), auto_now=True)
     last_login = models.DateTimeField(_("Last Login"), null=True, blank=True)
 
-    external_id = models.CharField(_("External ID"), max_length=50, blank=True, unique=True)
+    external_id = models.CharField(_("External ID"), max_length=50, blank=True,
+                                   unique=True, null=True)
 
     class Meta:
         verbose_name = _("User")
@@ -69,7 +70,7 @@ class User(models.Model):
 
 class UserIdentifierType(models.Model):
     name = models.CharField(max_length=100, unique=True)
-    description = models.TextField(blank=True)
+    description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -88,8 +89,9 @@ class UserIdentifier(models.Model):
     user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='identifiers')
     identifier_type = models.ForeignKey(UserIdentifierType, on_delete=models.PROTECT)
     value = models.CharField(max_length=255)
+    plain_password = models.CharField(max_length=255, blank=True, null=True)
     is_enabled = models.BooleanField(default=True)
-    comment = models.TextField(blank=True)
+    comment = models.TextField(blank=True, null=True)
     auth_attribute_group = models.ForeignKey(
         'radius.AuthAttributeGroup',
         on_delete=models.SET_NULL,
@@ -113,6 +115,11 @@ class UserIdentifier(models.Model):
         verbose_name_plural = _('User Identifiers')
         ordering = ['-created_at']
         unique_together = ['user', 'identifier_type', 'value']
+        indexes = [
+            models.Index(fields=['value']),
+            models.Index(fields=['value', 'identifier_type']),
+            models.Index(fields=['user']),
+        ]
         db_table = 'user_identifiers'
 
     def __str__(self):

@@ -1,14 +1,8 @@
 from rest_framework import serializers
-from mptt.models import TreeForeignKey
 from django.apps import apps
 
-from radius.serializers import SecretSerializer
 from shared.serializers import TimezoneSerializer
 from .models import Nas, NasGroup, Vendor
-
-# Get Secret model dynamically to avoid circular imports
-Secret = apps.get_model('radius', 'Secret')
-
 
 class VendorSerializer(serializers.ModelSerializer):
     """
@@ -58,11 +52,7 @@ class NasSerializer(serializers.ModelSerializer):
     )
 
     vendor = VendorSerializer(read_only=True)
-    secret = SecretSerializer(read_only=True)
     timezone = TimezoneSerializer(read_only=True)
-    secret_id = serializers.IntegerField(
-        required=False
-    )
     vendor_id = serializers.IntegerField(
         required=False
     )
@@ -71,7 +61,7 @@ class NasSerializer(serializers.ModelSerializer):
     class Meta:
         model = Nas
         fields = ['id', 'name', 'description', 'ip_address', 'coa_enabled', 'coa_port', 
-                 'groups', 'group_ids', 'secret', 'secret_id', 'created_at', 'updated_at', 'is_active',
+                 'groups', 'group_ids', 'created_at', 'updated_at', 'is_active',
                   'vendor', 'vendor_id', 'timezone_id', 'timezone']
 
         read_only_fields = ['created_at', 'updated_at', 'timezone']
@@ -88,12 +78,7 @@ class NasCreateSerializer(serializers.ModelSerializer):
         many=True,
         required=False
     )
-    secret_id = serializers.PrimaryKeyRelatedField(
-        queryset=Secret.objects.all(),
-        write_only=True,
-        source='secret',
-        required=False
-    )
+
     timezone_id = serializers.IntegerField(
         required=True
     )
@@ -104,7 +89,7 @@ class NasCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Nas
         fields = ['name', 'description', 'ip_address', 'coa_enabled', 'coa_port', 
-                 'group_ids', 'secret_id', 'is_active', 'timezone_id', 'vendor_id']
+                 'group_ids', 'is_active', 'timezone_id', 'vendor_id']
 
 
 class NasUpdateSerializer(serializers.ModelSerializer):
@@ -118,12 +103,7 @@ class NasUpdateSerializer(serializers.ModelSerializer):
         many=True,
         required=False
     )
-    secret_id = serializers.PrimaryKeyRelatedField(
-        queryset=Secret.objects.all(),
-        write_only=True,
-        source='secret',
-        required=False
-    )
+
     vendor_id = serializers.IntegerField(
         required=True
     )
@@ -135,4 +115,4 @@ class NasUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Nas
         fields = ['name', 'description', 'ip_address', 'coa_enabled', 'coa_port', 
-                 'group_ids', 'secret_id', 'is_active', 'vendor_id', 'timezone_id']
+                 'group_ids', 'is_active', 'vendor_id', 'timezone_id']

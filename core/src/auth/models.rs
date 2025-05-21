@@ -18,15 +18,13 @@ pub struct NasDevice {
     pub id: i64,
     pub name: String,
     pub is_active: bool,
-    pub secret: Option<String>,
-    pub source_subnets: Option<JsonValue>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Secret {
     pub id: i32,
-    pub subnet: String,
-    pub secret: String,
+    pub source_subnets: Option<JsonValue>,
+    pub secret: Option<String>,
     pub description: Option<String>,
     pub is_active: bool,
 }

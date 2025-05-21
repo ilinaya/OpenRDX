@@ -93,8 +93,7 @@ class Nas(models.Model):
                                    verbose_name=_("NAS Groups"))
     vendor = models.ForeignKey(Vendor, on_delete=models.SET_NULL, null=True, blank=True,
                               related_name="nas_devices", verbose_name=_("Vendor"))
-    secret = models.ForeignKey('radius.Secret', on_delete=models.PROTECT, null=True, blank=True,
-                             related_name="nas_devices", verbose_name=_("Secret"))
+
     created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated At"), auto_now=True)
     is_active = models.BooleanField(_("Is Active"), default=True)

@@ -4,13 +4,21 @@ use serde::{Deserialize, Serialize};
 use tracing::{info, warn, debug, error};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
+use sqlx::types::JsonValue;
 use ipnetwork::IpNetwork;
+use std::net::IpAddr;
 
 mod radius_server;
 mod models;
 
 pub use radius_server::RadiusAuthServer;
 pub use models::{NasDevice, Subscriber};
+
+#[derive(Debug, Clone)]
+struct SecretInfo {
+    secret: String,
+    subnets: Vec<IpNetwork>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -69,6 +77,7 @@ pub struct AuthServer {
     pub config: Config,
     db_pool: PgPool,
     nas_devices: HashMap<IpNetwork, NasDevice>,
+    secrets: HashMap<IpNetwork, SecretInfo>,
 }
 
 impl AuthServer {
@@ -86,12 +95,152 @@ impl AuthServer {
             config,
             db_pool,
             nas_devices: HashMap::new(),
+            secrets: HashMap::new(),
         };
 
-        // Load NAS devices
+        // Load NAS devices and secrets
         server.load_nas_devices().await?;
+        server.load_secrets().await?;
 
         Ok(server)
+    }
+
+    async fn load_secrets(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        info!("Loading RADIUS secrets from database");
+        debug!("Executing secrets query");
+        
+        #[derive(sqlx::FromRow)]
+        struct SecretRow {
+            id: i64,
+            secret: Option<String>,
+            source_subnets: Option<JsonValue>,
+        }
+
+        let secrets = sqlx::query_as::<_, SecretRow>(
+            r#"
+            SELECT 
+                id,
+                secret,
+                source_subnets
+            FROM radius_secret
+            "#
+        )
+        .fetch_all(&self.db_pool)
+        .await?;
+
+        debug!("Query returned {} secrets", secrets.len());
+        self.secrets.clear();
+        
+        for secret in secrets {
+            debug!("Processing secret: id={}", secret.id);
+            
+            if let Some(subnets_json) = secret.source_subnets {
+                debug!("Raw subnets JSON: {:?}", subnets_json);
+                let subnets: Vec<String> = serde_json::from_value(subnets_json)?;
+                debug!("Parsed subnets: {:?}", subnets);
+                
+                let mut ip_networks = Vec::new();
+                
+                for subnet in subnets {
+                    match subnet.parse::<IpNetwork>() {
+                        Ok(network) => {
+                            ip_networks.push(network);
+                            debug!("Added subnet: {} (prefix: {}) for secret ID {}", 
+                                network, network.prefix(), secret.id);
+                        }
+                        Err(e) => {
+                            warn!("Invalid subnet format '{}' for secret ID {}: {}", subnet, secret.id, e);
+                        }
+                    }
+                }
+                
+                if let Some(secret_str) = secret.secret {
+                    debug!("Found secret for ID {}: {}", secret.id, secret_str);
+                    let secret_info = SecretInfo {
+                        secret: secret_str,
+                        subnets: ip_networks.clone(),
+                    };
+                    
+                    // Store the secret for each subnet
+                    for network in &ip_networks {
+                        debug!("Mapping subnet {} (prefix: {}) to secret ID {}", 
+                            network, network.prefix(), secret.id);
+                        self.secrets.insert(*network, secret_info.clone());
+                    }
+                } else {
+                    warn!("No secret found for ID {}", secret.id);
+                }
+            } else {
+                warn!("No subnets found for secret ID {}", secret.id);
+            }
+        }
+
+        // Print final mapping for verification
+        debug!("Final subnet-secret mappings:");
+        for (network, secret_info) in &self.secrets {
+            debug!("Subnet: {} (prefix: {}) -> Secret: {}", 
+                network, network.prefix(), secret_info.secret);
+        }
+
+        info!("Successfully loaded {} subnet-secret mappings", self.secrets.len());
+        Ok(())
+    }
+
+    fn parse_ip(ip: &str) -> Option<IpAddr> {
+        match ip.parse::<IpAddr>() {
+            Ok(addr) => {
+                debug!("Successfully parsed IP address: {}", addr);
+                Some(addr)
+            }
+            Err(e) => {
+                error!("Failed to parse IP address '{}': {}", ip, e);
+                None
+            }
+        }
+    }
+
+    pub fn find_secret_for_ip(&self, ip: impl Into<IpAddr>) -> Option<&str> {
+        let ip_addr = ip.into();
+        debug!("Finding secret for IP: {}", ip_addr);
+        debug!("IP type: {:?}", ip_addr);
+        debug!("Available subnets: {:?}", self.secrets.keys().collect::<Vec<_>>());
+        
+        // Find all matching subnets
+        let matching_subnets: Vec<&IpNetwork> = self.secrets.keys()
+            .filter(|network| {
+                let contains = network.contains(ip_addr);
+                debug!("Checking subnet {} against IP {}: {}", network, ip_addr, contains);
+                debug!("Subnet type: {:?}, IP type: {:?}", network.ip(), ip_addr);
+                debug!("Subnet prefix: {}, Network: {}", network.prefix(), network);
+                contains
+            })
+            .collect();
+        
+        if matching_subnets.is_empty() {
+            debug!("No matching subnet found for IP: {}", ip_addr);
+            return None;
+        }
+        
+        debug!("Found matching subnets: {:?}", matching_subnets);
+        
+        // Find the most specific (smallest) subnet
+        let most_specific = matching_subnets.iter()
+            .min_by_key(|network| {
+                let prefix = network.prefix();
+                debug!("Subnet {} has prefix {}", network, prefix);
+                prefix
+            })
+            .unwrap();
+        
+        debug!("Selected most specific subnet: {} (prefix: {})", 
+            most_specific, most_specific.prefix());
+        
+        // Get the secret for the most specific subnet
+        let secret = self.secrets.get(most_specific)
+            .map(|info| info.secret.as_str());
+        
+        debug!("Found secret for IP {}: {:?}", ip_addr, secret);
+        secret
     }
 
     async fn load_nas_devices(&mut self) -> Result<(), Box<dyn std::error::Error>> {
@@ -104,9 +253,8 @@ impl AuthServer {
             SELECT 
                 nas_nas.id,
                 nas_nas.name,
-                nas_nas.is_active, radius_secret.source_subnets, radius_secret.secret
+                nas_nas.is_active 
             FROM nas_nas
-            LEFT JOIN radius_secret ON nas_nas.secret_id = radius_secret.id
             WHERE is_active = true
             "#
         )
@@ -119,12 +267,6 @@ impl AuthServer {
         for device in nas_devices {
             debug!("Processing NAS device: id={}, name={}, is_active={}", 
                 device.id, device.name, device.is_active);
-            if let Some(subnets) = &device.source_subnets {
-                debug!("NAS device has source subnets: {:?}", subnets);
-            }
-            if let Some(secret) = &device.secret {
-                debug!("NAS device has secret: {}", secret);
-            }
             info!("Loaded NAS device: {}", device.id);
         }
 
@@ -138,5 +280,13 @@ impl AuthServer {
 
     pub async fn refresh_nas_devices(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         self.load_nas_devices().await
+    }
+
+    pub async fn refresh_secrets(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        self.load_secrets().await
+    }
+
+    pub fn get_pool(&self) -> &PgPool {
+        &self.db_pool
     }
 } 

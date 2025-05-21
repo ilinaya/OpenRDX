@@ -12,7 +12,7 @@ class NasGroupAdmin(MPTTModelAdmin):
 
 @admin.register(Nas)
 class NasAdmin(admin.ModelAdmin):
-    list_display = ('name', 'ip_address', 'coa_enabled', 'coa_port', 'secret', 'is_active')
-    list_filter = ('coa_enabled', 'is_active', 'groups', 'secret')
+    list_display = ('name', 'ip_address', 'coa_enabled', 'coa_port', 'is_active')
+    list_filter = ('coa_enabled', 'is_active', 'groups')
     search_fields = ('name', 'description', 'ip_address')
     filter_horizontal = ('groups',)

@@ -10,6 +10,7 @@ from .serializers import (
     UserGroupTreeSerializer, UserIdentifierTypeSerializer, UserIdentifierSerializer
 )
 from rest_framework.decorators import action
+from rest_framework import serializers
 
 class UserGroupViewSet(viewsets.ModelViewSet):
     """
@@ -215,3 +216,78 @@ class UserViewSet(viewsets.ModelViewSet):
         elif request.method == 'DELETE':
             identifier.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def _handle_identifiers(self, user, identifiers_data):
+        """Handle updating user identifiers."""
+        if not identifiers_data:
+            return
+
+        # Get existing identifiers
+        existing_identifiers = {str(identifier.id): identifier for identifier in user.identifiers.all()}
+        
+        # Create a map of existing identifiers by type and value
+        existing_by_type_value = {
+            (str(identifier.identifier_type_id), identifier.value): identifier 
+            for identifier in user.identifiers.all()
+        }
+        
+        # Process each identifier in the request
+        for identifier_data in identifiers_data:
+            identifier_id = identifier_data.get('id')
+            type_id = str(identifier_data.get('identifier_type_id'))
+            value = identifier_data.get('value')
+            
+            # Try to find existing identifier by ID or by type+value combination
+            if identifier_id and str(identifier_id) in existing_identifiers:
+                identifier = existing_identifiers[str(identifier_id)]
+            elif (type_id, value) in existing_by_type_value:
+                identifier = existing_by_type_value[(type_id, value)]
+            else:
+                identifier = None
+            
+            if identifier:
+                # Update existing identifier
+                serializer = UserIdentifierSerializer(identifier, data=identifier_data, partial=True)
+                if serializer.is_valid():
+                    serializer.save()
+                else:
+                    raise serializers.ValidationError(serializer.errors)
+            else:
+                # Create new identifier
+                serializer = UserIdentifierSerializer(data=identifier_data)
+                if serializer.is_valid():
+                    serializer.save(user=user)
+                else:
+                    raise serializers.ValidationError(serializer.errors)
+
+        # Remove identifiers that are no longer in the request
+        current_ids = {str(data.get('id')) for data in identifiers_data if data.get('id')}
+        current_type_values = {
+            (str(data.get('identifier_type_id')), data.get('value'))
+            for data in identifiers_data
+        }
+        
+        for identifier_id, identifier in existing_identifiers.items():
+            if (identifier_id not in current_ids and 
+                (str(identifier.identifier_type_id), identifier.value) not in current_type_values):
+                identifier.delete()
+
+    def perform_update(self, serializer):
+        """Handle the update of a user instance."""
+        instance = serializer.instance
+        data = serializer.validated_data
+
+        # Handle groups update
+        if 'groups' in data:
+            # Clear existing groups and set new ones
+            instance.groups.clear()
+            instance.groups.add(*data['groups'])
+
+        # Save the user instance
+        instance = serializer.save()
+
+        # Handle identifiers update
+        identifiers_data = self.request.data.get('identifiers', [])
+        self._handle_identifiers(instance, identifiers_data)
+
+        return instance

@@ -1,9 +1,11 @@
 import { Component, OnInit } from '@angular/core';
-import {ActivatedRoute, Router} from '@angular/router';
-import {DatePipe, NgClass, NgForOf, NgIf} from "@angular/common";
-import {TranslatePipe} from "@ngx-translate/core";
-import {UserService} from "../../../../shared/services/user.service";
-import {User} from "../../../../shared/models/user.model";
+import { ActivatedRoute, Router } from '@angular/router';
+import { DatePipe, NgClass, NgForOf, NgIf } from "@angular/common";
+import { TranslatePipe, TranslateService } from "@ngx-translate/core";
+import { UserService } from "../../../../shared/services/user.service";
+import { User } from "../../../../shared/models/user.model";
+import { catchError, finalize } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 @Component({
   selector: 'app-user-detail',
@@ -11,7 +13,6 @@ import {User} from "../../../../shared/models/user.model";
   imports: [
     DatePipe,
     NgClass,
-    NgForOf,
     TranslatePipe
   ],
   styleUrls: ['./user-detail.component.scss']
@@ -19,24 +20,42 @@ import {User} from "../../../../shared/models/user.model";
 export class UserDetailComponent implements OnInit {
   user: User | null = null;
   loading = false;
-  error = '';
+  error: string | null = null;
 
   constructor(
     private route: ActivatedRoute,
     private userService: UserService,
-    private router: Router
+    private router: Router,
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
     const userId = this.route.snapshot.paramMap.get('id');
     if (userId) {
       this.loadUser(Number(userId));
+    } else {
+      this.error = this.translate.instant('users.detail.invalidId');
+      this.router.navigate(['/users/users']);
     }
   }
 
   loadUser(id: number): void {
-    this.userService.getUser(id).subscribe(user => {
-      this.user = user;
+    this.loading = true;
+    this.error = null;
+
+    this.userService.getUser(id).pipe(
+      catchError(error => {
+        this.error = this.translate.instant('users.detail.loadError');
+        console.error('Error loading user:', error);
+        return of(null);
+      }),
+      finalize(() => {
+        this.loading = false;
+      })
+    ).subscribe(user => {
+      if (user) {
+        this.user = user;
+      }
     });
   }
 
@@ -49,21 +68,28 @@ export class UserDetailComponent implements OnInit {
   deleteUser(): void {
     if (!this.user) return;
 
-    if (confirm('Are you sure you want to delete this User?')) {
-      this.userService.deleteUser(this.user.id)
-        .subscribe({
-          next: () => {
-            this.router.navigate(['/users/users']);
-          },
-          error: (err) => {
-            this.error = 'Failed to delete User. Please try again later.';
-            console.error('Error deleting User:', err);
-          }
-        });
+    if (confirm(this.translate.instant('users.detail.deleteConfirm'))) {
+      this.loading = true;
+      this.error = null;
+
+      this.userService.deleteUser(this.user.id).pipe(
+        catchError(error => {
+          this.error = this.translate.instant('users.detail.deleteError');
+          console.error('Error deleting user:', error);
+          return of(null);
+        }),
+        finalize(() => {
+          this.loading = false;
+        })
+      ).subscribe(result => {
+        if (result !== null) {
+          this.router.navigate(['/users/users']);
+        }
+      });
     }
   }
 
   goBack(): void {
-    window.history.back();
+    this.router.navigate(['/users/users']);
   }
 }

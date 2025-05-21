@@ -1,31 +1,6 @@
 from django.db import migrations, models
 import django.db.models.deletion
 
-def create_default_identifier_types(apps, schema_editor):
-    UserIdentifierType = apps.get_model('users', 'UserIdentifierType')
-    default_types = [
-        {
-            'name': 'Username/Password',
-            'description': 'Standard username and password authentication'
-        },
-        {
-            'name': 'MAC',
-            'description': 'MAC address based authentication'
-        },
-        {
-            'name': 'IMSI',
-            'description': 'International Mobile Subscriber Identity'
-        },
-        {
-            'name': 'Serial',
-            'description': 'Serial number based authentication'
-        }
-    ]
-    for type_data in default_types:
-        UserIdentifierType.objects.get_or_create(
-            name=type_data['name'],
-            defaults={'description': type_data['description']}
-        )
 
 class Migration(migrations.Migration):
 
@@ -73,5 +48,4 @@ class Migration(migrations.Migration):
                 'unique_together': {('user', 'identifier_type', 'value')},
             },
         ),
-        migrations.RunPython(create_default_identifier_types),
-    ] 
+    ]

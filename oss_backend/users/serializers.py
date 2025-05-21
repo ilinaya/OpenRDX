@@ -31,7 +31,7 @@ class UserGroupTreeSerializer(serializers.ModelSerializer):
 class UserIdentifierTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserIdentifierType
-        fields = ['id', 'name', 'description', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'code', 'description', 'created_at', 'updated_at']
         read_only_fields = ['created_at', 'updated_at']
 
 

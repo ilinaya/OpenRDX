@@ -281,29 +281,32 @@
     "detail": {
       "title": "Detalles del Usuario",
       "backToList": "Volver a la Lista",
-      "edit": "Editar",
-      "delete": "Eliminar",
-      "deleteConfirm": "¿Está seguro de que desea eliminar este usuario?",
       "basicInfo": "Información Básica",
+      "additionalInfo": "Información Adicional",
+      "externalId": "ID Externo",
       "email": "Correo Electrónico",
       "fullName": "Nombre Completo",
-      "phone": "Teléfono",
+      "phone": "Número de Teléfono",
       "status": "Estado",
-      "additionalInfo": "Información Adicional",
+      "active": "Activo",
+      "inactive": "Inactivo",
       "groups": "Grupos",
       "lastLogin": "Último Inicio de Sesión",
-      "createdAt": "Creado En",
-      "updatedAt": "Actualizado En",
+      "createdAt": "Creado el",
+      "updatedAt": "Actualizado el",
       "identifiers": "Identificadores",
       "identifierType": "Tipo",
       "identifierValue": "Valor",
-      "identifierStatus": "Estado",
-      "identifierExpiration": "Expiración",
-      "identifierAuthGroup": "Grupo de Autenticación",
-      "errors": {
-        "loadFailed": "Error al cargar detalles del usuario",
-        "deleteFailed": "Error al eliminar usuario"
-      }
+      "expiration": "Fecha de Expiración",
+      "authGroup": "Grupo de Autenticación",
+      "comment": "Comentario",
+      "enabled": "Habilitado",
+      "disabled": "Deshabilitado",
+      "noIdentifiers": "No se encontraron identificadores",
+      "invalidId": "ID de usuario inválido",
+      "loadError": "Error al cargar los detalles del usuario",
+      "deleteConfirm": "¿Está seguro de que desea eliminar este usuario?",
+      "deleteError": "Error al eliminar el usuario"
     }
   }
 }

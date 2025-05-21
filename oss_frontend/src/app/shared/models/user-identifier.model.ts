@@ -5,6 +5,7 @@ export interface UserIdentifier {
   id: number;
   identifier_type: UserIdentifierType;
   value: string;
+  plain_password?: string;
   is_enabled: boolean;
   comment: string;
   auth_attribute_group: AttributeGroup | null;

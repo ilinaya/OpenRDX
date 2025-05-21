@@ -1,17 +1,16 @@
-<div class="container-fluid">
+<div class="container-fluid user-detail">
   <div class="header">
-    <button class="btn btn-secondary"
-            (click)="goBack()">
-      <i class="material-icons">arrow_back</i> {{ 'users.detail.backToList' | translate }}
-    </button>
-    <h2>{{ 'users.detail.title' | translate }}</h2>
+    <div class="header-left">
+      <button class="btn btn-secondary" (click)="goBack()">
+        <i class="material-icons">arrow_back</i> {{ 'users.detail.backToList' | translate }}
+      </button>
+      <h2>{{ 'users.detail.title' | translate }}</h2>
+    </div>
     <div class="header-actions">
-      <button class="btn btn-primary"
-              (click)="editUser()">
+      <button class="btn btn-primary" (click)="editUser()" [disabled]="loading">
         <i class="fas fa-edit"></i> {{ 'common.edit' | translate }}
       </button>
-      <button class="btn btn-danger"
-              (click)="deleteUser()">
+      <button class="btn btn-danger" (click)="deleteUser()" [disabled]="loading">
         <i class="fas fa-trash"></i> {{ 'common.delete' | translate }}
       </button>
     </div>
@@ -29,91 +28,110 @@
       {{ error }}
     </div>
   }
+
   @if (!loading && !error && user) {
-  <div class="card">
-    <div class="card-body">
-      <div class="row">
-        <div class="col-md-6">
-          <h5 class="card-title">Basic Information</h5>
-          <dl class="row">
-            @if (user.external_id) {
-            <dt class="col-sm-4">External ID</dt>
-            <dd class="col-sm-8">{{ user.external_id }}</dd>
+    <div class="card">
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h5 class="card-title">{{ 'users.detail.basicInfo' | translate }}</h5>
+            <dl class="row">
+              @if (user.external_id) {
+                <dt class="col-sm-4">{{ 'users.detail.externalId' | translate }}</dt>
+                <dd class="col-sm-8">{{ user.external_id }}</dd>
+              }
+
+              <dt class="col-sm-4">{{ 'users.detail.email' | translate }}</dt>
+              <dd class="col-sm-8">{{ user.email }}</dd>
+
+              <dt class="col-sm-4">{{ 'users.detail.fullName' | translate }}</dt>
+              <dd class="col-sm-8">{{ user.full_name }}</dd>
+
+              <dt class="col-sm-4">{{ 'users.detail.phone' | translate }}</dt>
+              <dd class="col-sm-8">{{ user.phone_number || '-' }}</dd>
+
+              <dt class="col-sm-4">{{ 'users.detail.status' | translate }}</dt>
+              <dd class="col-sm-8">
+                <span class="badge" [ngClass]="user.is_active ? 'bg-success' : 'bg-danger'">
+                  {{ (user.is_active ? 'users.detail.active' : 'users.detail.inactive') | translate }}
+                </span>
+              </dd>
+            </dl>
+          </div>
+
+          <div class="col-md-6">
+            <h5 class="card-title">{{ 'users.detail.additionalInfo' | translate }}</h5>
+            <dl class="row">
+              <dt class="col-sm-4">{{ 'users.detail.groups' | translate }}</dt>
+              <dd class="col-sm-8">
+                @if (user.groups.length) {
+                  <div class="group-badges">
+                    @for (group of user.groups; track group.id) {
+                      <span class="badge bg-secondary me-1 mb-1">
+          {{ group.name }}
+        </span>
+                    }
+                  </div>
+                } @else {
+                  <span class="text-muted">-</span>
+                }
+              </dd>
+
+              <dt class="col-sm-4">{{ 'users.detail.lastLogin' | translate }}</dt>
+              <dd class="col-sm-8">
+                {{ user.last_login ? (user.last_login | date:'medium') : '-' }}
+              </dd>
+              <dt class="col-sm-4">{{ 'users.detail.createdAt' | translate }}</dt>
+              <dd class="col-sm-8">{{ user.created_at | date:'medium' }}</dd>
+
+              <dt class="col-sm-4">{{ 'users.detail.updatedAt' | translate }}</dt>
+              <dd class="col-sm-8">{{ user.updated_at | date:'medium' }}</dd>
+            </dl>
+          </div>
+        </div>
+
+        <div class="row mt-4">
+          <div class="col">
+            <h5 class="card-title">{{ 'users.detail.identifiers' | translate }}</h5>
+            @if (user.identifiers.length) {
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead>
+                    <tr>
+                      <th>{{ 'users.detail.identifierType' | translate }}</th>
+                      <th>{{ 'users.detail.identifierValue' | translate }}</th>
+                      <th>{{ 'users.detail.status' | translate }}</th>
+                      <th>{{ 'users.detail.expiration' | translate }}</th>
+                      <th>{{ 'users.detail.authGroup' | translate }}</th>
+                      <th>{{ 'users.detail.comment' | translate }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (identifier of user.identifiers; track identifier.id) {
+                      <tr>
+                        <td>{{ identifier.identifier_type.name }}</td>
+                        <td>{{ identifier.value }}</td>
+                        <td>
+        <span class="badge" [ngClass]="identifier.is_enabled ? 'bg-success' : 'bg-danger'">
+          {{ (identifier.is_enabled ? 'users.detail.enabled' : 'users.detail.disabled') | translate }}
+        </span>
+                        </td>
+                        <td>
+                          {{ identifier.expiration_date ? (identifier.expiration_date | date:'medium') : '-' }}
+                        </td>
+                        <td>{{ identifier.auth_attribute_group?.name || '-' }}</td>
+                        <td>{{ identifier.comment || '-' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <p class="text-muted">{{ 'users.detail.noIdentifiers' | translate }}</p>
             }
-
-
-            <dt class="col-sm-4">Email</dt>
-            <dd class="col-sm-8">{{ user.email }}</dd>
-
-            <dt class="col-sm-4">Full Name</dt>
-            <dd class="col-sm-8">{{ user.full_name }}</dd>
-
-            <dt class="col-sm-4">Phone</dt>
-            <dd class="col-sm-8">{{ user.phone_number }}</dd>
-
-            <dt class="col-sm-4">Status</dt>
-            <dd class="col-sm-8">
-              <span class="badge" [ngClass]="user.is_active ? 'bg-success' : 'bg-danger'">
-                {{ user.is_active ? 'Active' : 'Inactive' }}
-              </span>
-            </dd>
-          </dl>
-        </div>
-
-        <div class="col-md-6">
-          <h5 class="card-title">Additional Information</h5>
-          <dl class="row">
-            <dt class="col-sm-4">Groups</dt>
-            <dd class="col-sm-8">
-              <span class="badge bg-secondary me-1" *ngFor="let group of user.groups">
-                {{ group.name }}
-              </span>
-            </dd>
-
-            <dt class="col-sm-4">Last Login</dt>
-            <dd class="col-sm-8">{{ user.last_login | date:'medium' }}</dd>
-
-            <dt class="col-sm-4">Created At</dt>
-            <dd class="col-sm-8">{{ user.created_at | date:'medium' }}</dd>
-
-            <dt class="col-sm-4">Updated At</dt>
-            <dd class="col-sm-8">{{ user.updated_at | date:'medium' }}</dd>
-          </dl>
-        </div>
-      </div>
-
-      <div class="row mt-4">
-        <div class="col">
-          <h5 class="card-title">Identifiers</h5>
-          <div class="table-responsive">
-            <table class="table table-hover">
-              <thead>
-                <tr>
-                  <th>Type</th>
-                  <th>Value</th>
-                  <th>Status</th>
-                  <th>Expiration</th>
-                  <th>Auth Group</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let identifier of user.identifiers">
-                  <td>{{ identifier.identifier_type.name }}</td>
-                  <td>{{ identifier.value }}</td>
-                  <td>
-                    <span class="badge" [ngClass]="identifier.is_enabled ? 'bg-success' : 'bg-danger'">
-                      {{ identifier.is_enabled ? 'Enabled' : 'Disabled' }}
-                    </span>
-                  </td>
-                  <td>{{ identifier.expiration_date | date:'medium' }}</td>
-                  <td>{{ identifier.auth_attribute_group?.name || '-' }}</td>
-                </tr>
-              </tbody>
-            </table>
           </div>
         </div>
       </div>
     </div>
-  </div>
   }
 </div>

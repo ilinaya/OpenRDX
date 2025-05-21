@@ -280,15 +280,15 @@
     "detail": {
       "title": "User Details",
       "backToList": "Back to List",
-      "edit": "Edit",
-      "delete": "Delete",
-      "deleteConfirm": "Are you sure you want to delete this user?",
       "basicInfo": "Basic Information",
+      "additionalInfo": "Additional Information",
+      "externalId": "External ID",
       "email": "Email",
       "fullName": "Full Name",
-      "phone": "Phone",
+      "phone": "Phone Number",
       "status": "Status",
-      "additionalInfo": "Additional Information",
+      "active": "Active",
+      "inactive": "Inactive",
       "groups": "Groups",
       "lastLogin": "Last Login",
       "createdAt": "Created At",
@@ -296,13 +296,16 @@
       "identifiers": "Identifiers",
       "identifierType": "Type",
       "identifierValue": "Value",
-      "identifierStatus": "Status",
-      "identifierExpiration": "Expiration",
-      "identifierAuthGroup": "Auth Group",
-      "errors": {
-        "loadFailed": "Failed to load user details",
-        "deleteFailed": "Failed to delete user"
-      }
+      "expiration": "Expiration Date",
+      "authGroup": "Auth Group",
+      "comment": "Comment",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "noIdentifiers": "No identifiers found",
+      "invalidId": "Invalid user ID",
+      "loadError": "Failed to load user details",
+      "deleteConfirm": "Are you sure you want to delete this user?",
+      "deleteError": "Failed to delete user"
     }
   }
 }

@@ -72,7 +72,7 @@
                        class="form-check-input"
                        [id]="'group-' + group.id"
                        [value]="group.id"
-                       [checked]="userForm.get('groups')?.value?.includes(group.id)"
+                       [checked]="userForm.get('group_ids')?.value?.includes(group.id)"
                        (change)="onGroupChange($event, group)">
                 <label class="form-check-label"
                        [for]="'group-' + group.id">
@@ -86,47 +86,56 @@
 
       <div class="identifiers-section">
         <h3>{{ 'users.form.identifiers' | translate }}</h3>
+        @if (!hasValidIdentifiers()) {
+          <div class="alert alert-warning">
+            {{ getIdentifiersErrorMessage() }}
+          </div>
+        }
         <div class="table-responsive">
           <table class="table">
             <thead>
             <tr>
               <th>{{ 'users.form.identifierType' | translate }}</th>
               <th>{{ 'users.form.identifierValue' | translate }}</th>
-              <th>{{ 'users.form.enabled' | translate }}</th>
               <th>{{ 'users.form.rejectExpired' | translate }}</th>
               <th>{{ 'users.form.authAttributeGroup' | translate }}</th>
               <th>{{ 'users.form.expiredAuthAttributeGroup' | translate }}</th>
               <th>{{ 'users.form.expirationDate' | translate }}</th>
               <th>{{ 'users.form.comment' | translate }}</th>
+              <th>{{ 'users.form.enabled' | translate }}</th>
+
               <th>{{ 'users.form.actions' | translate }}</th>
             </tr>
             </thead>
             <tbody>
-              @for (identifier of identifiers; track identifier.id; let i = $index) {
-
-                <tr>
+              @for (identifier of identifiersForm.controls; track $index) {
+                <tr [formGroup]="getIdentifierFormGroup(identifier)">
                   <td>
-                    <select class="form-select" [(ngModel)]="identifier.identifier_type" [ngModelOptions]="{standalone: true}">
+                    <select class="form-select" formControlName="identifier_type_id">
                       @for (type of identifierTypes; track type.id) {
-                        <option [ngValue]="type">{{type.name}}</option>
+                        <option [ngValue]="type.id">{{type.name}}</option>
                       }
                     </select>
                   </td>
                   <td>
-                    <input type="text" class="form-control" [(ngModel)]="identifier.value" [ngModelOptions]="{standalone: true}">
+                    <div class="input-group">
+                      <label class="form-label">{{getValuePlaceholder($index)}}</label>
+                      <input type="text" class="form-control" formControlName="value">
+                      @if (shouldShowPasswordField($index)) {
+                        <label class="form-label">{{getPasswordPlaceholder($index)}}</label>
+                        <input type="text" class="form-control" formControlName="plain_password">
+                      }
+                    </div>
                   </td>
+
                   <td>
                     <div class="form-check">
-                      <input type="checkbox" class="form-check-input" [(ngModel)]="identifier.is_enabled" [ngModelOptions]="{standalone: true}">
+                      <input type="checkbox" class="form-check-input" formControlName="reject_expired"
+                             (change)="onRejectExpiredChange($index)">
                     </div>
                   </td>
                   <td>
-                    <div class="form-check">
-                      <input type="checkbox" class="form-check-input" [(ngModel)]="identifier.reject_expired" [ngModelOptions]="{standalone: true}">
-                    </div>
-                  </td>
-                  <td>
-                    <select class="form-select" [(ngModel)]="identifier.auth_attribute_group" [ngModelOptions]="{standalone: true}">
+                    <select class="form-select" formControlName="auth_attribute_group">
                       <option [ngValue]="null">{{ 'users.form.selectGroup' | translate }}</option>
                       @for (group of authAttributeGroups; track group.id) {
                         <option [ngValue]="group">{{group.name}}</option>
@@ -134,7 +143,7 @@
                     </select>
                   </td>
                   <td>
-                    <select class="form-select" [(ngModel)]="identifier.expired_auth_attribute_group" [ngModelOptions]="{standalone: true}">
+                    <select class="form-select" formControlName="expired_auth_attribute_group">
                       <option [ngValue]="null">{{ 'users.form.selectGroup' | translate }}</option>
                       @for (group of authAttributeGroups; track group.id) {
                         <option [ngValue]="group">{{group.name}}</option>
@@ -142,13 +151,18 @@
                     </select>
                   </td>
                   <td>
-                    <input type="date" class="form-control" [(ngModel)]="identifier.expiration_date" [ngModelOptions]="{standalone: true}">
+                    <input type="date" class="form-control" formControlName="expiration_date">
                   </td>
                   <td>
-                    <input type="text" class="form-control" [(ngModel)]="identifier.comment" [ngModelOptions]="{standalone: true}">
+                    <input type="text" class="form-control" formControlName="comment">
                   </td>
                   <td>
-                    <button type="button" class="btn btn-danger btn-sm" (click)="removeIdentifier(i)">
+                    <div class="form-check">
+                      <input type="checkbox" class="form-check-input" formControlName="is_enabled">
+                    </div>
+                  </td>
+                  <td>
+                    <button type="button" class="btn btn-danger btn-sm" (click)="removeIdentifier($index)">
                       <i class="bi bi-trash"></i>
                     </button>
                   </td>

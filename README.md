@@ -299,3 +299,103 @@ Please report any security issues to security@openrdx.org
 ## Support
 
 For support, please open an issue in the GitHub repository or contact support@openrdx.org
+
+# OpenRDX Core
+
+A comprehensive Authentication, Authorization, and Accounting (AAA) system with support for multiple authentication protocols.
+
+## Features
+
+- **Multi-protocol Authentication Support**
+  - PAP (Password Authentication Protocol)
+  - CHAP (Challenge Handshake Authentication Protocol)
+  - MS-CHAP (Microsoft Challenge Handshake Authentication Protocol)
+  - MS-CHAPv2 (Microsoft Challenge Handshake Authentication Protocol Version 2)
+
+- **RADIUS Server**
+  - Standards-compliant RADIUS implementation
+  - Support for vendor-specific attributes
+  - Secure password handling
+  - Message integrity verification
+  - Account status checking
+
+- **User Management**
+  - User creation and management
+  - Password management
+  - Account status control
+  - Identifier management
+
+- **Security**
+  - Secure password storage
+  - Challenge-response authentication
+  - Message authentication
+  - Vendor-specific attribute handling
+
+## Documentation
+
+- [Getting Started](docs/getting-started.md)
+- [Features](docs/features.md)
+- [Components](docs/components.md)
+- [Services](docs/services.md)
+- [RADIUS Server](docs/radius-server.md)
+- [Contributing](docs/contributing.md)
+
+## Quick Start
+
+1. Clone the repository
+2. Set up the environment variables
+3. Run the database migrations
+4. Start the services
+
+```bash
+# Set up environment
+cp .env.example .env
+# Edit .env with your configuration
+
+# Run migrations
+cargo run --bin migrate
+
+# Start the services
+cargo run --bin radius-server
+```
+
+## Configuration
+
+### Required Environment Variables
+
+```env
+# Database
+DATABASE_URL=postgres://user:password@localhost/dbname
+
+# RADIUS Server
+RADIUS_BIND_ADDR=0.0.0.0:1812
+RADIUS_SECRET=your_shared_secret
+```
+
+## Development
+
+### Prerequisites
+
+- Rust 1.70 or later
+- PostgreSQL 13 or later
+- Cargo
+
+### Building
+
+```bash
+cargo build
+```
+
+### Testing
+
+```bash
+cargo test
+```
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Contributing
+
+Please read [CONTRIBUTING.md](docs/contributing.md) for details on our code of conduct and the process for submitting pull requests.

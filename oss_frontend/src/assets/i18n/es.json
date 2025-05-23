@@ -1,5 +1,6 @@
 {
   "common": {
+    "details": "Detalles",
     "actions": "Acciones",
     "create": "Crear",
     "update": "Actualizar",
@@ -279,6 +280,7 @@
       }
     },
     "detail": {
+      "actions": "Acciones",
       "title": "Detalles del Usuario",
       "backToList": "Volver a la Lista",
       "basicInfo": "Información Básica",
@@ -307,6 +309,30 @@
       "loadError": "Error al cargar los detalles del usuario",
       "deleteConfirm": "¿Está seguro de que desea eliminar este usuario?",
       "deleteError": "Error al eliminar el usuario"
+    },
+    "userGroups": {
+      "allowAnyNas": "Permitir en todos NAS",
+      "title": "Grupos de Usuario",
+      "create": "Agregar Grupo de Usuario",
+      "edit": "Editar Grupo de Usuario",
+      "name": "Nombre",
+      "nameRequired": "El nombre es requerido",
+      "nameMaxLength": "El nombre no puede exceder 255 caracteres",
+      "description": "Descripción",
+      "descriptionPlaceholder": "Ingrese la descripción del grupo",
+      "parentGroup": "Grupo Padre",
+      "parentGroupHelp": "Seleccione un grupo padre para crear una estructura jerárquica",
+      "status": "Estado",
+      "createdAt": "Creado En",
+      "updatedAt": "Actualizado En",
+      "noGroups": "No se encontraron grupos de usuario",
+      "deleteConfirm": "¿Está seguro de que desea eliminar este grupo de usuario?",
+      "errors": {
+        "loadFailed": "Error al cargar grupos de usuario",
+        "createFailed": "Error al crear grupo de usuario",
+        "updateFailed": "Error al actualizar grupo de usuario",
+        "deleteFailed": "Error al eliminar grupo de usuario"
+      }
     }
   }
 }

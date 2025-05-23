@@ -1,16 +1,16 @@
 <div class="admin-group-list-container">
   <div class="header">
-    <h2>Admin Groups</h2>
+    <h2>{{ 'users.userGroups.title' | translate }}</h2>
     <button class="btn btn-primary"
             (click)="createNewGroup()">
-      Create New Group
+      {{ 'users.userGroups.create' | translate }}
     </button>
   </div>
 
   @if (loading) {
     <div class="loading-container">
       <div class="spinner"></div>
-      <p>Loading admin groups...</p>
+      <p>{{ 'common.loading' | translate }}</p>
     </div>
   }
 
@@ -22,7 +22,7 @@
 
   @if (!loading && groups.length === 0) {
     <div class="empty-state">
-      <p>No admin groups found. Create your first group to get started.</p>
+      <p>{{ 'users.userGroups.noGroups' | translate }}</p>
     </div>
   }
 
@@ -31,32 +31,34 @@
       <table class="groups-table">
         <thead>
         <tr>
-          <th>Name</th>
-          <th>Description</th>
-          <th>Created At</th>
-          <th>Updated At</th>
-          <th>Actions</th>
+          <th>{{ 'users.userGroups.name' | translate }}</th>
+          <th>{{ 'users.userGroups.description' | translate }}</th>
+          <th>{{ 'users.userGroups.allowAnyNas' | translate }}</th>
+          <th>{{ 'users.userGroups.createdAt' | translate }}</th>
+          <th>{{ 'users.userGroups.updatedAt' | translate }}</th>
+          <th>{{ 'common.actions' | translate }}</th>
         </tr>
         </thead>
         <tbody>
           @for (group of groups; track group) {
             <tr>
               <td>{{ group.name }}</td>
-              <td>{{ group.description || 'N/A' }}</td>
+              <td>{{ group.description || ('common.notAvailable' | translate) }}</td>
+              <td>{{ group.allow_any_nas ? ('common.yes' | translate) : ('common.no' | translate) }}</td>
               <td>{{ group.created_at | date:'medium' }}</td>
               <td>{{ group.updated_at | date:'medium' }}</td>
               <td class="actions">
                 <button class="btn btn-info"
                         (click)="viewGroupDetails(group.id)">
-                  View
+                  {{ 'common.details' | translate }}
                 </button>
                 <button class="btn btn-warning"
                         (click)="editGroup(group.id)">
-                  Edit
+                  {{ 'common.edit' | translate }}
                 </button>
                 <button class="btn btn-danger"
                         (click)="deleteGroup(group.id)">
-                  Delete
+                  {{ 'common.delete' | translate }}
                 </button>
               </td>
             </tr>
@@ -70,16 +72,16 @@
             class="btn btn-secondary"
             [disabled]="currentPage === 1"
             (click)="changePage(currentPage - 1)">
-            Previous
+            {{ 'common.previous' | translate }}
           </button>
           <span class="page-info">
-        Page {{ currentPage }} of {{ totalPages }}
-      </span>
+            {{ 'common.page' | translate }} {{ currentPage }} {{ 'common.of' | translate }} {{ totalPages }}
+          </span>
           <button
             class="btn btn-secondary"
             [disabled]="currentPage === totalPages"
             (click)="changePage(currentPage + 1)">
-            Next
+            {{ 'common.next' | translate }}
           </button>
         </div>
       }

@@ -15,6 +15,8 @@ class UserGroup(MPTTModel):
     created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated At"), auto_now=True)
 
+    allow_any_nas = models.BooleanField(_("Allow All NAS"), default=False)
+
     class MPTTMeta:
         order_insertion_by = ['name']
 

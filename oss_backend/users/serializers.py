@@ -10,7 +10,9 @@ class UserGroupSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = UserGroup
-        fields = ['id', 'name', 'description', 'parent', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'description',
+                  'allow_any_nas',
+                  'parent', 'created_at', 'updated_at']
         read_only_fields = ['created_at', 'updated_at']
 
 
@@ -22,7 +24,7 @@ class UserGroupTreeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserGroup
-        fields = ['id', 'name', 'description', 'parent', 'children']
+        fields = ['id', 'name', 'description', 'parent', 'children', 'allow_any_nas']
 
     def get_children(self, obj):
         return UserGroupTreeSerializer(obj.get_children(), many=True).data

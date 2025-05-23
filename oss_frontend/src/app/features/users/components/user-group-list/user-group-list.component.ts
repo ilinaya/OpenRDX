@@ -4,12 +4,14 @@ import { PaginationParams } from '../../../../shared/models/pagination.model';
 import {DatePipe} from '@angular/common';
 import {UserService} from "../../../../shared/services/user.service";
 import {UserGroup} from "../../../../shared/models/user-group.model";
+import {TranslateModule} from "@ngx-translate/core";
 
 @Component({
   selector: 'app-user-group-list',
   templateUrl: './user-group-list.component.html',
   imports: [
     DatePipe,
+    TranslateModule,
   ],
   styleUrls: ['./user-group-list.component.scss'],
 })

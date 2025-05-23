@@ -6,4 +6,5 @@ export interface UserGroup {
   created_at: string;
   updated_at: string;
   selected?: boolean;
-} 
+  allow_any_nas: boolean;
+}

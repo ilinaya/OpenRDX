@@ -1,12 +1,12 @@
 <div class="admin-group-form-container">
   <div class="header">
-    <h2>{{ isEditMode ? 'Edit' : 'Create' }} Admin Group</h2>
+    <h2>{{ (isEditMode ? 'users.userGroups.edit' : 'users.userGroups.create') | translate }}</h2>
   </div>
 
   @if (loading) {
     <div class="loading-container">
       <div class="spinner"></div>
-      <p>Loading admin group...</p>
+      <p>{{ 'common.loading' | translate }}</p>
     </div>
   }
 
@@ -21,41 +21,64 @@
           (ngSubmit)="onSubmit()">
       <div class="form-grid">
         <div class="form-group">
-          <label for="name">Group Name *</label>
+          <label for="name">{{ 'users.userGroups.name' | translate }} *</label>
           <input
             type="text"
             id="name"
             formControlName="name"
             class="form-control"
             [class.is-invalid]="groupForm.get('name')?.invalid && groupForm.get('name')?.touched"
+            [placeholder]="'users.userGroups.namePlaceholder' | translate"
           >
           @if (groupForm.get('name')?.errors?.['required']) {
             <div class="invalid-feedback">
-              Group name is required
+              {{ 'users.userGroups.nameRequired' | translate }}
             </div>
           }
           @if (groupForm.get('name')?.errors?.['maxlength']) {
             <div class="invalid-feedback">
-              Group name cannot exceed 150 characters
+              {{ 'users.userGroups.nameMaxLength' | translate }}
             </div>
           }
         </div>
 
         <div class="form-group">
-          <label for="description">Description</label>
+          <label for="description">{{ 'users.userGroups.description' | translate }}</label>
           <textarea
             id="description"
             formControlName="description"
             class="form-control"
             rows="3"
+            [placeholder]="'users.userGroups.descriptionPlaceholder' | translate"
             [class.is-invalid]="groupForm.get('description')?.invalid && groupForm.get('description')?.touched"
           ></textarea>
-          @if (groupForm.get('description')?.errors?.['maxlength']) {
-            <div class="invalid-feedback">
-              Description cannot exceed 200 characters
-            </div>
-          }
         </div>
+
+        <div class="form-group">
+          <label for="parent_id">{{ 'users.userGroups.parentGroup' | translate }}</label>
+          <select
+            id="parent_id"
+            formControlName="parent_id"
+            class="form-control">
+            <option [ngValue]="null">{{ 'common.none' | translate }}</option>
+            @for (group of availableGroups; track group) {
+              <option [ngValue]="group.id">{{ group.name }}</option>
+            }
+          </select>
+          <small class="form-text text-muted">{{ 'users.userGroups.parentGroupHelp' | translate }}</small>
+        </div>
+      </div>
+
+      <div class="form-group form-check">
+        <input
+          type="checkbox"
+          id="allow_any_nas"
+          formControlName="allow_any_nas"
+          class="form-check-input"
+        >
+        <label for="allow_any_nas" class="form-check-label">
+          {{ 'users.userGroups.allowAnyNas' | translate }}
+        </label>
       </div>
 
       <div class="form-actions">
@@ -65,7 +88,7 @@
           (click)="cancel()"
           [disabled]="submitting"
         >
-          Cancel
+          {{ 'common.cancel' | translate }}
         </button>
         <button
           type="submit"
@@ -75,7 +98,7 @@
           @if (submitting) {
             <span class="spinner spinner-sm"></span>
           }
-          {{ isEditMode ? 'Update' : 'Create' }} Group
+          {{ (isEditMode ? 'common.update' : 'common.create') | translate }}
         </button>
       </div>
     </form>

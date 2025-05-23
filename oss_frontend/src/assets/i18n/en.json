@@ -1,5 +1,6 @@
 {
   "common": {
+    "details": "Details",
     "actions": "Actions",
     "create": "Create",
     "update": "Update",
@@ -278,6 +279,7 @@
       }
     },
     "detail": {
+      "actions": "Actions",
       "title": "User Details",
       "backToList": "Back to List",
       "basicInfo": "Basic Information",
@@ -321,6 +323,30 @@
         "deleteError": "Failed to delete authorization",
         "authorizeError": "Failed to authorize NAS devices",
         "deleteConfirm": "Are you sure you want to delete this authorization?"
+      }
+    },
+    "userGroups": {
+      "title": "User Groups",
+      "create": "Add User Group",
+      "edit": "Edit User Group",
+      "name": "Name",
+      "allowAnyNas": "Allow any nas auth",
+      "nameRequired": "Name is required",
+      "nameMaxLength": "Name cannot exceed 255 characters",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter group description",
+      "parentGroup": "Parent Group",
+      "parentGroupHelp": "Select a parent group to create a hierarchical structure",
+      "status": "Status",
+      "createdAt": "Created At",
+      "updatedAt": "Updated At",
+      "noGroups": "No user groups found",
+      "deleteConfirm": "Are you sure you want to delete this user group?",
+      "errors": {
+        "loadFailed": "Failed to load user groups",
+        "createFailed": "Failed to create user group",
+        "updateFailed": "Failed to update user group",
+        "deleteFailed": "Failed to delete user group"
       }
     }
   }

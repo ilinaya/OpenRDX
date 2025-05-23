@@ -2,12 +2,15 @@ import { Component, OnInit } from '@angular/core';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import {UserService} from "../../../../shared/services/user.service";
+import {TranslateModule} from "@ngx-translate/core";
+import {UserGroup} from "../../../../shared/models/user-group.model";
 
 @Component({
   selector: 'app-user-group-form',
   templateUrl: './user-group-form.component.html',
   imports: [
     ReactiveFormsModule,
+    TranslateModule
   ],
   styleUrls: ['./user-group-form.component.scss'],
 })
@@ -19,6 +22,9 @@ export class UserGroupFormComponent implements OnInit {
   error = '';
   groupId?: number;
 
+  availableGroups: UserGroup[] = [];
+
+
   constructor(
     private fb: FormBuilder,
     private userService: UserService,
@@ -27,12 +33,16 @@ export class UserGroupFormComponent implements OnInit {
   ) {
     this.groupForm = this.fb.group({
       name: ['', [Validators.required, Validators.maxLength(150)]],
-      description: ['', Validators.maxLength(200)]
+      description: ['', Validators.maxLength(200)],
+      allow_any_nas: [false],
+      parent_id: [null]
     });
   }
 
   ngOnInit(): void {
     this.groupId = this.route.snapshot.params['id'];
+    this.loadAvailableGroups();
+
     if (this.groupId) {
       this.isEditMode = true;
       this.loadGroup();
@@ -77,6 +87,17 @@ export class UserGroupFormComponent implements OnInit {
         this.error = `Failed to ${this.isEditMode ? 'update' : 'create'} admin group. Please try again later.`;
         console.error(`Error ${this.isEditMode ? 'updating' : 'creating'} admin group:`, err);
         this.submitting = false;
+      }
+    });
+  }
+
+  loadAvailableGroups(): void {
+    this.userService.getUserGroups({ page: 1, page_size: 1000 }).subscribe({
+      next: (response) => {
+        this.availableGroups = response.results;
+      },
+      error: (err) => {
+        console.error('Failed to load available groups', err);
       }
     });
   }

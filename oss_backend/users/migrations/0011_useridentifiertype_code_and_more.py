@@ -29,6 +29,7 @@ def create_default_identifier_types(apps, schema_editor):
     for type_data in default_types:
         UserIdentifierType.objects.get_or_create(
             name=type_data['name'],
+            code=type_data['code'],
             defaults={'description': type_data['description']}
         )
 

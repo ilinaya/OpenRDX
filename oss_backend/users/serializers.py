@@ -3,6 +3,8 @@ from mptt.models import TreeForeignKey
 from .models import User, UserGroup, UserIdentifierType, UserIdentifier, UserIdentifierNasAuthorization
 from django.apps import apps
 
+AuthAttributeGroup = apps.get_model('radius', 'AuthAttributeGroup')
+RadiusAttribute = apps.get_model('radius', 'RadiusAttribute')
 
 class UserGroupSerializer(serializers.ModelSerializer):
     """
@@ -40,6 +42,31 @@ class UserIdentifierTypeSerializer(serializers.ModelSerializer):
         model = UserIdentifierType
         fields = ['id', 'name', 'code', 'description', 'created_at', 'updated_at']
         read_only_fields = ['created_at', 'updated_at']
+
+
+
+class RadiusAttributeSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the RadiusAttribute model.
+    """
+    class Meta:
+        model = RadiusAttribute
+        fields = ['id', 'group', 'vendor_id', 'attribute_id', 'attribute_name',
+                 'attribute_type', 'attribute_value', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
+
+
+class AuthAttributeGroupSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the AuthAttributeGroup model.
+    """
+    attributes = RadiusAttributeSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = AuthAttributeGroup
+        fields = ['id', 'name', 'description', 'created_at', 'updated_at', 'attributes']
+        read_only_fields = ['created_at', 'updated_at']
+
 
 
 class UserIdentifierSerializer(serializers.ModelSerializer):

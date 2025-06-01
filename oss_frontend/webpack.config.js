@@ -4,9 +4,9 @@ module.exports = {
   plugins: [
     new webpack.DefinePlugin({
       ENV: {
-        apiUrl: process.env.API_URL,
-        commitVersion: process.env.COMMIT_SHA,
-        buildTimestamp: process.env.BUILD_TIMESTAMP,
+        apiUrl: JSON.stringify(process.env.API_URL),
+        commitVersion: JSON.stringify(process.env.COMMIT_SHA),
+        buildTimestamp: JSON.stringify(process.env.BUILD_TIMESTAMP),
       }
     }),
   ],

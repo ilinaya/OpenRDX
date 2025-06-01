@@ -1,123 +1,132 @@
-# RADIUS Server Implementation
+# RADIUS Server
 
-## Overview
-The RADIUS server implementation supports multiple authentication methods including PAP, CHAP, MS-CHAP, and MS-CHAPv2. It is designed to work with the existing user authentication system and provides secure authentication for network access.
+The OpenRDX RADIUS server is implemented in Rust and provides high-performance authentication and accounting services.
 
-## Supported Authentication Methods
+## Features
 
-### PAP (Password Authentication Protocol)
-- Simple password-based authentication
-- Passwords are encrypted using the RADIUS shared secret
-- Uses MD5 for password encryption
+- Authentication methods:
+  - PAP (Password Authentication Protocol)
+  - CHAP (Challenge Handshake Authentication Protocol)
+  - MS-CHAP (Microsoft Challenge Handshake Authentication Protocol)
+  - MS-CHAPv2 (Microsoft Challenge Handshake Authentication Protocol v2)
+  - EAP (Extensible Authentication Protocol)
+    - EAP-TLS
+    - EAP-TTLS
+    - EAP-PEAP
+    - EAP-SIM
+    - EAP-AKA
+    - EAP-AKA'
 
-### CHAP (Challenge Handshake Authentication Protocol)
-- Challenge-response based authentication
-- Uses MD5 for response generation
-- More secure than PAP as passwords are never sent in clear text
-- Challenge is generated from the RADIUS authenticator
+- Accounting support
+  - Start/Stop records
+  - Interim updates
+  - Session tracking
+  - MongoDB storage
 
-### MS-CHAP (Microsoft Challenge Handshake Authentication Protocol)
-- Microsoft's implementation of CHAP
-- Uses DES encryption for challenge-response
-- Supports UTF-16LE password encoding
-- Implements proper DES key setup with parity bits
-
-### MS-CHAPv2 (Microsoft Challenge Handshake Authentication Protocol Version 2)
-- Enhanced version of MS-CHAP
-- Uses SHA1 for challenge hash generation
-- Implements proper NT hash generation
-- Supports peer challenge for mutual authentication
-- Uses DES encryption for response generation
-
-## Implementation Details
-
-### Authentication Flow
-1. Server receives Access-Request packet
-2. Authentication method is detected from packet attributes
-3. Appropriate authentication handler is called based on method
-4. User credentials are verified against the database
-5. Access-Accept or Access-Reject is sent based on authentication result
-
-### Security Features
-- Support for RADIUS shared secrets
-- Message-Authenticator attribute for packet integrity
-- Proper handling of vendor-specific attributes
-- Secure password storage and verification
-- Support for account status checking
-
-### Database Integration
-- Uses the existing user_identifiers table
-- Supports plain password storage for authentication
-- Checks account enabled status
-- Maintains user identifier types
+- RadSec (RADIUS over TLS) support via RadSec Proxy
+  - Secure RADIUS communication
+  - TLS 1.2/1.3 support
+  - Certificate-based authentication
+  - Client and server modes
 
 ## Configuration
 
-### Required Dependencies
-```toml
-[dependencies]
-tokio = { version = "1.0", features = ["full"] }
-sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "postgres", "json", "chrono", "ipnetwork"] }
-md5 = "0.10.6"
-hmac = "0.12.1"
-digest = "0.10.7"
-des = "0.8.0"
-sha1 = "0.10.6"
-md4 = "0.10"
-generic-array = "0.14"  # Required for DES encryption
+### Core Service
+
+The RADIUS server is configured through environment variables:
+
+```env
+# RADIUS settings
+RADIUS_AUTH_PORT=1812
+RADIUS_ACCT_PORT=1813
+RADIUS_SECRET=your_shared_secret
+
+# Database settings
+DB_HOST=postgres
+DB_PORT=5432
+DB_NAME=openrdx
+DB_USER=postgres
+DB_PASSWORD=postgres
+
+# MongoDB settings
+MONGODB_URI=mongodb://mongodb:27017/radius_accounting
+
+# Logging
+LOG_LEVEL=info
 ```
 
-### Environment Variables
-- `RADIUS_BIND_ADDR`: The address and port to bind the RADIUS server to
-- `RADIUS_SECRET`: The shared secret for RADIUS communication
+### RadSec Proxy
 
-### Testing
-The project includes shell scripts in `core/tests/` for testing different authentication methods:
+The RadSec proxy is configured through environment variables:
 
-- `test_pap_radius.sh`: Tests PAP authentication
-- `test_chap_radius.sh`: Tests CHAP authentication
-- `test_mschap_radius.sh`: Tests MS-CHAP authentication
-
-These scripts simulate RADIUS client behavior and can be used to verify the server's authentication functionality.
-
-## Usage Example
-
-```rust
-let auth_server = Arc::new(AuthServer::new(pool).await?);
-let radius_server = RadiusAuthServer::new("0.0.0.0:1812".to_string(), auth_server).await?;
-radius_server.run().await?;
+```env
+# RadSec settings
+RADSEC_LISTEN_PORT=2083
+RADSEC_TLS_CERT=/etc/radsecproxy/certs/server.crt
+RADSEC_TLS_KEY=/etc/radsecproxy/certs/server.key
+RADSEC_TLS_CA=/etc/radsecproxy/certs/ca.crt
 ```
 
-## Protocol Support
+## Usage
 
-### RADIUS Attributes
-- User-Name (1)
-- User-Password (2)
-- CHAP-Password (3)
-- Reply-Message (18)
-- Vendor-Specific (26)
-- MS-CHAP-Challenge (11)
-- MS-CHAP-Response (1)
-- MS-CHAP2-Response (25)
+### Standard RADIUS
 
-### Vendor-Specific Attributes
-- Microsoft Vendor ID: 311
-- MS-CHAP-Challenge: 11
-- MS-CHAP-Response: 1
-- MS-CHAP2-Response: 25
-- MS-CHAP2-Challenge: 11
+For standard RADIUS communication, clients should connect to UDP ports 1812 (authentication) and 1813 (accounting).
+
+### RadSec
+
+For secure RADIUS communication over TLS:
+
+1. Configure your RADIUS client to use RadSec:
+   ```
+   radsec {
+     server radsec.example.com:2083 {
+       secret your_shared_secret
+       tls {
+         ca_file /path/to/ca.crt
+         cert_file /path/to/client.crt
+         key_file /path/to/client.key
+       }
+     }
+   }
+   ```
+
+2. The RadSec proxy will handle the TLS connection and forward requests to the core service.
 
 ## Security Considerations
-1. Always use strong shared secrets
-2. Implement proper network security (firewall rules)
-3. Monitor authentication attempts
-4. Regularly rotate shared secrets
-5. Use secure password storage
-6. Implement proper error handling and logging
+
+- Always use strong shared secrets
+- Keep certificates and private keys secure
+- Use TLS 1.2 or higher for RadSec
+- Regularly rotate certificates
+- Monitor for suspicious activity
+- Use proper firewall rules to restrict access
+
+## Monitoring
+
+The RADIUS server provides detailed logging for:
+- Authentication attempts
+- Accounting records
+- TLS handshakes
+- Error conditions
+
+Logs are stored in MongoDB for analysis and auditing.
 
 ## Troubleshooting
-- Check server logs for authentication failures
-- Verify shared secrets match between client and server
-- Ensure proper network connectivity
-- Verify user credentials in database
-- Check account status (enabled/disabled) 
+
+Common issues and solutions:
+
+1. Authentication failures:
+   - Check shared secrets
+   - Verify user credentials
+   - Check certificate validity for EAP methods
+
+2. RadSec connection issues:
+   - Verify TLS certificates
+   - Check firewall rules
+   - Ensure proper TLS version support
+
+3. Accounting problems:
+   - Check MongoDB connection
+   - Verify accounting port access
+   - Check for duplicate session IDs 

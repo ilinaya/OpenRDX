@@ -61,7 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             info!("Configuration loaded: {:?}", config);
 
             // Create and start the accounting server
-            let server = accounting::AccountingServer::new(config).await?;
+            let mut server = accounting::AccountingServer::new(config).await?;
             if let Err(e) = server.start().await {
                 error!("Accounting server error: {}", e);
                 return Err(e.into());

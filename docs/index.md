@@ -32,11 +32,14 @@ OpenRDX is a modern, scalable platform for managing and processing RADIUS authen
 - [Components](./components.md)
 - [Services](./services.md)
 - [API Integration](./api-integration.md)
+- [Testing](./testing.md)
 - [Contributing](./contributing.md)
 
 ## Quick Start
 
 For a quick start guide, see [Getting Started](./getting-started.md).
+
+For testing the RADIUS server functionality, see [Testing](./testing.md).
 
 ---
 

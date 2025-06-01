@@ -48,6 +48,10 @@ echo "API_URL=$API_URL" > .docker-env
 echo "BUILD_TIMESTAMP=$TIMESTAMP" >> .docker-env
 echo "COMMIT_SHA=$COMMIT_SHA" >> .docker-env
 
+# this is just to pass Cargo Compilation, fake URL
+echo "DATABASE_URL=postgres://placeholder/fake" >> .docker-env
+
+
 # Build all services, ensuring .docker-env file is used
 $COMPOSE_CMD --env-file .docker-env build
 

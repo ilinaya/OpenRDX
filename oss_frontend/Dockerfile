@@ -17,7 +17,9 @@ ENV BUILD_TIMESTAMP=$BUILD_TIMESTAMP
 ARG API_URL
 ENV API_URL=$API_URL
 
+RUN echo "API_URL: $API_URL"
 RUN npm run build:production
+
 
 FROM nginx:1.27.5-alpine-slim
 

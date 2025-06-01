@@ -40,8 +40,9 @@ services:
     ports:
       - "1812:1812/udp"
     environment:
-      - DATABASE_URL=postgres://radius:radius@postgres/radius
-      - REDIS_URL=redis://redis:6379/
+      - DATABASE_URL=postgres://postgres:postgres@postgres/postgres
+      - MONGO_URL=mongodb://openrdx-mongo:27017
+      - REDIS_URL=redis://openrdx-redis:6379/
       - RADIUS_BIND_ADDR=0.0.0.0:1812
       - SUBSCRIBER_CACHE_TTL=3600
       - LOG_LEVEL=info
@@ -60,8 +61,9 @@ services:
     ports:
       - "1813:1813/udp"
     environment:
-      - MONGO_URL=mongodb://mongodb:27017
-      - REDIS_URL=redis://redis:6379/
+      - DATABASE_URL=postgres://postgres:postgres@postgres/postgres
+      - MONGO_URL=mongodb://openrdx-mongo:27017
+      - REDIS_URL=redis://openrdx-redis:6379/
       - RADIUS_BIND_ADDR=0.0.0.0:1813
       - QUOTA_CHECK_INTERVAL=60
       - LOG_LEVEL=info
@@ -94,7 +96,7 @@ services:
       - DB_PORT=5432
       
       # MongoDB settings
-      - MONGODB_URI=mongodb://mongodb:27017/radius_accounting
+      - MONGODB_URI=mongodb://openrdx-mongodb:27017/radius_accounting
       
       # JWT settings
       - JWT_SECRET_KEY=jwt-secret-key-for-development-only
@@ -110,7 +112,7 @@ services:
       - GOOGLE_CHAT_WEBHOOK_URL=
       
       # Redis settings
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://openrdx-redis:6379/0
 
       # RADIUS settings
       - COA_TOPIC=radius_coa
@@ -158,6 +160,7 @@ services:
 
   mongodb:
     container_name: 'openrdx-mongo'
+    hostname: 'openrdx-mongo'
     image: mongo:6.0
     environment:
       - MONGO_INITDB_DATABASE=radius_accounting
@@ -171,6 +174,7 @@ services:
 
   redis:
     container_name: 'openrdx-redis'
+    hostname: 'openrdx-redis'
     image: redis:7-alpine
     expose:
       - "6379"

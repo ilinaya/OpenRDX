@@ -1,7 +1,7 @@
 [package]
 name = "OpenRDX-Radsec-Proxy"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 authors = ["Alexey Ilinskiy <alexey@openrdx.org>"]
 license = "MIT OR Apache-2.0"
 description = "OpenRDX Radsec proxy"

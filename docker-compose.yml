@@ -122,6 +122,8 @@ services:
     build:
       context: ./oss_frontend
       dockerfile: Dockerfile
+      args:
+        - API_URL=${API_URL}
     environment:
       - API_URL=${API_URL}
     expose:

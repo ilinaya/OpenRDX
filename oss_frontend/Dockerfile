@@ -17,7 +17,10 @@ ENV BUILD_TIMESTAMP=$BUILD_TIMESTAMP
 ARG API_URL
 ENV API_URL=$API_URL
 
-RUN echo "API_URL: $API_URL"
+# Debug output
+RUN echo "Building with API_URL: $API_URL"
+
+
 RUN npm run build:production
 
 

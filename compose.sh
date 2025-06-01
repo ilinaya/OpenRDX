@@ -1,4 +1,3 @@
-
 #!/bin/bash
 set -e
 
@@ -22,17 +21,6 @@ fi
 
 echo "✅ API_URL is set to: $API_URL"
 
-# Backup the original docker-compose.yml file if not already backed up
-if [ ! -f docker-compose.yml.bak ]; then
-  echo "Creating backup of docker-compose.yml..."
-  cp docker-compose.yml docker-compose.yml.bak
-fi
-
-# Update docker-compose.yml to use the API_URL from environment
-echo "Updating docker-compose.yml to use API_URL from environment variable..."
-sed -i.tmp -E "s|([ ]*- API_URL=).*|\1\${API_URL}|g" docker-compose.yml
-rm -f docker-compose.yml.tmp
-
 # Determine docker compose command (supports both docker-compose and docker compose)
 if command -v docker-compose &> /dev/null; then
   COMPOSE_CMD="docker-compose"
@@ -40,14 +28,37 @@ else
   COMPOSE_CMD="docker compose"
 fi
 
-echo "🔨 Building services with API_URL=$API_URL..."
-$COMPOSE_CMD build
+# Get the current timestamp for build arguments
+TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+# Get the git commit SHA if available
+if command -v git &> /dev/null && git rev-parse --is-inside-work-tree &> /dev/null; then
+  COMMIT_SHA=$(git rev-parse --short HEAD)
+else
+  COMMIT_SHA="unknown"
+fi
+
+echo "🔨 Building services..."
+echo "API_URL: $API_URL"
+echo "Build timestamp: $TIMESTAMP"
+echo "Commit SHA: $COMMIT_SHA"
+
+# Create a temporary .env file for docker compose build
+echo "API_URL=$API_URL" > .docker-env
+echo "BUILD_TIMESTAMP=$TIMESTAMP" >> .docker-env
+echo "COMMIT_SHA=$COMMIT_SHA" >> .docker-env
+
+# Build all services, ensuring .docker-env file is used
+$COMPOSE_CMD --env-file .docker-env build
 
 echo "🚀 Starting services in detached mode..."
-$COMPOSE_CMD up -d
+$COMPOSE_CMD --env-file .docker-env up -d
+
+# Clean up temporary env file
+rm .docker-env
 
 echo "✅ Services are now running in the background"
-echo "📡 The oss_frontend service is using API_URL: $API_URL"
+echo "📡 The oss_frontend service was built with API_URL: $API_URL"
 echo "💡 To view logs: $COMPOSE_CMD logs -f"
 echo "💡 To stop services: $COMPOSE_CMD down"
 

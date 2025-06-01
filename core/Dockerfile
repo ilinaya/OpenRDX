@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
 # Copy the source code
 COPY . .
 
+ENV SQLX_OFFLINE=true
 # Build the application
 RUN cargo build --release
 

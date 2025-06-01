@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT id, plain_password, is_enabled\n            FROM user_identifiers \n            WHERE value = $1 AND identifier_type_id = 1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "plain_password",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "is_enabled",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "3486677aa536f2f031783a59631e6a65fdb119666185463857ced9c45ac17d46"
+}

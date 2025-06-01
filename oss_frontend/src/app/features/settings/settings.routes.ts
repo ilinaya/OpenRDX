@@ -15,6 +15,9 @@ import {VendorDetailComponent} from './components/vendor-detail/vendor-detail.co
 import {ChangePasswordComponent} from './components/change-password/change-password.component';
 import {AttributeGroupListComponent} from './components/attribute-group-list/attribute-group-list.component';
 import {AttributeGroupFormComponent} from './components/attribute-group-form/attribute-group-form.component';
+import {RadsecSourceListComponent} from "./components/radsec/radsec-source-list/radsec-source-list.component";
+import {RadsecSourceFormComponent} from "./components/radsec/radsec-source-form/radsec-source-form.component";
+import {RadsecSourceDetailComponent} from "./components/radsec/radsec-source-detail/radsec-source-detail.component";
 
 export const routes: Routes = [
   {
@@ -46,6 +49,15 @@ export const routes: Routes = [
           {path: 'new', component: SecretFormComponent},
           {path: ':id', component: SecretDetailComponent},
           {path: ':id/edit', component: SecretFormComponent},
+        ],
+      },
+      {
+        path: 'radsec/sources',
+        children: [
+          {path: '', component: RadsecSourceListComponent},
+          {path: 'new', component: RadsecSourceFormComponent},
+          {path: ':id', component: RadsecSourceDetailComponent},
+          {path: ':id/edit', component: RadsecSourceFormComponent},
         ],
       },
       {

@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: acct-core
+  namespace: openrdx
+  labels:
+    app: acct-core
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: acct-core
+  template:
+    metadata:
+      labels:
+        app: acct-core
+    spec:
+      containers:
+      - name: acct-core
+        image: openrdx/core:latest
+        ports:
+        - containerPort: 1813
+        env:
+        - name: REDIS_URL
+          value: "redis://redis:6379/0"
+        - name: DATABASE_URL
+          value: "postgresql://radius:radius@postgres:5432/radius"
+        - name: RADIUS_BIND_ADDR
+          value: "0.0.0.0:1812"
+        - name: SERVICE_TYPE
+          value: "acct"
+        - name: LOG_LEVEL
+          value: "info"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: acct-core
+  namespace: openrdx
+spec:
+  selector:
+    app: acct-core
+  ports:
+    - protocol: UDP
+      port: 1813
+      targetPort: 1813
+  type: ClusterIP 

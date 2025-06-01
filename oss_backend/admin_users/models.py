@@ -60,6 +60,9 @@ class AdminUser(AbstractUser):
     class Meta:
         verbose_name = 'Admin User'
         verbose_name_plural = 'Admin Users'
+        indexes = [
+            models.Index(fields=['email'], name='admin_email_idx'),
+        ]
         db_table = 'admin_users_admin_user'
 
     def __str__(self):

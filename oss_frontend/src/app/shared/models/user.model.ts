@@ -15,4 +15,6 @@ export interface User {
   last_login: string | null;
   full_name: string;
   external_id: string;
+  allowed_by_any_nas: boolean;
+  allow_any_nas?: boolean;
 }

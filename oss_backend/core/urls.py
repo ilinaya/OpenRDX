@@ -15,12 +15,12 @@ def health_check(request):
 # Schema view for Swagger documentation
 schema_view = get_schema_view(
     openapi.Info(
-        title="API Documentation",
+        title="OpenRDX Backend API Documentation",
         default_version='v1',
-        description="API documentation for the project",
-        terms_of_service="https://www.example.com/terms/",
-        contact=openapi.Contact(email="contact@example.com"),
-        license=openapi.License(name="BSD License"),
+        description="API documentation for the OpenRDX backend",
+        terms_of_service="https://openrdx.org/",
+        contact=openapi.Contact(email="alexey@openrdx.org"),
+        license=openapi.License(name="MIT License"),
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),
@@ -43,10 +43,10 @@ urlpatterns = [
     path('api/auth/', include('authentication.urls')),
     path('api/admin-users/', include('admin_users.urls')),
     path('api/nas/', include('nas.urls')),
-    path('api/settings/', include('settings_app.urls')),
     path('api/users/', include('users.urls')),
     path('api/accounting/', include('accounting.urls')),
     path('api/radius/', include('radius.urls')),
+    path('api/radsec/', include('radsec.urls')),
     path('api/shared/', include('shared.urls')),
 ]
 

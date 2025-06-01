@@ -2,10 +2,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: oss-backend
+  namespace: openrdx
   labels:
     app: oss-backend
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
       app: oss-backend
@@ -29,6 +30,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: oss-backend
+  namespace: openrdx
 spec:
   selector:
     app: oss-backend

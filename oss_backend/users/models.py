@@ -47,6 +47,9 @@ class User(models.Model):
     external_id = models.CharField(_("External ID"), max_length=50, blank=True,
                                    unique=True, null=True)
 
+    allow_any_nas = models.BooleanField(_("Allow All NAS"), null=True)
+
+
     class Meta:
         verbose_name = _("User")
         verbose_name_plural = _("Users")

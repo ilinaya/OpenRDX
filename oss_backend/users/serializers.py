@@ -8,6 +8,9 @@ class UserGroupSerializer(serializers.ModelSerializer):
     """
     Serializer for the UserGroup model.
     """
+    allow_any_nas = serializers.BooleanField()
+
+
     class Meta:
         model = UserGroup
         fields = ['id', 'name', 'description',
@@ -21,6 +24,8 @@ class UserGroupTreeSerializer(serializers.ModelSerializer):
     Serializer for the UserGroup model with nested children.
     """
     children = serializers.SerializerMethodField()
+    allow_any_nas = serializers.BooleanField()
+
 
     class Meta:
         model = UserGroup
@@ -109,11 +114,23 @@ class UserSerializer(serializers.ModelSerializer):
         required=False
     )
     identifiers = UserIdentifierSerializer(many=True, read_only=True)
+    allow_any_nas = serializers.BooleanField(allow_null=True)
+
+    allowed_by_any_nas = serializers.SerializerMethodField(read_only=True)
+
+    def get_allowed_by_any_nas(self, obj):
+        if obj.allow_any_nas is not None:
+            return obj.allowed_by_any_nas
+        for each_group in obj.groups.all():
+            if each_group.allow_any_nas:
+                return True
+        return False
 
     class Meta:
         model = User
         fields = ['id', 'email', 'first_name', 'last_name', 'full_name', 'phone_number', 'external_id',
-                  'is_active', 'groups', 'group_ids', 'created_at', 'updated_at', 'last_login', 'identifiers']
+                  'is_active', 'groups', 'group_ids', 'created_at', 'updated_at', 'last_login',
+                  'identifiers', 'allow_any_nas', 'allowed_by_any_nas']
         read_only_fields = ['created_at', 'updated_at', 'last_login']
 
 
@@ -128,12 +145,14 @@ class UserCreateSerializer(serializers.ModelSerializer):
         many=True,
         required=False
     )
+    allow_any_nas = serializers.BooleanField(allow_null=True)
+
 
     class Meta:
         model = User
         fields = ['email', 'first_name', 'last_name', 'phone_number',
                   'external_id', 'email',
-                  'is_active', 'group_ids']
+                  'is_active', 'group_ids', 'allow_any_nas']
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
@@ -147,11 +166,14 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         many=True,
         required=False
     )
+    allow_any_nas = serializers.BooleanField(allow_null=True)
+
 
     class Meta:
         model = User
         fields = ['first_name',
                   'external_id',
+                  'allow_any_nas',
                   'email',
                   'last_name', 'phone_number', 'is_active', 'group_ids']
 

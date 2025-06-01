@@ -6,20 +6,20 @@ metadata:
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
-  - host: openrdx.local
+  - host: openrdx.local #Your domain must be set here
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: oss-frontend
+            name: nginx-proxy
             port:
-              number: 4200
+              number: 80
       - path: /api
         pathType: Prefix
         backend:
           service:
-            name: oss-backend
+            name: nginx-proxy
             port:
-              number: 8000 
+              number: 80

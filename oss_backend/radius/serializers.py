@@ -96,7 +96,7 @@ class SecretSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = Secret
-        fields = ['id', 'name', 'secret', 'rad_sec', 'description', 'source_subnets', 
+        fields = ['id', 'name', 'secret', 'description', 'source_subnets',
                  'created_at', 'updated_at']
         read_only_fields = ['created_at', 'updated_at']
 
@@ -107,7 +107,7 @@ class SecretCreateSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = Secret
-        fields = ['name', 'secret', 'rad_sec', 'description', 'source_subnets']
+        fields = ['name', 'secret', 'description', 'source_subnets']
 
 
 class SecretUpdateSerializer(serializers.ModelSerializer):
@@ -116,4 +116,4 @@ class SecretUpdateSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = Secret
-        fields = ['name', 'secret', 'rad_sec', 'description', 'source_subnets']
+        fields = ['name', 'secret', 'description', 'source_subnets']

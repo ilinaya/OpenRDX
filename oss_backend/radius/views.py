@@ -240,7 +240,7 @@ class SecretViewSet(viewsets.ModelViewSet):
     queryset = Secret.objects.all()
     serializer_class = SecretSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['name', 'rad_sec']
+    filterset_fields = ['name']
     search_fields = ['name', 'description']
     ordering_fields = ['name', 'created_at']
     ordering = ['name']

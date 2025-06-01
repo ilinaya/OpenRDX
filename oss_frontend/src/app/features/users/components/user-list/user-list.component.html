@@ -29,6 +29,8 @@
               <th>{{ 'users.list.fullName' | translate }}</th>
               <th>{{ 'users.list.phone' | translate }}</th>
               <th>{{ 'users.list.groups' | translate }}</th>
+              <th>{{ 'users.allow_any_nas' | translate }}</th>
+
               <th>{{ 'users.list.status' | translate }}</th>
               <th>{{ 'users.list.lastLogin' | translate }}</th>
               <th>{{ 'common.actions' | translate }}</th>
@@ -45,6 +47,10 @@
                     <span class="badge bg-secondary me-1">{{ group.name }}</span>
                   }
                 </td>
+
+                <td>{{ user.allowed_by_any_nas }}</td>
+
+
                 <td>
                   <span class="badge" [ngClass]="user.is_active ? 'bg-success' : 'bg-danger'">
                     {{ user.is_active ? ('common.active' | translate) : ('common.inactive' | translate) }}
@@ -76,7 +82,7 @@
       </div>
 
       <div class="pagination">
-        <button class="pagination-btn" 
+        <button class="pagination-btn"
                 [disabled]="currentPage === 1"
                 (click)="changePage(currentPage - 1)">
           {{ 'common.previous' | translate }}
@@ -92,4 +98,4 @@
       </div>
     </div>
   }
-</div> 
+</div>

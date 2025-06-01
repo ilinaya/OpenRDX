@@ -56,6 +56,15 @@
                   {{ (user.is_active ? 'users.detail.active' : 'users.detail.inactive') | translate }}
                 </mat-chip>
               </dd>
+
+
+              <dt>{{ 'users.allow_any_nas' | translate }}</dt>
+              <dd>
+                <mat-chip [color]="user.allowed_by_any_nas ? 'primary' : 'warn'" selected>
+                  {{ (user.allowed_by_any_nas ? 'common.yes' : 'common.no') | translate }}
+                </mat-chip>
+              </dd>
+
             </dl>
           </div>
 
@@ -131,10 +140,12 @@
               <ng-container matColumnDef="actions">
                 <th mat-header-cell *matHeaderCellDef>{{ 'users.detail.actions' | translate }}</th>
                 <td mat-cell *matCellDef="let identifier">
+                  @if (!user.allowed_by_any_nas) {
                   <button mat-raised-button color="primary" (click)="openNasAuthorizationModal(identifier)">
                     <mat-icon>network_wired</mat-icon>
                     {{ 'users.detail.nasAuth.manage' | translate }}
                   </button>
+                  }
                 </td>
               </ng-container>
 

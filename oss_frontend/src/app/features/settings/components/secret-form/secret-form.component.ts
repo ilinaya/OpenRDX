@@ -29,7 +29,6 @@ export class SecretFormComponent implements OnInit {
     this.secretForm = this.fb.group({
       name: ['', [Validators.required, Validators.maxLength(255)]],
       secret: ['', [Validators.required, Validators.maxLength(255)]],
-      rad_sec: [false],
       description: [''],
       source_subnets: [[]]
     });

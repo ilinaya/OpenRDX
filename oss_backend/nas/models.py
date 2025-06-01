@@ -51,6 +51,9 @@ class VendorAttribute(models.Model):
         verbose_name_plural = _("Vendor Attributes")
         ordering = ['vendor', 'attribute_id']
         unique_together = [['vendor', 'attribute_id']]
+        indexes = [
+            models.Index(fields=['vendor'], name='attrs_vendor_idx'),
+        ]
         db_table = 'nas_vendor_attribute'
 
     def __str__(self):
@@ -74,6 +77,9 @@ class NasGroup(MPTTModel):
     class Meta:
         verbose_name = _("NAS Group")
         verbose_name_plural = _("NAS Groups")
+        indexes = [
+            models.Index(fields=['parent'], name='nas_group_parent_idx'),
+        ]
         db_table = 'nas_nas_group'
 
     def __str__(self):
@@ -104,10 +110,12 @@ class Nas(models.Model):
         verbose_name = _("NAS")
         verbose_name_plural = _("NAS Devices")
         ordering = ['name']
+        indexes = [
+            models.Index(fields=['vendor'], name='nas_vendor_idx'),
+            models.Index(fields=['ip_address'], name='nas_ip_idx'),
+        ]
         db_table = 'nas_nas'
 
     def __str__(self):
         return f"{self.name} ({self.ip_address})"
 
-
-# Default NAS groups and vendors are now created in migration 0002_create_default_nas_groups_and_vendors.py

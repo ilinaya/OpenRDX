@@ -53,6 +53,10 @@ class RadiusAttribute(models.Model):
         verbose_name_plural = _("RADIUS Attributes")
         ordering = ['vendor_id', 'attribute_id']
         unique_together = [['group', 'vendor_id', 'attribute_id']]
+        indexes = [
+            models.Index(fields=['vendor_id'], name='rad_att_vendor_id'),
+            models.Index(fields=['group'], name='rd_att_group_idx'),
+        ]
         db_table = 'radius_radius_attribute'
 
     def __str__(self):
@@ -82,6 +86,9 @@ class UserNasRelationship(models.Model):
         verbose_name = _("User-NAS Relationship")
         verbose_name_plural = _("User-NAS Relationships")
         unique_together = [['user', 'nas']]
+        indexes = [
+            models.Index(fields=['user'], name='user_to_nas_idx'),
+        ]
         db_table = 'radius_user_nas_relationship'
 
     def __str__(self):
@@ -94,8 +101,7 @@ class Secret(models.Model):
     """
     name = models.CharField(_("Name"), max_length=255, unique=True)
     secret = models.CharField(_("Secret"), max_length=255)
-    rad_sec = models.BooleanField(_("RADSEC"), default=False, 
-                                help_text=_("Whether this secret is used for RADSEC"))
+
     description = models.TextField(_("Description"), blank=True)
     source_subnets = models.JSONField(_("Source Subnets"), default=list, blank=True,
                                     help_text=_("List of source subnets allowed to use this secret"))

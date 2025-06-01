@@ -1,0 +1,99 @@
+<div class="sources-list-container">
+  <div class="header">
+    <h2>RadSec Sources</h2>
+    <button class="btn btn-primary"
+            (click)="createNewSource()">
+      Create New Sources
+    </button>
+  </div>
+
+  @if (loading) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading radsec sources...</p>
+    </div>
+  }
+
+  @if (error) {
+    <div class="alert alert-danger">
+      {{ error }}
+    </div>
+  }
+
+  @if (!loading && sources.length === 0) {
+    <div class="empty-state">
+      <p>No sources found. Create your first rdsec source to get started.</p>
+    </div>
+  }
+
+  @if (!loading && sources.length > 0) {
+    <div class="sources-table-container">
+      <table class="sources-table">
+        <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Source Subnets</th>
+          <th>Created At</th>
+          <th>Updated At</th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+          @for (source of sources; track $index) {
+            <tr>
+              <td>{{ source.name }}</td>
+              <td>{{ source.description || 'N/A' }}</td>
+
+              <td>
+                @if (source.source_subnets.length) {
+                  <span class="subnet-count">
+              {{ source.source_subnets }} subnet(s)
+            </span>
+                } @else {
+                  <span>None</span>
+                }
+              </td>
+              <td>{{ source.created_at | date:'medium' }}</td>
+              <td>{{ source.updated_at | date:'medium' }}</td>
+              <td class="actions">
+                <button class="btn btn-info"
+                        (click)="viewSourceDetails(source.id)">
+                  View
+                </button>
+                <button class="btn btn-warning"
+                        (click)="editSource(source.id)">
+                  Edit
+                </button>
+                <button class="btn btn-danger"
+                        (click)="deleteSource(source.id)">
+                  Delete
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      @if (totalPages > 1) {
+        <div class="pagination">
+          <button
+            class="btn btn-secondary"
+            [disabled]="currentPage === 1"
+            (click)="changePage(currentPage - 1)">
+            Previous
+          </button>
+          <span class="page-info">
+        Page {{ currentPage }} of {{ totalPages }}
+      </span>
+          <button
+            class="btn btn-secondary"
+            [disabled]="currentPage === totalPages"
+            (click)="changePage(currentPage + 1)">
+            Next
+          </button>
+        </div>
+      }
+    </div>
+  }
+</div>

@@ -37,7 +37,7 @@ export interface Secret {
   id: number;
   name: string;
   secret: string;
-  rad_sec: boolean;
+  rad_sec?: boolean;
   description?: string;
   source_subnets: string[];
   created_at: string;

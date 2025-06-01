@@ -31,7 +31,9 @@
       "userGroups": "Grupos de Usuario",
       "secrets": "Secretos",
       "vendors": "Vendedores",
-      "attributeGroups": "Grupos de Atributos"
+      "attributeGroups": "Grupos de Atributos",
+      "radsec_sources": "Origenes RadSec"
+
     },
     "userGroups": {
       "title": "Grupos de Usuario",
@@ -227,6 +229,7 @@
   },
   "users": {
     "title": "Usuarios",
+    "allow_any_nas": "Permitir en cualquier nas",
     "nav": {
       "users": "Usuarios",
       "userGroups": "Grupos de Usuario"

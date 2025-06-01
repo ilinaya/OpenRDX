@@ -17,6 +17,21 @@ services:
       - openrdx-network
     restart: unless-stopped
 
+  core-radsec-proxy:
+    build:
+      context: ./core
+      dockerfile: Dockerfile
+    ports:
+      - "1814:1814/tcp"
+    environment:
+      - RADSEC_BIND_ADDR=0.0.0.0:1812
+      - LOG_LEVEL=info
+    depends_on:
+      - core-auth
+      - core-acct
+    networks:
+      - openrdx-network
+
   core-auth:
     build:
       context: ./core
@@ -27,9 +42,9 @@ services:
       - DATABASE_URL=postgres://radius:radius@postgres/radius
       - REDIS_URL=redis://redis:6379/
       - RADIUS_BIND_ADDR=0.0.0.0:1812
-      - RADIUS_SECRET_TTL=300
       - SUBSCRIBER_CACHE_TTL=3600
       - LOG_LEVEL=info
+      - SERVICE_TYPE=auth
     depends_on:
       - postgres
       - redis
@@ -48,12 +63,12 @@ services:
       - RADIUS_BIND_ADDR=0.0.0.0:1813
       - QUOTA_CHECK_INTERVAL=60
       - LOG_LEVEL=info
+      - SERVICE_TYPE=acct
     depends_on:
       - mongodb
       - redis
     networks:
       - openrdx-network
-
 
   oss_backend:
     build:

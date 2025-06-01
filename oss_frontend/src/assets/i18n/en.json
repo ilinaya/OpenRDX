@@ -30,7 +30,8 @@
       "userGroups": "User Groups",
       "secrets": "Secrets",
       "vendors": "Vendors",
-      "attributeGroups": "Attribute Groups"
+      "attributeGroups": "Attribute Groups",
+      "radsec_sources": "RadSec Sources"
     },
     "userGroups": {
       "title": "User Groups",
@@ -226,6 +227,7 @@
   },
   "users": {
     "title": "Users",
+    "allow_any_nas": "Allow to any NAS",
     "nav": {
       "users": "Users",
       "userGroups": "User Groups"

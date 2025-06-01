@@ -41,10 +41,10 @@ INSTALLED_APPS = [
     'admin_users',
     'authentication',
     'nas',
-    'settings_app',
     'users',
     'accounting',
     'radius',
+    'radsec',
     'shared'
 ]
 

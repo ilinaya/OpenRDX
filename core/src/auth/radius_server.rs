@@ -4,16 +4,21 @@ use std::net::IpAddr;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::fs::File;
+use std::io::BufReader;
 use crate::auth::AuthServer;
 use hmac::{Hmac, Mac};
-use md5::Md5;
-use digest::{Digest, CtOutput};
+use md5::{Md5};
+
+use digest::{Digest, CtOutput, KeyInit, core_api::CoreWrapper};
 use sqlx::PgPool;
+use rustls::{Certificate, PrivateKey, ServerConfig};
+use tokio_rustls::TlsAcceptor;
+use rustls_pemfile::{certs, pkcs8_private_keys};
 
 use des::Des;
 use des::cipher::{BlockEncrypt};
 use generic_array::GenericArray;
-use hmac::digest::KeyInit;
 
 const ATTR_USER_PASSWORD: u8 = 2;      // PAP
 const ATTR_CHAP_PASSWORD: u8 = 3;      // CHAP
@@ -33,6 +38,39 @@ const ATTR_USER_NAME: u8 = 1;
 
 const ATTR_REPLY_MESSAGE: u8 = 18;  // Reply-Message attribute type
 
+// EAP-related constants
+const ATTR_EAP_MESSAGE: u8 = 79;      // EAP-Message attribute
+const ATTR_MESSAGE_AUTHENTICATOR: u8 = 80;  // Message-Authenticator attribute
+
+// EAP method types
+const EAP_TYPE_TLS: u8 = 13;          // EAP-TLS
+const EAP_TYPE_TTLS: u8 = 21;         // EAP-TTLS
+const EAP_TYPE_PEAP: u8 = 25;         // EAP-PEAP
+const EAP_TYPE_SIM: u8 = 18;          // EAP-SIM
+const EAP_TYPE_AKA: u8 = 23;          // EAP-AKA
+const EAP_TYPE_AKA_PRIME: u8 = 50;    // EAP-AKA'
+
+// EAP-SIM/AKA subtypes
+const EAP_SIM_START: u8 = 10;
+const EAP_SIM_CHALLENGE: u8 = 11;
+const EAP_SIM_NOTIFICATION: u8 = 12;
+const EAP_SIM_REAUTHENTICATION: u8 = 13;
+const EAP_SIM_CLIENT_ERROR: u8 = 14;
+
+// EAP-AKA specific subtypes
+const EAP_AKA_CHALLENGE: u8 = 1;
+const EAP_AKA_AUTHENTICATION_REJECT: u8 = 2;
+const EAP_AKA_SYNCHRONIZATION_FAILURE: u8 = 4;
+const EAP_AKA_IDENTITY: u8 = 5;
+const EAP_AKA_NOTIFICATION: u8 = 12;
+const EAP_AKA_REAUTHENTICATION: u8 = 13;
+const EAP_AKA_CLIENT_ERROR: u8 = 14;
+
+// EAP codes
+const EAP_REQUEST: u8 = 1;
+const EAP_RESPONSE: u8 = 2;
+const EAP_SUCCESS: u8 = 3;
+const EAP_FAILURE: u8 = 4;
 
 #[derive(Debug, Clone)]
 pub struct RadiusAttribute {
@@ -132,9 +170,13 @@ impl RadiusAuthServer {
     }
 
     fn detect_auth_method(&self, packet: &RadiusPacket) -> String {
+        // Check for EAP first
+        if packet.attributes.iter().any(|attr| attr.typ == ATTR_EAP_MESSAGE) {
+            return "EAP".to_string();
+        }
+
         let has_mschap = packet.attributes.iter().any(|attr| {
             if attr.typ == ATTR_VENDOR_SPECIFIC && attr.value.len() >= 4 {
-                // Check for Microsoft vendor ID
                 let vendor_id = u32::from_be_bytes([
                     attr.value[0], attr.value[1],
                     attr.value[2], attr.value[3]
@@ -151,7 +193,6 @@ impl RadiusAuthServer {
             return "MS-CHAP".to_string();
         }
 
-        // Then check for other authentication methods
         if packet.attributes.iter().any(|attr| attr.typ == ATTR_USER_PASSWORD) {
             "PAP".to_string()
         } else if packet.attributes.iter().any(|attr| attr.typ == ATTR_CHAP_PASSWORD) {
@@ -161,10 +202,7 @@ impl RadiusAuthServer {
         } else {
             "Unknown".to_string()
         }
-
-
     }
-
 
     async fn authenticate_user(&self, username: &str, password: Vec<u8>, authenticator: &[u8],
                                secret: &str
@@ -270,7 +308,6 @@ impl RadiusAuthServer {
 
         encoded
     }
-
 
     pub async fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
         let mut buf = vec![0u8; 4096];
@@ -702,9 +739,7 @@ impl RadiusAuthServer {
         // Calculate Message-Authenticator if present
         if let Some(msg_auth_pos) = encoded.windows(2).position(|w| w[0] == 80) {
             // Create HMAC-MD5 of the packet with zeroed Message-Authenticator
-            type HmacMd5 = Hmac<Md5>;
-
-            let mut mac = <HmacMd5 as KeyInit>::new_from_slice(secret.as_bytes())
+            let mut mac = <Hmac<Md5> as Mac>::new_from_slice(secret.as_bytes())
                 .expect("HMAC can take key of any size");
 
             // Create temporary buffer with zeroed Message-Authenticator
@@ -754,6 +789,609 @@ impl RadiusAuthServer {
         encoded[3] = length as u8;
 
         encoded
+    }
+
+    async fn handle_eap_request(&self, packet: &RadiusPacket, secret: &str) -> Vec<u8> {
+        // Extract EAP message from attributes
+        let eap_data = packet.attributes.iter()
+            .find(|attr| attr.typ == ATTR_EAP_MESSAGE)
+            .map(|attr| attr.value.clone());
+
+        if let Some(eap_data) = eap_data {
+            if let Some(eap_packet) = EapPacket::parse(&eap_data) {
+                match eap_packet.type_ {
+                    EAP_TYPE_TLS => {
+                        match self.handle_eap_tls(packet, &eap_packet, secret).await {
+                            Ok(response) => response,
+                            Err(e) => self.create_access_reject(packet, secret, &format!("EAP-TLS error: {}", e))
+                        }
+                    }
+                    EAP_TYPE_TTLS => {
+                        match self.handle_eap_ttls(packet, &eap_packet, secret).await {
+                            Ok(response) => response,
+                            Err(e) => self.create_access_reject(packet, secret, &format!("EAP-TTLS error: {}", e))
+                        }
+                    }
+                    EAP_TYPE_PEAP => {
+                        match self.handle_eap_peap(packet, &eap_packet, secret).await {
+                            Ok(response) => response,
+                            Err(e) => self.create_access_reject(packet, secret, &format!("EAP-PEAP error: {}", e))
+                        }
+                    }
+                    EAP_TYPE_SIM => {
+                        self.handle_eap_sim(packet, &eap_packet, secret).await
+                    }
+                    EAP_TYPE_AKA => {
+                        self.handle_eap_aka(packet, &eap_packet, secret).await
+                    }
+                    EAP_TYPE_AKA_PRIME => {
+                        self.handle_eap_aka_prime(packet, &eap_packet, secret).await
+                    }
+                    _ => {
+                        self.create_access_reject(packet, secret, "Unsupported EAP method")
+                    }
+                }
+            } else {
+                self.create_access_reject(packet, secret, "Invalid EAP packet")
+            }
+        } else {
+            self.create_access_reject(packet, secret, "Missing EAP message")
+        }
+    }
+
+    async fn handle_eap_sim(&self, packet: &RadiusPacket, eap_packet: &EapPacket, secret: &str) -> Vec<u8> {
+        // Extract IMSI from EAP identity
+        let imsi = if eap_packet.code == EAP_RESPONSE && eap_packet.type_ == 1 {
+            // EAP Identity response
+            String::from_utf8_lossy(&eap_packet.data).to_string()
+        } else {
+            // Try to find IMSI in RADIUS attributes
+            packet.attributes.iter()
+                .find(|attr| attr.typ == ATTR_USER_NAME)
+                .map(|attr| String::from_utf8_lossy(&attr.value).to_string())
+                .unwrap_or_default()
+        };
+
+        if imsi.is_empty() {
+            return self.create_access_reject(packet, secret, "Missing IMSI");
+        }
+
+        // Parse EAP-SIM attributes
+        let mut sim_attrs = EapSimAttributes {
+            version_list: None,
+            selected_version: None,
+            nonce_mt: None,
+            nonce_s: None,
+            rand: None,
+            mac: None,
+            encr_data: None,
+            iv: None,
+            next_pseudonym: None,
+            next_reauth_id: None,
+            result_ind: None,
+            counter: None,
+            counter_too_small: None,
+            notification: None,
+            client_error_code: None,
+        };
+
+        // TODO: Parse EAP-SIM attributes from eap_packet.data
+
+        match eap_packet.code {
+            EAP_REQUEST => {
+                // Start EAP-SIM authentication
+                let mut response = EapPacket {
+                    code: EAP_RESPONSE,
+                    identifier: eap_packet.identifier,
+                    length: 0, // Will be set after encoding
+                    type_: EAP_TYPE_SIM,
+                    data: vec![EAP_SIM_START], // Start subtype
+                };
+
+                // Create RADIUS response with EAP message
+                let mut radius_response = RadiusPacket {
+                    code: 11, // Access-Challenge
+                    identifier: packet.identifier,
+                    length: 20,
+                    authenticator: packet.authenticator,
+                    attributes: vec![
+                        RadiusAttribute {
+                            typ: ATTR_EAP_MESSAGE,
+                            value: response.encode(),
+                        },
+                        RadiusAttribute {
+                            typ: ATTR_MESSAGE_AUTHENTICATOR,
+                            value: vec![0u8; 16],
+                        },
+                    ],
+                };
+
+                // Calculate Message-Authenticator
+                let mut encoded = radius_response.encode();
+                let msg_auth_pos = encoded.windows(2)
+                    .position(|w| w[0] == ATTR_MESSAGE_AUTHENTICATOR)
+                    .unwrap();
+
+                let mut mac = <Hmac<Md5> as Mac>::new_from_slice(secret.as_bytes())
+                    .expect("HMAC can take key of any size");
+                mac.update(&encoded[0..msg_auth_pos + 2]);
+                mac.update(&[0u8; 16]);
+                mac.update(&encoded[msg_auth_pos + 18..]);
+                let result = mac.finalize();
+                encoded[msg_auth_pos + 2..msg_auth_pos + 18].copy_from_slice(&result.into_bytes());
+
+                encoded
+            }
+            EAP_RESPONSE => {
+                // Continue EAP-SIM authentication
+                if eap_packet.data.is_empty() {
+                    return self.create_access_reject(packet, secret, "Empty EAP-SIM data");
+                }
+
+                // TODO: Implement EAP-SIM authentication state machine
+                // This requires:
+                // 1. SIM card authentication
+                // 2. Triple authentication vectors
+                // 3. Session key derivation
+                self.create_access_reject(packet, secret, "EAP-SIM authentication not implemented")
+            }
+            _ => {
+                self.create_access_reject(packet, secret, "Invalid EAP code")
+            }
+        }
+    }
+
+    async fn handle_eap_aka(&self, packet: &RadiusPacket, eap_packet: &EapPacket, secret: &str) -> Vec<u8> {
+        // Extract IMSI from EAP identity
+        let imsi = if eap_packet.code == EAP_RESPONSE && eap_packet.type_ == 1 {
+            // EAP Identity response
+            String::from_utf8_lossy(&eap_packet.data).to_string()
+        } else {
+            // Try to find IMSI in RADIUS attributes
+            packet.attributes.iter()
+                .find(|attr| attr.typ == ATTR_USER_NAME)
+                .map(|attr| String::from_utf8_lossy(&attr.value).to_string())
+                .unwrap_or_default()
+        };
+
+        if imsi.is_empty() {
+            return self.create_access_reject(packet, secret, "Missing IMSI");
+        }
+
+        // Parse EAP-AKA attributes
+        let mut aka_attrs = EapAkaAttributes {
+            rand: None,
+            autn: None,
+            ik: None,
+            ck: None,
+            res: None,
+            auts: None,
+            next_pseudonym: None,
+            next_reauth_id: None,
+            result_ind: None,
+            counter: None,
+            counter_too_small: None,
+            notification: None,
+            client_error_code: None,
+        };
+
+        // TODO: Parse EAP-AKA attributes from eap_packet.data
+
+        match eap_packet.code {
+            EAP_REQUEST => {
+                // Start EAP-AKA authentication
+                let mut response = EapPacket {
+                    code: EAP_RESPONSE,
+                    identifier: eap_packet.identifier,
+                    length: 0, // Will be set after encoding
+                    type_: EAP_TYPE_AKA,
+                    data: vec![EAP_AKA_IDENTITY], // Identity subtype
+                };
+
+                // Create RADIUS response with EAP message
+                let mut radius_response = RadiusPacket {
+                    code: 11, // Access-Challenge
+                    identifier: packet.identifier,
+                    length: 20,
+                    authenticator: packet.authenticator,
+                    attributes: vec![
+                        RadiusAttribute {
+                            typ: ATTR_EAP_MESSAGE,
+                            value: response.encode(),
+                        },
+                        RadiusAttribute {
+                            typ: ATTR_MESSAGE_AUTHENTICATOR,
+                            value: vec![0u8; 16],
+                        },
+                    ],
+                };
+
+                // Calculate Message-Authenticator
+                let mut encoded = radius_response.encode();
+                let msg_auth_pos = encoded.windows(2)
+                    .position(|w| w[0] == ATTR_MESSAGE_AUTHENTICATOR)
+                    .unwrap();
+
+                let mut mac = <Hmac<Md5> as Mac>::new_from_slice(secret.as_bytes())
+                    .expect("HMAC can take key of any size");
+                mac.update(&encoded[0..msg_auth_pos + 2]);
+                mac.update(&[0u8; 16]);
+                mac.update(&encoded[msg_auth_pos + 18..]);
+                let result = mac.finalize();
+                encoded[msg_auth_pos + 2..msg_auth_pos + 18].copy_from_slice(&result.into_bytes());
+
+                encoded
+            }
+            EAP_RESPONSE => {
+                // Continue EAP-AKA authentication
+                if eap_packet.data.is_empty() {
+                    return self.create_access_reject(packet, secret, "Empty EAP-AKA data");
+                }
+
+                // TODO: Implement EAP-AKA authentication state machine
+                // This requires:
+                // 1. USIM card authentication
+                // 2. Authentication vectors (RAND, AUTN, XRES, CK, IK)
+                // 3. Session key derivation
+                self.create_access_reject(packet, secret, "EAP-AKA authentication not implemented")
+            }
+            _ => {
+                self.create_access_reject(packet, secret, "Invalid EAP code")
+            }
+        }
+    }
+
+    async fn handle_eap_aka_prime(&self, packet: &RadiusPacket, eap_packet: &EapPacket, secret: &str) -> Vec<u8> {
+        // EAP-AKA' is similar to EAP-AKA but with additional key derivation
+        // We can reuse most of the EAP-AKA code with some modifications
+        self.handle_eap_aka(packet, eap_packet, secret).await
+    }
+
+    async fn handle_eap_tls(&self, packet: &RadiusPacket, eap_packet: &EapPacket, secret: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        // Extract username from EAP identity
+        let username = if eap_packet.code == EAP_RESPONSE && eap_packet.type_ == 1 {
+            // EAP Identity response
+            String::from_utf8_lossy(&eap_packet.data).to_string()
+        } else {
+            // Try to find username in RADIUS attributes
+            packet.attributes.iter()
+                .find(|attr| attr.typ == ATTR_USER_NAME)
+                .map(|attr| String::from_utf8_lossy(&attr.value).to_string())
+                .unwrap_or_default()
+        };
+
+        if username.is_empty() {
+            return Ok(self.create_access_reject(packet, secret, "Missing username"));
+        }
+
+        // Load server certificate and private key
+        let cert_file = File::open("certs/server.crt")
+            .map_err(|_| "Failed to open certificate file")?;
+
+        let key_file = File::open("certs/server.key")
+            .map_err(|_| "Failed to open private key file")?;
+
+        let mut reader = BufReader::new(cert_file);
+
+        let cert_chain = match certs(&mut reader) {
+            Ok(certs) => certs.into_iter().map(Certificate).collect::<Vec<_>>(),
+            Err(_) => return Ok(self.create_access_reject(packet, secret, "Failed to parse certificate")),
+        };
+        let mut key_reader = BufReader::new(key_file);
+        let mut keys = match pkcs8_private_keys(&mut key_reader) {
+            Ok(keys) => keys,
+            Err(_) => return Ok(self.create_access_reject(packet, secret, "Failed to parse private key")),
+        };
+
+        if keys.is_empty() {
+            return Ok(self.create_access_reject(packet, secret, "No private key found"));
+        }
+
+        let config = ServerConfig::builder()
+            .with_safe_defaults()
+            .with_no_client_auth()
+            .with_single_cert(
+                cert_chain,
+                PrivateKey(keys.remove(0))
+            )
+            .map_err(|_| "Failed to create TLS config")?;
+
+        let acceptor = TlsAcceptor::from(Arc::new(config));
+
+        match eap_packet.code {
+            EAP_REQUEST => {
+                // Start EAP-TLS handshake
+                let mut response = EapPacket {
+                    code: EAP_RESPONSE,
+                    identifier: eap_packet.identifier,
+                    length: 0, // Will be set after encoding
+                    type_: EAP_TYPE_TLS,
+                    data: vec![0x80], // Start bit set
+                };
+
+                // Create RADIUS response with EAP message
+                let mut radius_response = RadiusPacket {
+                    code: 11, // Access-Challenge
+                    identifier: packet.identifier,
+                    length: 20,
+                    authenticator: packet.authenticator,
+                    attributes: vec![
+                        RadiusAttribute {
+                            typ: ATTR_EAP_MESSAGE,
+                            value: response.encode(),
+                        },
+                        RadiusAttribute {
+                            typ: ATTR_MESSAGE_AUTHENTICATOR,
+                            value: vec![0u8; 16],
+                        },
+                    ],
+                };
+
+                // Calculate Message-Authenticator
+                let mut encoded = radius_response.encode();
+                let msg_auth_pos = encoded.windows(2)
+                    .position(|w| w[0] == ATTR_MESSAGE_AUTHENTICATOR)
+                    .unwrap();
+
+                let mut mac = <Hmac<Md5> as Mac>::new_from_slice(secret.as_bytes())
+                    .expect("HMAC can take key of any size");
+                mac.update(&encoded[0..msg_auth_pos + 2]);
+                mac.update(&[0u8; 16]);
+                mac.update(&encoded[msg_auth_pos + 18..]);
+                let result = mac.finalize();
+                encoded[msg_auth_pos + 2..msg_auth_pos + 18].copy_from_slice(&result.into_bytes());
+
+                Ok(encoded)
+            }
+            EAP_RESPONSE => {
+                // Continue EAP-TLS handshake
+                if eap_packet.data.is_empty() {
+                    return Ok(self.create_access_reject(packet, secret, "Empty EAP-TLS data"));
+                }
+
+                // TODO: Implement EAP-TLS handshake state machine
+                // This requires:
+                // 1. TLS handshake state tracking
+                // 2. Certificate validation
+                // 3. Session key derivation
+                Ok(self.create_access_reject(packet, secret, "EAP-TLS handshake not implemented"))
+            }
+            _ => {
+                Ok(self.create_access_reject(packet, secret, "Invalid EAP code"))
+            }
+        }
+    }
+
+    async fn handle_eap_peap(&self, packet: &RadiusPacket, eap_packet: &EapPacket, secret: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        // Extract username from EAP identity
+        let username = if eap_packet.code == EAP_RESPONSE && eap_packet.type_ == 1 {
+            // EAP Identity response
+            String::from_utf8_lossy(&eap_packet.data).to_string()
+        } else {
+            // Try to find username in RADIUS attributes
+            packet.attributes.iter()
+                .find(|attr| attr.typ == ATTR_USER_NAME)
+                .map(|attr| String::from_utf8_lossy(&attr.value).to_string())
+                .unwrap_or_default()
+        };
+
+        if username.is_empty() {
+            return Ok(self.create_access_reject(packet, secret, "Missing username"));
+        }
+
+        // Load server certificate and private key
+        let cert_file = File::open("certs/server.crt")
+            .map_err(|_| "Failed to open certificate file")?;
+
+        let key_file = File::open("certs/server.key")
+            .map_err(|_| "Failed to open private key file")?;
+
+        let mut reader = BufReader::new(cert_file);
+
+        let cert_chain = match certs(&mut reader) {
+            Ok(certs) => certs.into_iter().map(Certificate).collect::<Vec<_>>(),
+            Err(_) => return Ok(self.create_access_reject(packet, secret, "Failed to parse certificate")),
+        };
+        let mut key_reader = BufReader::new(key_file);
+        let mut keys = match pkcs8_private_keys(&mut key_reader) {
+            Ok(keys) => keys,
+            Err(_) => return Ok(self.create_access_reject(packet, secret, "Failed to parse private key")),
+        };
+
+        if keys.is_empty() {
+            return Ok(self.create_access_reject(packet, secret, "No private key found"));
+        }
+
+        let config = ServerConfig::builder()
+            .with_safe_defaults()
+            .with_no_client_auth()
+            .with_single_cert(
+                cert_chain,
+                PrivateKey(keys.remove(0))
+            )
+            .map_err(|_| "Failed to create TLS config")?;
+
+        let acceptor = TlsAcceptor::from(Arc::new(config));
+
+        match eap_packet.code {
+            EAP_REQUEST => {
+                // Start PEAP handshake
+                let mut response = EapPacket {
+                    code: EAP_RESPONSE,
+                    identifier: eap_packet.identifier,
+                    length: 0, // Will be set after encoding
+                    type_: EAP_TYPE_PEAP,
+                    data: vec![0x80], // Start bit set
+                };
+
+                // Create RADIUS response with EAP message
+                let mut radius_response = RadiusPacket {
+                    code: 11, // Access-Challenge
+                    identifier: packet.identifier,
+                    length: 20,
+                    authenticator: packet.authenticator,
+                    attributes: vec![
+                        RadiusAttribute {
+                            typ: ATTR_EAP_MESSAGE,
+                            value: response.encode(),
+                        },
+                        RadiusAttribute {
+                            typ: ATTR_MESSAGE_AUTHENTICATOR,
+                            value: vec![0u8; 16],
+                        },
+                    ],
+                };
+
+                // Calculate Message-Authenticator
+                let mut encoded = radius_response.encode();
+                let msg_auth_pos = encoded.windows(2)
+                    .position(|w| w[0] == ATTR_MESSAGE_AUTHENTICATOR)
+                    .unwrap();
+
+                let mut mac = <Hmac<Md5> as Mac>::new_from_slice(secret.as_bytes())
+                    .expect("HMAC can take key of any size");
+                mac.update(&encoded[0..msg_auth_pos + 2]);
+                mac.update(&[0u8; 16]);
+                mac.update(&encoded[msg_auth_pos + 18..]);
+                let result = mac.finalize();
+                encoded[msg_auth_pos + 2..msg_auth_pos + 18].copy_from_slice(&result.into_bytes());
+
+                Ok(encoded)
+            }
+            EAP_RESPONSE => {
+                // Continue PEAP handshake
+                if eap_packet.data.is_empty() {
+                    return Ok(self.create_access_reject(packet, secret, "Empty PEAP data"));
+                }
+
+                // TODO: Implement PEAP handshake state machine
+                // This requires:
+                // 1. TLS handshake state tracking
+                // 2. Certificate validation
+                // 3. MS-CHAPv2 inner authentication
+                // 4. Session key derivation
+                Ok(self.create_access_reject(packet, secret, "PEAP handshake not implemented"))
+            }
+            _ => {
+                Ok(self.create_access_reject(packet, secret, "Invalid EAP code"))
+            }
+        }
+    }
+
+    async fn handle_eap_ttls(&self, packet: &RadiusPacket, eap_packet: &EapPacket, secret: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        // Extract username from EAP identity
+        let username = if eap_packet.code == EAP_RESPONSE && eap_packet.type_ == 1 {
+            // EAP Identity response
+            String::from_utf8_lossy(&eap_packet.data).to_string()
+        } else {
+            // Try to find username in RADIUS attributes
+            packet.attributes.iter()
+                .find(|attr| attr.typ == ATTR_USER_NAME)
+                .map(|attr| String::from_utf8_lossy(&attr.value).to_string())
+                .unwrap_or_default()
+        };
+
+        if username.is_empty() {
+            return Ok(self.create_access_reject(packet, secret, "Missing username"));
+        }
+
+        // Load server certificate and private key
+        let cert_file = File::open("certs/server.crt")
+            .map_err(|_| "Failed to open certificate file")?;
+
+        let key_file = File::open("certs/server.key")
+            .map_err(|_| "Failed to open private key file")?;
+
+        let mut reader = BufReader::new(cert_file);
+
+        let cert_chain = match certs(&mut reader) {
+            Ok(certs) => certs.into_iter().map(Certificate).collect::<Vec<_>>(),
+            Err(_) => return Ok(self.create_access_reject(packet, secret, "Failed to parse certificate")),
+        };
+        let mut key_reader = BufReader::new(key_file);
+        let mut keys = match pkcs8_private_keys(&mut key_reader) {
+            Ok(keys) => keys,
+            Err(_) => return Ok(self.create_access_reject(packet, secret, "Failed to parse private key")),
+        };
+
+        if keys.is_empty() {
+            return Ok(self.create_access_reject(packet, secret, "No private key found"));
+        }
+
+        let config = ServerConfig::builder()
+            .with_safe_defaults()
+            .with_no_client_auth()
+            .with_single_cert(
+                cert_chain,
+                PrivateKey(keys.remove(0))
+            )
+            .map_err(|_| "Failed to create TLS config")?;
+
+        let acceptor = TlsAcceptor::from(Arc::new(config));
+
+        match eap_packet.code {
+            EAP_REQUEST => {
+                // Start TTLS handshake
+                let mut response = EapPacket {
+                    code: EAP_RESPONSE,
+                    identifier: eap_packet.identifier,
+                    length: 0, // Will be set after encoding
+                    type_: EAP_TYPE_TTLS,
+                    data: vec![0x80], // Start bit set
+                };
+
+                // Create RADIUS response with EAP message
+                let mut radius_response = RadiusPacket {
+                    code: 11, // Access-Challenge
+                    identifier: packet.identifier,
+                    length: 20,
+                    authenticator: packet.authenticator,
+                    attributes: vec![
+                        RadiusAttribute {
+                            typ: ATTR_EAP_MESSAGE,
+                            value: response.encode(),
+                        },
+                        RadiusAttribute {
+                            typ: ATTR_MESSAGE_AUTHENTICATOR,
+                            value: vec![0u8; 16],
+                        },
+                    ],
+                };
+
+                // Calculate Message-Authenticator
+                let mut encoded = radius_response.encode();
+                let msg_auth_pos = encoded.windows(2)
+                    .position(|w| w[0] == ATTR_MESSAGE_AUTHENTICATOR)
+                    .unwrap();
+
+                let mut mac = <Hmac<Md5> as Mac>::new_from_slice(secret.as_bytes())
+                    .expect("HMAC can take key of any size");
+                mac.update(&encoded[0..msg_auth_pos + 2]);
+                mac.update(&[0u8; 16]);
+                mac.update(&encoded[msg_auth_pos + 18..]);
+                let result = mac.finalize();
+                encoded[msg_auth_pos + 2..msg_auth_pos + 18].copy_from_slice(&result.into_bytes());
+
+                Ok(encoded)
+            }
+            EAP_RESPONSE => {
+                // Continue TTLS handshake
+                if eap_packet.data.is_empty() {
+                    return Ok(self.create_access_reject(packet, secret, "Empty TTLS data"));
+                }
+
+                // TODO: Implement TTLS handshake state machine
+                // This requires:
+                // 1. TLS handshake state tracking
+                // 2. Certificate validation
+                // 3. Inner authentication method selection and handling
+                // 4. Session key derivation
+                Ok(self.create_access_reject(packet, secret, "TTLS handshake not implemented"))
+            }
+            _ => {
+                Ok(self.create_access_reject(packet, secret, "Invalid EAP code"))
+            }
+        }
     }
 }
 
@@ -835,4 +1473,90 @@ impl ToUtf16Le for str {
             .flat_map(|c| c.to_le_bytes().to_vec())
             .collect()
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct EapPacket {
+    pub code: u8,
+    pub identifier: u8,
+    pub length: u16,
+    pub type_: u8,
+    pub data: Vec<u8>,
+}
+
+impl EapPacket {
+    pub fn parse(data: &[u8]) -> Option<Self> {
+        if data.len() < 4 {
+            return None;
+        }
+
+        let code = data[0];
+        let identifier = data[1];
+        let length = u16::from_be_bytes([data[2], data[3]]);
+
+        if data.len() < length as usize {
+            return None;
+        }
+
+        let type_ = if data.len() > 4 { data[4] } else { 0 };
+        let data = if data.len() > 5 {
+            data[5..length as usize].to_vec()
+        } else {
+            Vec::new()
+        };
+
+        Some(Self {
+            code,
+            identifier,
+            length,
+            type_,
+            data,
+        })
+    }
+
+    pub fn encode(&self) -> Vec<u8> {
+        let mut out = Vec::with_capacity(5 + self.data.len());
+        out.push(self.code);
+        out.push(self.identifier);
+        out.extend_from_slice(&self.length.to_be_bytes());
+        out.push(self.type_);
+        out.extend_from_slice(&self.data);
+        out
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct EapSimAttributes {
+    pub version_list: Option<Vec<u8>>,
+    pub selected_version: Option<u8>,
+    pub nonce_mt: Option<Vec<u8>>,
+    pub nonce_s: Option<Vec<u8>>,
+    pub rand: Option<Vec<Vec<u8>>>,  // Up to 3 RAND values
+    pub mac: Option<Vec<u8>>,
+    pub encr_data: Option<Vec<u8>>,
+    pub iv: Option<Vec<u8>>,
+    pub next_pseudonym: Option<Vec<u8>>,
+    pub next_reauth_id: Option<Vec<u8>>,
+    pub result_ind: Option<bool>,
+    pub counter: Option<u16>,
+    pub counter_too_small: Option<bool>,
+    pub notification: Option<u16>,
+    pub client_error_code: Option<u16>,
+}
+
+#[derive(Debug, Clone)]
+pub struct EapAkaAttributes {
+    pub rand: Option<Vec<u8>>,
+    pub autn: Option<Vec<u8>>,
+    pub ik: Option<Vec<u8>>,
+    pub ck: Option<Vec<u8>>,
+    pub res: Option<Vec<u8>>,
+    pub auts: Option<Vec<u8>>,
+    pub next_pseudonym: Option<Vec<u8>>,
+    pub next_reauth_id: Option<Vec<u8>>,
+    pub result_ind: Option<bool>,
+    pub counter: Option<u16>,
+    pub counter_too_small: Option<bool>,
+    pub notification: Option<u16>,
+    pub client_error_code: Option<u16>,
 }

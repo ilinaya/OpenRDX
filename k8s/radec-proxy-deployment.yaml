@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: radsec-proxy
+  namespace: openrdx
+  labels:
+    app: radsec-proxy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: radsec-proxy
+  template:
+    metadata:
+      labels:
+        app: radsec-proxy
+    spec:
+      containers:
+      - name: radsec-proxy
+        image: openrdx/radsec-proxy:latest
+        ports:
+        - containerPort: 1813
+        env:
+        - name: LOG_LEVEL
+          value: "info"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: radsec-proxy
+  namespace: openrdx
+spec:
+  selector:
+    app: radsec-proxy
+  ports:
+    - protocol: TCP
+      port: 1813
+      targetPort: 1813
+  type: ClusterIP 

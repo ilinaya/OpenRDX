@@ -57,4 +57,5 @@ kubeconfig
 
 # Logs
 *.log
-logs/ 
+logs/
+.env

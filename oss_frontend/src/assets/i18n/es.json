@@ -254,6 +254,10 @@
       }
     },
     "form": {
+      "allowAnyNas": "Permitir en cualquier NAS",
+      "allowAnyNasInherit": "Heredar del grupo",
+      "allowAnyNasAllowed": "Permitido",
+      "allowAnyNasDisallowed": "No permitido",
       "externalId": "ID Externo",
       "create": "Crear Usuario",
       "edit": "Editar Usuario",

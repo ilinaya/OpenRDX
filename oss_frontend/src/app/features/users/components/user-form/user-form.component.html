@@ -63,6 +63,24 @@
       </div>
 
       <div class="form-group">
+        <label>{{ 'users.form.allowAnyNas' | translate }}</label>
+        <div>
+          <label>
+            <input type="radio" formControlName="allow_any_nas" [value]="null">
+            {{ 'users.form.allowAnyNasInherit' | translate }}
+          </label>
+          <label>
+            <input type="radio" formControlName="allow_any_nas" [value]="true">
+            {{ 'users.form.allowAnyNasAllowed' | translate }}
+          </label>
+          <label>
+            <input type="radio" formControlName="allow_any_nas" [value]="false">
+            {{ 'users.form.allowAnyNasDisallowed' | translate }}
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
         <label>{{ 'users.form.groups' | translate }}</label>
         <div class="groups-container">
           @for (group of userGroups; track group.id) {

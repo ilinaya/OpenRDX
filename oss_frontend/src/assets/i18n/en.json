@@ -252,6 +252,10 @@
       }
     },
     "form": {
+      "allowAnyNas": "Allow at any NAS",
+      "allowAnyNasInherit": "Inherit from group",
+      "allowAnyNasAllowed": "Allowed",
+      "allowAnyNasDisallowed": "Disallowed",
       "externalId": "External ID",
       "create": "Create User",
       "edit": "Edit User",

@@ -28,6 +28,7 @@ interface UserResponse {
   is_active: boolean;
   groups: UserGroup[];
   identifiers: UserIdentifier[];
+  allow_any_nas?: boolean;
 }
 
 interface EditModeResult extends LoadDataResult {
@@ -66,7 +67,6 @@ export class UserFormComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private translate: TranslateService,
-    private cdr: ChangeDetectorRef
   ) {
     this.userForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -75,6 +75,7 @@ export class UserFormComponent implements OnInit {
       external_id: [null],
       phone_number: [''],
       is_active: [true],
+      allow_any_nas: [null],
       group_ids: [[]],
       identifiers: this.fb.array([])
     });
@@ -289,8 +290,8 @@ export class UserFormComponent implements OnInit {
     const identifiers = this.identifiersForm.controls.map(control => {
       const identifierValue = control.getRawValue();
       // Get the original identifier from the identifiers array if it exists
-      const originalIdentifier = this.identifiers.find(i => 
-        i.identifier_type?.id === identifierValue.identifier_type_id && 
+      const originalIdentifier = this.identifiers.find(i =>
+        i.identifier_type?.id === identifierValue.identifier_type_id &&
         i.value === identifierValue.value
       );
 

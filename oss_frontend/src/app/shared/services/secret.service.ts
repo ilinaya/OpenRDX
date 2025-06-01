@@ -9,7 +9,7 @@ import { PagedResponse, PaginationParams } from '../models/pagination.model';
   providedIn: 'root'
 })
 export class SecretService {
-  private apiUrl = `${environment.apiUrl}/radius/secrets`;
+  private apiUrl = `${environment.apiUrl}/radius/secrets/`;
 
   constructor(private http: HttpClient) { }
 
@@ -26,7 +26,7 @@ export class SecretService {
   }
 
   getSecret(id: number): Observable<Secret> {
-    return this.http.get<Secret>(`${this.apiUrl}/${id}`);
+    return this.http.get<Secret>(`${this.apiUrl}/${id}/`);
   }
 
   createSecret(secret: SecretCreate): Observable<Secret> {
@@ -34,11 +34,11 @@ export class SecretService {
   }
 
   updateSecret(id: number, secret: SecretUpdate): Observable<Secret> {
-    return this.http.patch<Secret>(`${this.apiUrl}/${id}`, secret);
+    return this.http.patch<Secret>(`${this.apiUrl}/${id}/`, secret);
   }
 
   deleteSecret(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+    return this.http.delete<void>(`${this.apiUrl}/${id}/`);
   }
 
   encryptSecret(id: number): Observable<Secret> {
@@ -48,4 +48,4 @@ export class SecretService {
   decryptSecret(id: number): Observable<Secret> {
     return this.http.post<Secret>(`${this.apiUrl}/${id}/decrypt`, {});
   }
-} 
+}

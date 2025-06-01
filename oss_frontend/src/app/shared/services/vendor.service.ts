@@ -9,7 +9,7 @@ import { PagedResponse } from '../models/pagination.model';
   providedIn: 'root'
 })
 export class VendorService {
-  private apiUrl = `${environment.apiUrl}/nas/vendors`;
+  private apiUrl = `${environment.apiUrl}/nas/vendors/`;
 
   constructor(private http: HttpClient) {}
 
@@ -47,4 +47,4 @@ export class VendorService {
   deleteVendor(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}/`);
   }
-} 
+}

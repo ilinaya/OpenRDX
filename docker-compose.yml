@@ -20,9 +20,9 @@ services:
       context: ./core
       dockerfile: Dockerfile
     ports:
-      - "1814:1814/tcp"
+      - "2083:2083/tcp"
     environment:
-      - RADSEC_BIND_ADDR=0.0.0.0:1812
+      - RADSEC_BIND_ADDR=0.0.0.0:2083
       - LOG_LEVEL=info
     depends_on:
       - core-auth

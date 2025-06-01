@@ -1,5 +1,5 @@
 # Build stage
-FROM rust:1.75-slim-bullseye as builder
+FROM rust:nightly AS builder
 
 WORKDIR /usr/src/app
 
@@ -37,6 +37,8 @@ USER radius
 
 # Set environment variables
 ENV RUST_LOG=info
+
+EXPOSE 2083
 
 # The entrypoint script will determine which service to run
 COPY --from=builder /usr/src/app/docker-entrypoint.sh /usr/local/bin/

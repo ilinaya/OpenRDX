@@ -1,21 +1,23 @@
 services:
   nginx:
-    image: nginx:alpine
+    container_name: 'openrdx-nginx-proxy'
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
     ports:
       - "80:80"
       - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       - oss_frontend
       - oss_backend
+    volumes:
+      - ./nginx/ssl:/etc/nginx/ssl
     networks:
       - openrdx-network
     restart: unless-stopped
 
   core-radsec-proxy:
+    container_name: 'openrdx-radsec-proxy'
     build:
       context: ./core
       dockerfile: Dockerfile
@@ -31,6 +33,7 @@ services:
       - openrdx-network
 
   core-auth:
+    container_name: 'openrdx-auth-core'
     build:
       context: ./core
       dockerfile: Dockerfile
@@ -50,6 +53,7 @@ services:
       - openrdx-network
 
   core-acct:
+    container_name: 'openrdx-acct-core'
     build:
       context: ./core
       dockerfile: Dockerfile
@@ -69,6 +73,8 @@ services:
       - openrdx-network
 
   oss_backend:
+    container_name: 'openrdx-backend'
+    hostname: 'openrdx-backend'
     build:
       context: ./oss_backend
       dockerfile: Dockerfile
@@ -108,8 +114,6 @@ services:
 
       # RADIUS settings
       - COA_TOPIC=radius_coa
-    expose:
-      - "8000"
     networks:
       - openrdx-network
     depends_on:
@@ -119,6 +123,8 @@ services:
     restart: unless-stopped
 
   oss_frontend:
+    container_name: 'openrdx-frontend'
+    hostname: 'openrdx-frontend'
     build:
       context: ./oss_frontend
       dockerfile: Dockerfile
@@ -136,6 +142,7 @@ services:
     restart: unless-stopped
 
   postgres:
+    container_name: 'openrdx-postgres'
     image: postgres:15-alpine
     environment:
       - POSTGRES_USER=postgres
@@ -150,6 +157,7 @@ services:
     restart: unless-stopped
 
   mongodb:
+    container_name: 'openrdx-mongo'
     image: mongo:6.0
     environment:
       - MONGO_INITDB_DATABASE=radius_accounting
@@ -162,6 +170,7 @@ services:
     restart: unless-stopped
 
   redis:
+    container_name: 'openrdx-redis'
     image: redis:7-alpine
     expose:
       - "6379"

@@ -40,16 +40,15 @@ urlpatterns = [
     path('', include('django_prometheus.urls')),
 
     # API endpoints
-    path('api/auth/', include('authentication.urls')),
-    path('api/admin-users/', include('admin_users.urls')),
-    path('api/nas/', include('nas.urls')),
-    path('api/users/', include('users.urls')),
-    path('api/accounting/', include('accounting.urls')),
-    path('api/radius/', include('radius.urls')),
-    path('api/radsec/', include('radsec.urls')),
-    path('api/shared/', include('shared.urls')),
+    path('auth/', include('authentication.urls')),
+    path('admin-users/', include('admin_users.urls')),
+    path('nas/', include('nas.urls')),
+    path('users/', include('users.urls')),
+    path('accounting/', include('accounting.urls')),
+    path('radius/', include('radius.urls')),
+    path('radsec/', include('radsec.urls')),
+    path('shared/', include('shared.urls')),
 ]
 
-# Serve static files in development
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

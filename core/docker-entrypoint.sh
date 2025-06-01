@@ -16,4 +16,4 @@ else
 fi
 
 # Run the application with the appropriate service type
-exec radius-server 
+exec OpenRDX-Core

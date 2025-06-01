@@ -62,25 +62,32 @@ OpenRDX is a modern, scalable platform for managing and processing RADIUS authen
    cd OpenRDX
    ```
 
-2. Generate SSL certificates for local development:
+2. Copy the example environment file and configure it:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration, API_URL mainly for the FE <> BE communication
+   ```
+
+3. Generate SSL certificates for BE / FE SSL:
    ```bash
    ./scripts/generate-ssl.sh
    ```
 
-3. Start all services:
+4. Start all services using the compose script:
    ```bash
-   docker-compose up -d
+   ./compose.sh
    ```
 
-4. Access the services:
-   - Frontend: https://localhost
-   - Backend API: https://localhost/api
+5. Access the services:
+   - Frontend: http://<API_URL>
+   - Backend API: http://<API_URL>/api
    - Core Service (RADIUS): UDP ports 1812, 1813
+   - Core Service (RadSEC): TCP port 2083
    - PostgreSQL: Internal only (port 5432)
    - MongoDB: Internal only (port 27017)
    - Redis: Internal only (port 6379)
 
-5. Default Authentication Credentials:
+6. Default Authentication Credentials (FE):
    ```json
    {
      "email": "admin@example.com",
@@ -92,19 +99,83 @@ OpenRDX is a modern, scalable platform for managing and processing RADIUS authen
 ## Architecture
 
 ### Components
-- **Core Service (Rust)**:
-  - High-performance RADIUS server
-  - Handles authentication and accounting
-  - Exposes UDP ports 1812, 1813
-  - Internal service, not directly accessible from outside
-  - Stores accounting data in MongoDB
-  - Uses MongoDB for high-performance logging
-  - Environment variables:
-    ```env
-    # RADIUS settings
-    COA_TOPIC=radius_coa  # Topic used for Change of Authorization (CoA) requests
-    ```
+- **Core Services**:
+  - **Authentication Service (Rust)**:
+    - High-performance RADIUS authentication server
+    - Handles PAP, CHAP, MS-CHAP, MS-CHAPv2 authentication
+    - Exposes UDP port 1812
+    - Horizontally scalable under load balancer
+    - Environment variables:
+      ```env
+      # Service type
+      SERVICE_TYPE=auth
+      
+      # RADIUS settings
+      RADIUS_BIND_ADDR=0.0.0.0:1812
+      
+      # Database settings
+      DATABASE_URL=postgresql://user:pass@postgres:5432/radius
+      REDIS_URL=redis://redis:6379/0
+      ```
 
+  - **Accounting Service (Rust)**:
+    - High-performance RADIUS accounting server
+    - Handles Start/Stop/Interim-Update accounting records
+    - Exposes UDP port 1813
+    - Horizontally scalable under load balancer
+    - Stores accounting data in MongoDB
+    - Environment variables:
+      ```env
+      # Service type
+      SERVICE_TYPE=acct
+      
+      # RADIUS settings
+      RADIUS_BIND_ADDR=0.0.0.0:1813
+      
+      # Database settings
+      MONGODB_URI=mongodb://mongodb:27017/radius_accounting
+      REDIS_URL=redis://redis:6379/0
+      ```
+
+  - **RadSec Proxy Service (Rust) (Optional)**:
+    - Secure RADIUS over TLS implementation
+    - Handles both authentication and accounting over TLS
+    - Exposes TCP port 2083
+    - Horizontally scalable under load balancer
+    - Supports TLS 1.2/1.3
+    - Environment variables:
+      ```env
+      # RadSec settings
+      RADSEC_BIND_ADDR=0.0.0.0:2083
+      
+      # Database settings
+      DATABASE_URL=postgresql://user:pass@postgres:5432/radius
+      MONGODB_URI=mongodb://mongodb:27017/radius_accounting
+      REDIS_URL=redis://redis:6379/0
+      ```
+
+  - **Load Balancer Configuration (Optional)**:
+    - UDP load balancing for RADIUS (1812/1813)
+    - TCP load balancing for RadSec (2083)
+    - Session persistence for accounting
+    - Health checks for service availability
+    - Automatic failover
+    - Example Kubernetes Service:
+      ```yaml
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: radius-auth
+      spec:
+        type: LoadBalancer
+        ports:
+        - protocol: UDP
+          port: 1812
+          targetPort: 1812
+        selector:
+          app: radius-auth
+      ```
+      
 - **Backend Service (Django)**:
   - RESTful API built with Django REST Framework
   - User management and system configuration
@@ -224,40 +295,37 @@ OpenRDX is a modern, scalable platform for managing and processing RADIUS authen
 ## SSL Certificate Management
 
 ### Local Development
-The project includes automatic SSL certificate generation for local development:
-```bash
-./scripts/generate-ssl.sh
-```
-This script:
-- Installs mkcert if not present
-- Generates self-signed certificates
-- Places them in the correct location
-- Sets proper permissions
+The project handles SSL certificates automatically through the nginx container:
 
-### Production
-For production environments, you have two options:
+1. **Automatic Self-Signed Certificates**:
+   - If no SSL certificates are found in `nginx/ssl/`, the nginx container will automatically generate self-signed certificates during startup
+   - Generated certificates will be placed in `nginx/ssl/`
+   - This is suitable for local development and testing
 
-1. Using Let's Encrypt with certbot:
-   ```bash
-   # Install certbot
-   sudo apt-get update
-   sudo apt-get install certbot
+2. **Custom SSL Certificates**:
+   - For production or custom certificates, place your SSL files in `nginx/ssl/`:
+     ```
+     nginx/ssl/
+     ├── server.crt    # Your SSL certificate
+     └── server.key    # Your private key
+     ```
+   - Update the SSL configuration in `nginx/conf.d/` to match your certificate filenames:
+     ```nginx
+     ssl_certificate     /etc/nginx/ssl/server.crt;
+     ssl_certificate_key /etc/nginx/ssl/server.key;
+     ```
 
-   # Generate certificates
-   sudo certbot certonly --standalone -d yourdomain.com
+3. **Certificate Requirements**:
+   - Certificates must be in PEM format
+   - Private key must be unencrypted
+   - Files must have proper permissions (readable by nginx)
 
-   # Copy certificates to nginx/ssl/
-   sudo cp /etc/letsencrypt/live/yourdomain.com/fullchain.pem nginx/ssl/cert.pem
-   sudo cp /etc/letsencrypt/live/yourdomain.com/privkey.pem nginx/ssl/key.pem
-   ```
-
-2. Using Docker with certbot:
-   ```bash
-   docker run -it --rm \
-     -v nginx/ssl:/etc/nginx/ssl \
-     -p 80:80 -p 443:443 \
-     certbot/certbot certonly --standalone -d yourdomain.com
-   ```
+### Production Deployment
+For production environments:
+1. Use proper SSL certificates from a trusted Certificate Authority
+2. Place certificates in `nginx/ssl/` before deployment
+3. Ensure proper security measures for certificate storage and rotation
+4. Consider using a certificate management solution (e.g., Let's Encrypt, AWS Certificate Manager)
 
 ## Development
 

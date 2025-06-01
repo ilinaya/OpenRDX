@@ -74,21 +74,24 @@ class UserIdentifierSerializer(serializers.ModelSerializer):
     identifier_type_id = serializers.PrimaryKeyRelatedField(
         queryset=UserIdentifierType.objects.all(),
         source='identifier_type',
-        write_only=True
     )
     auth_attribute_group = serializers.SerializerMethodField()
     auth_attribute_group_id = serializers.PrimaryKeyRelatedField(
         queryset=apps.get_model('radius', 'AuthAttributeGroup').objects.all(),
         source='auth_attribute_group',
-        write_only=True,
         required=False,
         allow_null=True
+    )
+    plain_password = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        help_text="Plain text password for the identifier, will be hashed before saving"
     )
     expired_auth_attribute_group = serializers.SerializerMethodField()
     expired_auth_attribute_group_id = serializers.PrimaryKeyRelatedField(
         queryset=apps.get_model('radius', 'AuthAttributeGroup').objects.all(),
         source='expired_auth_attribute_group',
-        write_only=True,
         required=False,
         allow_null=True
     )
@@ -101,7 +104,7 @@ class UserIdentifierSerializer(serializers.ModelSerializer):
             'is_enabled', 'comment', 'auth_attribute_group', 'auth_attribute_group_id',
             'expiration_date', 'reject_expired', 'expired_auth_attribute_group',
             'expired_auth_attribute_group_id', 'created_at', 'updated_at',
-            'is_expired'
+            'is_expired', 'plain_password'
         ]
         read_only_fields = ['created_at', 'updated_at']
 

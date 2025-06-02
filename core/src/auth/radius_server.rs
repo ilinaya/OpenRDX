@@ -175,7 +175,9 @@ impl RadiusAuthServer {
             return "EAP".to_string();
         }
 
-        let has_mschap = packet.attributes.iter().any(|attr| {
+        // Check for MS-CHAP and MS-CHAPv2 in Vendor-Specific Attributes
+        // Check for MS-CHAP and MS-CHAPv2 in Vendor-Specific Attributes
+        let has_ms_auth = packet.attributes.iter().any(|attr| {
             if attr.typ == ATTR_VENDOR_SPECIFIC && attr.value.len() >= 4 {
                 let vendor_id = u32::from_be_bytes([
                     attr.value[0], attr.value[1],
@@ -183,22 +185,40 @@ impl RadiusAuthServer {
                 ]);
                 if vendor_id == VENDOR_MICROSOFT && attr.value.len() >= 6 {
                     let vendor_type = attr.value[4];
-                    return vendor_type == VENDOR_ATTR_MS_CHAP_RESPONSE;
+                    return vendor_type == VENDOR_ATTR_MS_CHAP_RESPONSE ||
+                        vendor_type == VENDOR_ATTR_MS_CHAP2_RESPONSE;
                 }
             }
             false
         });
 
-        if has_mschap {
-            return "MS-CHAP".to_string();
+        if has_ms_auth {
+            // Now determine if it's MS-CHAP or MS-CHAPv2
+            let is_v2 = packet.attributes.iter().any(|attr| {
+                if attr.typ == ATTR_VENDOR_SPECIFIC && attr.value.len() >= 4 {
+                    let vendor_id = u32::from_be_bytes([
+                        attr.value[0], attr.value[1],
+                        attr.value[2], attr.value[3]
+                    ]);
+                    if vendor_id == VENDOR_MICROSOFT && attr.value.len() >= 6 {
+                        return attr.value[4] == VENDOR_ATTR_MS_CHAP2_RESPONSE;
+                    }
+                }
+                false
+            });
+
+            if is_v2 {
+                return "MS-CHAPv2".to_string();
+            } else {
+                return "MS-CHAP".to_string();
+            }
         }
+
 
         if packet.attributes.iter().any(|attr| attr.typ == ATTR_USER_PASSWORD) {
             "PAP".to_string()
         } else if packet.attributes.iter().any(|attr| attr.typ == ATTR_CHAP_PASSWORD) {
             "CHAP".to_string()
-        } else if packet.attributes.iter().any(|attr| attr.typ == ATTR_MS_CHAP2_RESPONSE) {
-            "MS-CHAPv2".to_string()
         } else {
             "Unknown".to_string()
         }
@@ -503,6 +523,10 @@ impl RadiusAuthServer {
                 }
             }
             "MS-CHAPv2" => {
+                debug!("MS-CHAPv2 Peer Challenge: {:02x?}", mschap2_peer_challenge);
+                debug!("MS-CHAPv2 NT Response: {:02x?}", mschap2_nt_response);
+
+
                 if let (Some(username), Some(peer_challenge), Some(nt_response)) = (username, mschap2_peer_challenge, mschap2_nt_response) {
                     match self.authenticate_mschap2(&username, &peer_challenge, &nt_response, &packet.authenticator, secret).await {
                         Ok(AuthResult::Success) => self.create_access_accept(packet, secret),
@@ -638,7 +662,8 @@ impl RadiusAuthServer {
 
     async fn authenticate_mschap2(&self, username: &str, peer_challenge: &[u8], nt_response: &[u8], authenticator: &[u8], secret: &str) -> Result<AuthResult, sqlx::Error> {
         let pool = self.auth_server.get_pool();
-        
+        debug!("Query Username: {}", username);
+
         let result = sqlx::query!(
             r#"
             SELECT id, plain_password, is_enabled
@@ -650,6 +675,9 @@ impl RadiusAuthServer {
         .fetch_optional(pool)
         .await?;
 
+        debug!("Got Db user for MSChapv2: {:?}", result);
+
+
         match result {
             Some(record) => {
                 if !record.is_enabled {
@@ -658,50 +686,43 @@ impl RadiusAuthServer {
 
                 if let Some(stored_pass) = record.plain_password {
                     // Generate NT hash from password
-                    let nt_hash = nt_hash(stored_pass.as_bytes());
-                    
-                    // Generate challenge hash using SHA1(peer_challenge + authenticator + username)
-                    let mut hasher = sha1::Sha1::new();
-                    hasher.update(peer_challenge);
-                    hasher.update(authenticator);
-                    hasher.update(username.as_bytes());
-                    let challenge_hash = hasher.finalize();
+                    debug!(
+                        "Stored password - Length: {}, Bytes: {:02x?}",
+                        stored_pass.len(),
+                        stored_pass
+                    );
 
-                    // Generate expected NT response
-                    let mut hasher = md4::Md4::new();
-                    hasher.update(&nt_hash);
-                    hasher.update(&challenge_hash);
+                    let password_utf16: Vec<u8> = stored_pass.encode_utf16()
+                        .flat_map(|c| c.to_le_bytes().to_vec())
+                        .collect();
 
-                    let challenge_hash = {
-                        let mut sha = sha1::Sha1::new();
-                        sha.update(peer_challenge);
-                        sha.update(authenticator);
-                        sha.update(username.as_bytes());
-                        let full_hash = sha.finalize();
-                        full_hash[0..8].to_vec()
-                    };
+                    // Generate NT hash from the UTF-16LE password
+                    let password_hash = nt_hash(&password_utf16);
 
-                    // Generate 24-byte response with 3 DES blocks
-                    let mut padded = nt_hash.clone();
-                    padded.resize(21, 0);
+                    // Add extra debug output to verify the hashing steps
+                    debug!("Password UTF-16LE bytes: {:02x?}", password_utf16);
+                    debug!("Password NT hash: {:02x?}", password_hash);
 
-                    let mut expected_response = Vec::with_capacity(24);
+                    // Generate the challenge using SHA1(peer_challenge + authenticator + username)
+                    let challenge = generate_nt_response_challenge(peer_challenge, authenticator, username);
+                    debug!("Generated challenge: {:02x?}", challenge);
 
-                    for i in 0..3 {
-                        let key_7 = &padded[i * 7..(i + 1) * 7];
-                        let key_8 = setup_des_key(key_7);
-                        let cipher = Des::new_from_slice(&key_8).unwrap();
-                        let mut block = GenericArray::clone_from_slice(&challenge_hash[..8]);
-                        cipher.encrypt_block(&mut block);
-                        expected_response.extend_from_slice(&block);
-                    }
+                    // Generate expected response
+                    let expected_response = generate_nt_response(&password_hash, &challenge);
 
-                    // Compare NT responses (24 bytes)
-                    if nt_response[0..24] == expected_response.as_slice()[0..24] {
+                    debug!(
+                        "MSCHAPv2 response comparison:\nReceived:  {:02x?}\nExpected:  {:02x?}",
+                        &nt_response[0..24],
+                        &expected_response[0..24]
+                    );
+
+                    if nt_response[0..24] == expected_response[0..24] {
                         Ok(AuthResult::Success)
                     } else {
                         Ok(AuthResult::InvalidPassword)
                     }
+
+
                 } else {
                     Ok(AuthResult::InvalidPassword)
                 }
@@ -1441,12 +1462,65 @@ fn decode_pap_password(encrypted: Vec<u8>, authenticator: &[u8], secret: &str) -
 
 }
 
-// Helper function for MS-CHAPv2
+// Helper function to generate the challenge for NT-Response
+fn generate_nt_response_challenge(peer_challenge: &[u8], authenticator_challenge: &[u8], username: &str) -> Vec<u8> {
+    use sha1::{Sha1, Digest};
+
+    let mut hasher = Sha1::new();
+    // The challenge should use peer challenge first, then authenticator challenge
+    hasher.update(peer_challenge);
+    hasher.update(authenticator_challenge);
+    hasher.update(username.as_bytes());
+    let hash = hasher.finalize();
+    hash[0..8].to_vec()
+}
+
+fn generate_nt_response(password_hash: &[u8], challenge: &[u8]) -> Vec<u8> {
+    let mut padded_hash = password_hash.to_vec();
+    padded_hash.resize(21, 0);
+
+    let mut response = Vec::with_capacity(24);
+
+    // Generate three DES keys from the 21-byte padded hash
+    for i in 0..3 {
+        let start = i * 7;
+        let mut key = [0u8; 8];
+
+        // Convert 7 bytes into 8 bytes for DES key
+        key[0] = padded_hash[start] >> 1;
+        key[1] = ((padded_hash[start] & 0x01) << 6) | (padded_hash[start + 1] >> 2);
+        key[2] = ((padded_hash[start + 1] & 0x03) << 5) | (padded_hash[start + 2] >> 3);
+        key[3] = ((padded_hash[start + 2] & 0x07) << 4) | (padded_hash[start + 3] >> 4);
+        key[4] = ((padded_hash[start + 3] & 0x0F) << 3) | (padded_hash[start + 4] >> 5);
+        key[5] = ((padded_hash[start + 4] & 0x1F) << 2) | (padded_hash[start + 5] >> 6);
+        key[6] = ((padded_hash[start + 5] & 0x3F) << 1) | (padded_hash[start + 6] >> 7);
+        key[7] = padded_hash[start + 6] & 0x7F;
+
+        // Left shift each byte by 1 bit
+        for b in &mut key {
+            *b = (*b << 1) & 0xFE;
+        }
+
+        let cipher = des::Des::new_from_slice(&key)
+            .expect("Failed to create DES cipher");
+
+        let mut block = GenericArray::clone_from_slice(&challenge[0..8]);
+        cipher.encrypt_block(&mut block);
+        response.extend_from_slice(&block);
+    }
+
+    response
+}
+
+
 fn nt_hash(password: &[u8]) -> Vec<u8> {
-    let mut hasher = md4::Md4::new();
+    use md4::{Md4, Digest};
+
+    let mut hasher = Md4::new();
     hasher.update(password);
     hasher.finalize().to_vec()
 }
+
 
 /// Convert 7-byte array into 8-byte DES key (with parity bits)
 fn setup_des_key(key_7: &[u8]) -> [u8; 8] {

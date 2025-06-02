@@ -19,7 +19,7 @@ def create_default_secret(apps, schema_editor):
             'secret': "openrdx",
             'rad_sec': False,
             'description': "Default RADIUS secret",
-            'source_subnets': []
+            'source_subnets': ["0.0.0.0/0"],
         }
     )
 

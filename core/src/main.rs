@@ -1,7 +1,7 @@
 use dotenv::dotenv;
 use std::path::Path;
-use tracing::{info, error, Level, debug};
-use tracing_subscriber::{EnvFilter, fmt::format::FmtSpan, FmtSubscriber};
+use tracing::{info, error, debug};
+use tracing_subscriber::{EnvFilter, fmt::format::FmtSpan};
 use std::sync::Arc;
 
 mod auth;

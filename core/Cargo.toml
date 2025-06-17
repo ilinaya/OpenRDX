@@ -34,5 +34,6 @@ generic-array = "0.14"
 rustls-pemfile = "1.0.4"
 tokio-rustls = "0.24.1"
 rustls = "0.21.12"
+hex = "0.4.3"
 
 

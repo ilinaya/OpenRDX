@@ -12,7 +12,7 @@ mod radius_server;
 mod models;
 
 pub use radius_server::RadiusAuthServer;
-pub use models::{NasDevice, Subscriber};
+pub use models::{NasDevice};
 
 #[derive(Debug, Clone)]
 struct SecretInfo {

@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
-use std::net::IpAddr;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Session {
@@ -49,7 +48,7 @@ impl AccountingPacket {
     pub fn parse(data: &[u8]) -> Option<Self> {
         if data.len() < 20 { return None; }
         
-        let code = data[0];
+        //let code = data[0];
         let identifier = data[1];
         let length = u16::from_be_bytes([data[2], data[3]]);
         if data.len() < length as usize { return None; }

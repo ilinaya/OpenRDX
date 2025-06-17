@@ -1,6 +1,4 @@
 use serde::{Serialize, Deserialize};
-use std::net::IpAddr;
-use ipnetwork::IpNetwork;
 use sqlx::types::JsonValue;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -43,4 +41,4 @@ pub struct AuthAttributeGroup {
     pub name: String,
     pub description: Option<String>,
     pub attributes: Vec<AuthAttribute>,
-} 
+}

@@ -3,17 +3,13 @@ use tracing::{info, error, warn, debug};
 use mongodb::{Client, options::ClientOptions, Database, bson::{doc, DateTime as BsonDateTime}};
 use redis::Client as RedisClient;
 use tokio::net::UdpSocket;
-use chrono::Utc;
 use std::collections::HashMap;
 use std::net::IpAddr;
-use std::sync::Arc;
 use std::time::SystemTime;
-use hmac::{Hmac, Mac};
-use md5::{Md5, Digest};
 
 mod models;
 
-pub use models::{Session, Quota, AccountingPacket, AccountingAttribute};
+pub use models::{Session, AccountingPacket};
 
 // RADIUS Accounting packet types
 const ACCT_STATUS_TYPE_START: u8 = 1;

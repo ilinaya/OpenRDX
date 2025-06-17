@@ -154,17 +154,17 @@
                   </td>
                   <td>
                     <select class="form-select" formControlName="auth_attribute_group">
-                      <option [ngValue]="null">{{ 'users.form.selectGroup' | translate }}</option>
+                      <option [value]="''">{{ 'users.form.selectGroup' | translate }}</option>
                       @for (group of authAttributeGroups; track group.id) {
-                        <option [ngValue]="group">{{group.name}}</option>
+                        <option [value]="group.id">{{group.name}}</option>
                       }
                     </select>
                   </td>
                   <td>
                     <select class="form-select" formControlName="expired_auth_attribute_group">
-                      <option [ngValue]="null">{{ 'users.form.selectGroup' | translate }}</option>
+                      <option [value]="''">{{ 'users.form.selectGroup' | translate }}</option>
                       @for (group of authAttributeGroups; track group.id) {
-                        <option [ngValue]="group">{{group.name}}</option>
+                        <option [value]="group.id">{{group.name}}</option>
                       }
                     </select>
                   </td>

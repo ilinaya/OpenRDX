@@ -113,7 +113,10 @@ export class UserFormComponent implements OnInit {
       })
     ).subscribe({
       next: (result) => {
+
         if (result) {
+          this.authAttributeGroups = result.authAttributeGroups;
+
           if (this.isEditMode && 'user' in result) {
             const editResult = result as EditModeResult;
             const userData = {
@@ -133,6 +136,7 @@ export class UserFormComponent implements OnInit {
 
             // Create form controls for existing identifiers
             if (editResult.user.identifiers) {
+              console.log("auth_attribute_group", this.authAttributeGroups);
               editResult.user.identifiers.forEach(identifier => {
                 const identifierForm = this.createIdentifierForm();
                 identifierForm.patchValue({
@@ -140,11 +144,14 @@ export class UserFormComponent implements OnInit {
                   value: identifier.value,
                   is_enabled: identifier.is_enabled,
                   reject_expired: identifier.reject_expired,
-                  auth_attribute_group: identifier.auth_attribute_group,
-                  expired_auth_attribute_group: identifier.expired_auth_attribute_group,
+                  auth_attribute_group: identifier.auth_attribute_group?.id,
+                  expired_auth_attribute_group: identifier.expired_auth_attribute_group?.id,
                   expiration_date: identifier.expiration_date,
-                  comment: identifier.comment
+                  comment: identifier.comment,
+                  plain_password: identifier.plain_password
                 });
+
+                console.log('Selected identifier expired_auth_attribute_group is %s', identifier.auth_attribute_group?.id)
 
                 // Handle disabled state for expired_auth_attribute_group
                 if (identifier.reject_expired) {
@@ -157,7 +164,6 @@ export class UserFormComponent implements OnInit {
           }
           this.userGroups = result.groups;
           this.identifierTypes = result.identifierTypes;
-          this.authAttributeGroups = result.authAttributeGroups;
         }
         this.loading = false;
       },
@@ -302,8 +308,8 @@ export class UserFormComponent implements OnInit {
         plain_password: identifierValue.plain_password,
         is_enabled: identifierValue.is_enabled,
         reject_expired: identifierValue.reject_expired,
-        auth_attribute_group_id: identifierValue.auth_attribute_group?.id || null,
-        expired_auth_attribute_group_id: identifierValue.expired_auth_attribute_group?.id || null,
+        auth_attribute_group_id: identifierValue.auth_attribute_group || null,
+        expired_auth_attribute_group_id: identifierValue.expired_auth_attribute_group || null,
         expiration_date: identifierValue.expiration_date,
         comment: identifierValue.comment
       };

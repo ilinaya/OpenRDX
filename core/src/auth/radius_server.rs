@@ -13,6 +13,7 @@ use tokio_rustls::TlsAcceptor;
 use rustls_pemfile::{certs, pkcs8_private_keys};
 use des::cipher::{BlockEncrypt};
 use generic_array::GenericArray;
+type HmacMd5 = Hmac<Md5>; // alias for clarity
 
 const ATTR_USER_PASSWORD: u8 = 2;      // PAP
 const ATTR_CHAP_PASSWORD: u8 = 3;      // CHAP
@@ -27,6 +28,11 @@ const ATTR_MS_CHAP2_RESPONSE: u8 = 25; // MS-CHAPv2
 
 const VENDOR_ATTR_MS_CHAP2_RESPONSE: u8 = 25;    // Microsoft's MS-CHAPv2-Response
 const VENDOR_ATTR_MS_CHAP2_CHALLENGE: u8 = 11;   // Microsoft's MS-CHAPv2-Challenge
+const VENDOR_ATTR_MS_CHAP2_SUCCESS: u8 = 26;     // Microsoft's MS-CHAP2-Success
+const VENDOR_ATTR_MS_MPPE_ENCRYPTION_POLICY: u8 = 7;  // Microsoft's MS-MPPE-Encryption-Policy
+const VENDOR_ATTR_MS_MPPE_ENCRYPTION_TYPES: u8 = 8;   // Microsoft's MS-MPPE-Encryption-Types
+const VENDOR_ATTR_MS_MPPE_SEND_KEY: u8 = 16;          // Microsoft's MS-MPPE-Send-Key
+const VENDOR_ATTR_MS_MPPE_RECV_KEY: u8 = 17;          // Microsoft's MS-MPPE-Recv-Key
 
 const ATTR_USER_NAME: u8 = 1;
 
@@ -84,6 +90,7 @@ pub enum AuthResult {
 pub struct Mschapv2Result {
     pub result: AuthResult,
     pub authenticator_response: Option<Vec<u8>>,
+    pub password_hash: Option<Vec<u8>>,
 }
 impl RadiusAttribute {
     pub fn parse(data: &[u8]) -> Option<(Self, usize)> {
@@ -97,8 +104,27 @@ impl RadiusAttribute {
     pub fn encode(&self) -> Vec<u8> {
         let mut out = Vec::with_capacity(2 + self.value.len());
         out.push(self.typ);
-        out.push((self.value.len() + 2) as u8);
-        out.extend_from_slice(&self.value);
+
+        // Check if the attribute length exceeds the maximum allowed size (255 bytes)
+        let attr_len = self.value.len() + 2;
+        if attr_len > 255 {
+            error!("Attribute type {} length {} exceeds maximum allowed size of 255 bytes, truncating", 
+                  self.typ, attr_len);
+            let truncated_len = 253; // 255 - 2 bytes for type and length
+            out.push(255); // Maximum length
+            out.extend_from_slice(&self.value[0..truncated_len]);
+
+            // Log the truncated attribute for debugging
+            debug!("Truncated attribute type {}: original_length={}, truncated_length={}",
+                  self.typ, attr_len, 255);
+        } else {
+            out.push(attr_len as u8);
+            out.extend_from_slice(&self.value);
+
+            // Log the attribute for debugging
+            debug!("Encoded attribute type {}: length={}", self.typ, attr_len);
+        }
+
         out
     }
 }
@@ -134,14 +160,63 @@ impl RadiusPacket {
         Some(Self { code, identifier, length, authenticator, attributes })
     }
     pub fn encode(&self) -> Vec<u8> {
-        let mut out = Vec::with_capacity(self.length as usize);
+        // Calculate total length first
+        let mut total_length = 20; // Header size
+        let mut attr_lengths = Vec::new();
+
+        for attr in &self.attributes {
+            let attr_len = attr.encode().len();
+            total_length += attr_len;
+            attr_lengths.push(attr_len);
+        }
+
+        debug!("Encoding RADIUS packet: code={}, identifier={}, attributes={}, calculated_length={}",
+               self.code, self.identifier, self.attributes.len(), total_length);
+
+        // Ensure length doesn't exceed maximum RADIUS packet size (4096 bytes)
+        if total_length > 4096 {
+            error!("Packet length {} exceeds maximum RADIUS packet size of 4096 bytes", total_length);
+            total_length = 4096;
+        }
+
+        // Start with a capacity based on the calculated length
+        let mut out = Vec::with_capacity(total_length);
         out.push(self.code);
         out.push(self.identifier);
-        out.extend_from_slice(&(self.length.to_be_bytes()));
+
+        // Add length field
+        out.push((total_length >> 8) as u8);
+        out.push(total_length as u8);
         out.extend_from_slice(&self.authenticator);
-        for attr in &self.attributes {
-            out.extend_from_slice(&attr.encode());
+
+        // Add attributes
+        let mut skipped_attrs = 0;
+        for (i, attr) in self.attributes.iter().enumerate() {
+            let attr_bytes = attr.encode();
+            if out.len() + attr_bytes.len() <= 4096 {
+                debug!("Adding attribute {}: type={}, length={}", i, attr.typ, attr_bytes.len());
+                out.extend_from_slice(&attr_bytes);
+            } else {
+                error!("Skipping attribute {} (type={}, length={}) that would exceed maximum packet size",
+                       i, attr.typ, attr_bytes.len());
+                skipped_attrs += 1;
+                break;
+            }
         }
+
+        if skipped_attrs > 0 {
+            error!("Skipped {} attributes due to packet size limitations", skipped_attrs);
+        }
+
+        // Verify final length matches what we set
+        let final_length = out.len() as u16;
+        if final_length != total_length as u16 {
+            error!("Final packet length {} doesn't match calculated length {}", final_length, total_length);
+            out[2] = (final_length >> 8) as u8;
+            out[3] = final_length as u8;
+        }
+
+        debug!("Final encoded packet: length={}, attributes={}", out.len(), self.attributes.len() - skipped_attrs);
         out
     }
 }
@@ -149,6 +224,8 @@ impl RadiusPacket {
 pub struct RadiusAuthServer {
     socket: UdpSocket,
     auth_server: Arc<AuthServer>,
+    // Add connection tracking
+    connections: Arc<tokio::sync::Mutex<std::collections::HashMap<String, std::time::Instant>>>,
 }
 
 impl RadiusAuthServer {
@@ -156,14 +233,15 @@ impl RadiusAuthServer {
         debug!("Attempting to bind to address: {}", bind_addr);
         let socket = UdpSocket::bind(&bind_addr).await?;
         debug!("Successfully bound to {}", bind_addr);
-        
+
         // Get the local address we're bound to
         let local_addr = socket.local_addr()?;
         info!("RADIUS Auth server listening on {}", local_addr);
-        
+
         Ok(Self {
             socket,
             auth_server,
+            connections: Arc::new(tokio::sync::Mutex::new(std::collections::HashMap::new())),
         })
     }
 
@@ -226,7 +304,7 @@ impl RadiusAuthServer {
                                secret: &str
     ) -> Result<AuthResult, sqlx::Error> {
         let pool = self.auth_server.get_pool();
-        
+
         // Query the user_identifiers table
         let result = sqlx::query!(
             r#"
@@ -251,8 +329,6 @@ impl RadiusAuthServer {
                 // Then check the password
                 match &record.plain_password {
                     Some(stored_pass) => {
-                        debug!("Found stored password for user: {}", username);
-
                         // Decode the RADIUS PAP password
                         let decoded_password = match decode_pap_password(password, authenticator, secret) {
                             Ok(decoded) => decoded,
@@ -288,88 +364,250 @@ impl RadiusAuthServer {
 
     }
 
-    // Add this function to decode PAP passwords
     fn create_access_reject(&self, request: &RadiusPacket, secret: &str, reason: &str) -> Vec<u8> {
-        // Create the basic Access-Reject packet
-        let response = RadiusPacket {
+        use hmac::{Hmac, Mac};
+        use md5::Md5;
+        use digest::KeyInit;
+
+        // Ensure Reply-Message is not too long
+        let mut reply_msg = reason.as_bytes().to_vec();
+        if reply_msg.len() > 253 {
+            reply_msg.truncate(253);
+        }
+
+        let mut attributes = vec![
+            RadiusAttribute {
+                typ: ATTR_REPLY_MESSAGE,
+                value: reply_msg,
+            },
+        ];
+
+        let has_msg_auth = request.attributes.iter().any(|attr| attr.typ == ATTR_MESSAGE_AUTHENTICATOR);
+        if has_msg_auth {
+            attributes.push(RadiusAttribute {
+                typ: ATTR_MESSAGE_AUTHENTICATOR,
+                value: vec![0u8; 16],
+            });
+        }
+
+        let mut response = RadiusPacket {
             code: 3, // Access-Reject
             identifier: request.identifier,
-            length: 20, // Initial length with just header, will be updated
+            length: 20,
             authenticator: request.authenticator,
-            attributes: vec![
-                // Add Reply-Message attribute with the reason
-                RadiusAttribute {
-                    typ: ATTR_REPLY_MESSAGE,
-                    value: reason.as_bytes().to_vec(),
-                },
-            ],
+            attributes,
         };
 
-        // Encode the packet to get the complete structure
         let mut encoded = response.encode();
 
-        // Update the length field
-        let length = encoded.len() as u16;
-        encoded[2] = (length >> 8) as u8;
-        encoded[3] = length as u8;
+        if has_msg_auth {
+            if let Some(pos) = encoded.windows(2).position(|w| w[0] == ATTR_MESSAGE_AUTHENTICATOR && w[1] == 18) {
+                let mut temp = encoded.clone();
+                for i in 0..16 {
+                    temp[pos + 2 + i] = 0;
+                }
 
-        // Calculate Response Authenticator
-        let mut hasher = md5::Md5::new();
-        hasher.update(&encoded[0..4]); // Code+ID+Length
-        hasher.update(&request.authenticator); // RequestAuth
-        hasher.update(&encoded[20..]); // Attributes
-        hasher.update(secret.as_bytes()); // Secret
-        let response_auth = hasher.finalize();
+                let mut mac = <Hmac<Md5> as KeyInit>::new_from_slice(secret.as_bytes()).unwrap();
+                mac.update(&encoded); // MsgAuth=0
+                let msg_auth = mac.finalize().into_bytes();
 
-        // Copy Response Authenticator into the packet
-        encoded[4..20].copy_from_slice(&response_auth);
+                // Set Message-Authenticator in encoded
+                encoded[pos + 2..pos + 18].copy_from_slice(&msg_auth);
 
+                // --- (D) --- Now recalculate Response Authenticator (MD5) with correct buffer
+                let mut md5 = Md5::new();
+                md5.update(&encoded[0..4]);
+                md5.update(&request.authenticator);
+                md5.update(&encoded[20..]);
+                md5.update(secret.as_bytes());
+                let response_auth = md5.finalize();
+                encoded[4..20].copy_from_slice(&response_auth);
+
+
+                debug!("✅ Reject Response Authenticator: {:02X?}", response_auth);
+                debug!("✅ Reject Message-Authenticator: {:02X?}", msg_auth);
+            } else {
+                error!("❌ Could not locate Message-Authenticator attribute in Access-Reject");
+            }
+        } else {
+            // No Msg-Auth: Still need to calculate Response Authenticator
+            let mut md5 = Md5::new();
+            md5.update(&encoded[0..4]);
+            md5.update(&request.authenticator);
+            md5.update(&encoded[20..]);
+            md5.update(secret.as_bytes());
+            let response_auth = md5.finalize();
+            encoded[4..20].copy_from_slice(&response_auth);
+
+            debug!("✅ Reject Response Authenticator (no MsgAuth): {:02X?}", response_auth);
+        }
+
+        debug!("✅ Final Access-Reject packet: {:02X?}", encoded);
         encoded
     }
 
+    async fn handle_packet(&self, data: &[u8], src: std::net::SocketAddr, secret: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        // Parse the packet
+        let packet = match RadiusPacket::parse(data) {
+            Some(p) => p,
+            None => return Err("Invalid packet format".into()),
+        };
+
+        // Check for Message-Authenticator
+        let mut has_msg_auth = false;
+        let mut msg_auth_value = None;
+
+        for attr in &packet.attributes {
+            if attr.typ == ATTR_MESSAGE_AUTHENTICATOR {
+                has_msg_auth = true;
+                msg_auth_value = Some(attr.value.clone());
+
+                if let Some(ref value) = msg_auth_value {
+                    let hex = value.iter()
+                        .map(|b| format!("{:02x}", b))
+                        .collect::<String>();
+                    debug!("Message-Authenticator from client = 0x{}", hex);
+                }
+
+                break;
+            }
+        }
+
+        // Validate Message-Authenticator if present
+        if has_msg_auth {
+            if let Some(auth_value) = &msg_auth_value {
+                debug!("Validating Message-Authenticator for packet: code={}, identifier={}", 
+                       packet.code, packet.identifier);
+
+                let is_valid = self.validate_message_authenticator(&packet, secret, auth_value);
+                if !is_valid {
+                    error!("Invalid Message-Authenticator in packet from {}", src);
+                    return Err("Invalid Message-Authenticator".into());
+                } else {
+                    debug!("Message-Authenticator validation successful");
+                }
+            }
+        }
+
+        // Process the packet based on its code
+        match packet.code {
+            1 => { // Access-Request
+                Ok(self.handle_access_request(&packet, secret, msg_auth_value).await)
+            }
+            4 => { // Accounting-Request
+                Ok(self.create_accounting_response(&packet))
+            }
+            _ => {
+                debug!("Unsupported packet code: {}", packet.code);
+                Err("Unsupported packet code".into())
+            }
+        }
+    }
+
+    fn validate_message_authenticator(&self, packet: &RadiusPacket, secret: &str, received_auth: &[u8]) -> bool {
+        use hmac::{Hmac, Mac};
+        use md5::Md5;
+
+        let mut encoded = packet.encode();
+
+        // Manually walk the encoded AVP section and zero out the Message-Authenticator
+        let mut pos = 20; // RADIUS header is 20 bytes
+
+        while pos + 2 <= encoded.len() {
+            let attr_type = encoded[pos];
+            let attr_len = encoded[pos + 1] as usize;
+
+            if attr_len < 2 || pos + attr_len > encoded.len() {
+                // Invalid attribute, bail
+                break;
+            }
+
+            if attr_type == ATTR_MESSAGE_AUTHENTICATOR && attr_len == 18 {
+                // Zero out the 16-byte Message-Authenticator value (starts at pos + 2)
+                for i in 0..16 {
+                    encoded[pos + 2 + i] = 0;
+                }
+                break; // done
+            }
+
+            pos += attr_len;
+        }
+
+        // Calculate expected Message-Authenticator (RFC 2869)
+        let mut mac = <HmacMd5 as KeyInit>::new_from_slice(secret.as_bytes())
+            .expect("HMAC can take key of any size");
+
+        mac.update(&encoded);
+        let expected_auth = mac.finalize().into_bytes();
+
+        if received_auth != expected_auth.as_slice() {
+            debug!("Message-Authenticator validation failed");
+            debug!("Expected: {:02x?}", expected_auth);
+            debug!("Received: {:02x?}", received_auth);
+            return false;
+        }
+
+        true
+    }
+
     pub async fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let mut buf = vec![0u8; 4096];
         debug!("Starting RADIUS server loop");
-        
+
         loop {
+            // Create a new buffer for each request to prevent data corruption
+            let mut buf = vec![0u8; 4096];
             debug!("Waiting for incoming packets...");
             match self.socket.recv_from(&mut buf).await {
                 Ok((size, src)) => {
                     debug!("Received {} bytes from {}", size, src);
-                    
+
                     let ip = src.ip();
                     debug!("Source IP: {}", ip);
-                    
+
                     if let Some(secret) = self.auth_server.find_secret_for_ip(ip) {
                         debug!("Found secret for IP {}: {}", ip, secret);
-                        
-                        if let Some(packet) = RadiusPacket::parse(&buf[..size]) {
-                            debug!("Parsed RADIUS packet: {:?}", packet);
-                            
-                            match packet.code {
-                                1 => { // Access-Request
-                                    let response = self.handle_access_request(&packet, secret).await;
-                                    debug!("Sending response");
-                                    if let Err(e) = self.socket.send_to(&response, src).await {
-                                        error!("Failed to send response: {}", e);
+
+                        // Create a copy of the received data to ensure it's not modified by subsequent requests
+                        let request_data = buf[..size].to_vec();
+
+                        match self.handle_packet(&request_data, src, secret).await {
+                            Ok(response) => {
+                                debug!("Response packet size: {} bytes", response.len());
+                                debug!("Response packet: {:?}", response);
+
+                                // Verify the response packet has a valid length
+                                if response.len() >= 20 {
+                                    let length = u16::from_be_bytes([response[2], response[3]]);
+                                    debug!("Response packet length field: {}", length);
+
+                                    if length as usize != response.len() {
+                                        error!("Response packet length field ({}) doesn't match actual length ({})", length, response.len());
                                     }
+                                } else {
+                                    error!("Response packet is too short: {} bytes", response.len());
                                 }
-                                4 => { // Accounting-Request
-                                    debug!("Received Accounting-Request");
-                                    // TODO: Implement accounting logic
-                                    // For now, just send Accounting-Response
-                                    let response = self.create_accounting_response(&packet);
-                                    debug!("Sending Accounting-Response");
-                                    if let Err(e) = self.socket.send_to(&response, src).await {
-                                        error!("Failed to send response: {}", e);
-                                    }
-                                }
-                                _ => {
-                                    error!("Unsupported packet code: {}", packet.code);
+
+                                if let Err(e) = self.socket.send_to(&response, src).await {
+                                    error!("Failed to send response: {}", e);
+                                } else {
+                                    debug!("Successfully sent response to {}", src);
                                 }
                             }
-                        } else {
-                            error!("Failed to parse RADIUS packet from {}", src);
+                            Err(e) => {
+                                error!("Error handling packet: {}", e);
+                                // Optionally send Access-Reject for certain errors
+                                if let Some(packet) = RadiusPacket::parse(&request_data) {
+                                    let reject = self.create_access_reject(&packet, secret, &format!("Error: {}", e));
+                                    debug!("Reject packet size: {} bytes", reject.len());
+                                    debug!("Reject packet: {:?}", reject);
+
+                                    if let Err(e) = self.socket.send_to(&reject, src).await {
+                                        error!("Failed to send reject: {}", e);
+                                    } else {
+                                        debug!("Successfully sent reject to {}", src);
+                                    }
+                                }
+                            }
                         }
                     } else {
                         error!("No NAS secret found for {}", ip);
@@ -383,7 +621,7 @@ impl RadiusAuthServer {
         }
     }
 
-    async fn handle_access_request(&self, packet: &RadiusPacket, secret: &str) -> Vec<u8> {
+    async fn handle_access_request(&self, packet: &RadiusPacket, secret: &str, msg_auth_value: Option<Vec<u8>>) -> Vec<u8> {
         let auth_method = self.detect_auth_method(packet);
         debug!("Handling Access-Request with {} authentication", auth_method);
 
@@ -497,9 +735,6 @@ impl RadiusAuthServer {
             }
             "MS-CHAP" => {
                 debug!("MS-CHAP authentication details:");
-                debug!("Username: {:?}", username);
-                debug!("Challenge present: {}", mschap_challenge.is_some());
-                debug!("Response present: {}", mschap_response.is_some());
                 if let Some(ref challenge) = mschap_challenge {
                     debug!("Challenge length: {}", challenge.len());
                 }
@@ -521,8 +756,6 @@ impl RadiusAuthServer {
                 }
             }
             "MS-CHAPv2" => {
-                debug!("MS-CHAPv2 Peer Challenge: {:02x?}", mschap2_peer_challenge);
-                debug!("MS-CHAPv2 NT Response: {:02x?}", mschap2_nt_response);
 
                 if let (Some(username), Some(peer_challenge), Some(nt_response), Some(auth_challenge)) =
                     (username, mschap2_peer_challenge, mschap2_nt_response, mschap_challenge)
@@ -547,22 +780,17 @@ impl RadiusAuthServer {
                     match self.authenticate_mschap2(&username, &peer_challenge, &nt_response, &auth_challenge, secret).await {
                         Ok(mschapv2_result) => match mschapv2_result.result {
                             AuthResult::Success => {
-                                debug!("AuthResult::Success MS-CHAPv2 authentication successful for user: {}", username);
-                                let password_utf16: Vec<u8> = username.encode_utf16()
-                                    .flat_map(|c| c.to_le_bytes().to_vec())
-                                    .collect();
-                                let password_hash = nt_hash(&password_utf16);
-
 
                                 if let Some(auth_resp) = mschapv2_result.authenticator_response {
+
+
                                     self.create_access_accept_mschapv2(
                                         packet,
                                         secret,
                                         ms_chap_v2_ident,
                                         &auth_resp,
-                                        &password_hash,
-                                        &nt_response,
-                                    )
+                                        mschapv2_result.password_hash.as_deref().unwrap_or(&[]),
+                                        &nt_response)
                                 } else {
                                     self.create_access_reject(packet, secret, "Missing authenticator response")
                                 }
@@ -584,7 +812,7 @@ impl RadiusAuthServer {
 
     async fn authenticate_chap(&self, username: &str, chap_id: u8, chap_response: &[u8], authenticator: &[u8], secret: &str) -> Result<AuthResult, sqlx::Error> {
         let pool = self.auth_server.get_pool();
-        
+
         let result = sqlx::query!(
             r#"
             SELECT id, plain_password, is_enabled
@@ -684,9 +912,7 @@ impl RadiusAuthServer {
                     if response == &challenge_response {
                         Ok(AuthResult::Success)
                     } else {
-                        debug!("MS-CHAP response mismatch");
-                        debug!("Expected: {:?}", challenge_response);
-                        debug!("Received: {:?}", response);
+
                         Ok(AuthResult::InvalidPassword)
                     }
                 } else {
@@ -722,16 +948,12 @@ impl RadiusAuthServer {
                     return Ok(Mschapv2Result {
                         result: AuthResult::AccountDisabled,
                         authenticator_response: None,
+                        password_hash: None,
                     });
                 }
 
                 if let Some(stored_pass) = record.plain_password {
                     // Generate NT hash from password
-                    debug!(
-                        "Stored password - Length: {}, Bytes: {:02x?}",
-                        stored_pass.len(),
-                        stored_pass
-                    );
 
                     let password_utf16: Vec<u8> = stored_pass.encode_utf16()
                         .flat_map(|c| c.to_le_bytes().to_vec())
@@ -740,25 +962,13 @@ impl RadiusAuthServer {
                     // Generate NT hash from the UTF-16LE password
                     let password_hash = nt_hash(&password_utf16);
 
-                    // Add extra debug output to verify the hashing steps
-                    debug!("Password UTF-16LE bytes: {:02x?}", password_utf16);
-                    debug!("Password NT hash: {:02x?}", password_hash);
-
                     // Generate the challenge using SHA1(peer_challenge + authenticator + username)
                     let challenge = generate_nt_response_challenge(peer_challenge, authenticator, username);
-                    debug!("Generated challenge: {:02x?}", challenge);
 
                     // Generate expected response
                     let expected_response = generate_nt_response(&password_hash, &challenge);
 
-                    debug!(
-                        "MS-CHAPv2 response comparison:\nReceived:  {:02x?}\nExpected:  {:02x?}",
-                        &nt_response[0..24],
-                        &expected_response[0..24]
-                    );
-
                     if nt_response[0..24] == expected_response[0..24] {
-                        debug!("MS-CHAPv2 authentication successful for user: {}", username);
                         let authenticator_response = Some(calculate_authenticator_response(
                             &password_hash,
                             &nt_response[0..24],
@@ -769,12 +979,14 @@ impl RadiusAuthServer {
                         Ok(Mschapv2Result {
                             result: AuthResult::Success,
                             authenticator_response, //authenticator_response,
+                            password_hash: Some(password_hash)
                         })
                     } else {
                         debug!("MS-CHAPv2 authentication failed for user: {}", username);
                         Ok(Mschapv2Result {
                             result: AuthResult::InvalidPassword,
                             authenticator_response: None,
+                            password_hash: None
                         })
                     }
 
@@ -783,6 +995,7 @@ impl RadiusAuthServer {
                     Ok(Mschapv2Result {
                         result: AuthResult::InvalidPassword,
                         authenticator_response: None,
+                        password_hash: None,
                     })
                 }
             }
@@ -791,6 +1004,7 @@ impl RadiusAuthServer {
                 Ok(Mschapv2Result {
                     result: AuthResult::InvalidPassword,
                     authenticator_response: None,
+                    password_hash: None,
                 })
             }
         }
@@ -802,15 +1016,16 @@ impl RadiusAuthServer {
         let mut response = RadiusPacket {
             code: 2, // Access-Accept
             identifier: request.identifier,
-            length: 20, // Initial length with just header, will be updated
+            length: 20, // The initial length with just header will be updated
             authenticator: request.authenticator,
             attributes: Vec::new(),
         };
 
         // Add Message-Authenticator if it was in the request
-        if request.attributes.iter().any(|attr| attr.typ == 80) {
+        let has_msg_auth = request.attributes.iter().any(|attr| attr.typ == ATTR_MESSAGE_AUTHENTICATOR);
+        if has_msg_auth {
             response.attributes.push(RadiusAttribute {
-                typ: 80,
+                typ: ATTR_MESSAGE_AUTHENTICATOR,
                 value: vec![0u8; 16], // Will be calculated later
             });
         }
@@ -818,33 +1033,7 @@ impl RadiusAuthServer {
         // Encode the packet to get the complete structure
         let mut encoded = response.encode();
 
-        // Update the length field
-        let length = encoded.len() as u16;
-        encoded[2] = (length >> 8) as u8;
-        encoded[3] = length as u8;
-
-        // Calculate Message-Authenticator if present
-        if let Some(msg_auth_pos) = encoded.windows(2).position(|w| w[0] == 80) {
-            // Create HMAC-MD5 of the packet with zeroed Message-Authenticator
-            let mut mac = <Hmac<Md5> as Mac>::new_from_slice(secret.as_bytes())
-                .expect("HMAC can take key of any size");
-
-            // Create temporary buffer with zeroed Message-Authenticator
-            let mut temp_packet = encoded.clone();
-            for i in 0..16 {
-                temp_packet[msg_auth_pos + 2 + i] = 0;
-            }
-
-            mac.update(&temp_packet);
-            let result = mac.finalize();
-            let message_auth = result.into_bytes();
-
-            // Copy the calculated Message-Authenticator into the packet
-            encoded[msg_auth_pos + 2..msg_auth_pos + 18].copy_from_slice(&message_auth);
-        }
-
-        // Calculate Response Authenticator
-        // Response Auth = MD5(Code+ID+Length+RequestAuth+Attributes+Secret)
+        // 1. Calculate Response Authenticator first
         let mut hasher = md5::Md5::new();
         hasher.update(&encoded[0..4]); // Code+ID+Length
         hasher.update(&request.authenticator); // RequestAuth
@@ -852,8 +1041,39 @@ impl RadiusAuthServer {
         hasher.update(secret.as_bytes()); // Secret
         let response_auth = hasher.finalize();
 
-        // Copy Response Authenticator into the packet
+        // Update Response Authenticator in the packet
         encoded[4..20].copy_from_slice(&response_auth);
+
+        // 2. Calculate Message-Authenticator if present
+        if has_msg_auth {
+            if let Some(pos) = encoded.windows(2).position(|w| w[0] == ATTR_MESSAGE_AUTHENTICATOR) {
+                // Create a temporary packet with zeroed Message-Authenticator
+                let mut temp_packet = encoded.clone();
+                for i in 0..16 {
+                    temp_packet[pos + 2 + i] = 0;
+                }
+
+                // Calculate HMAC-MD5 over the entire packet
+                let mut mac = <Hmac<Md5> as Mac>::new_from_slice(secret.as_bytes())
+                    .expect("HMAC can take key of any size");
+                mac.update(&temp_packet);
+                let result = mac.finalize();
+                let message_auth = result.into_bytes();
+
+                // Update Message-Authenticator in the packet
+                encoded[pos + 2..pos + 18].copy_from_slice(&message_auth);
+                debug!("Message-Authenticator calculated: {:?}", message_auth);
+
+                // Verify the Message-Authenticator is not zeroed out
+                let is_zeroed = encoded[pos + 2..pos + 18].iter().all(|&b| b == 0);
+                if is_zeroed {
+                    error!("Message-Authenticator is zeroed out after calculation in create_access_accept!");
+                }
+            }
+        }
+
+        // Debug the final encoded packet
+        debug!("Final encoded packet: {:?}", encoded);
 
         encoded
     }
@@ -867,6 +1087,10 @@ impl RadiusAuthServer {
         password_hash: &[u8],
         nt_response: &[u8],
     ) -> Vec<u8> {
+        use hmac::{Hmac, Mac};
+        use md5::Md5;
+        type HmacMd5 = Hmac<Md5>;
+
         let mut response = RadiusPacket {
             code: 2, // Access-Accept
             identifier: request.identifier,
@@ -875,191 +1099,220 @@ impl RadiusAuthServer {
             attributes: Vec::new(),
         };
 
-        debug!("Creating Access-Accept for MS-CHAPv2 with identifier: {}", ms_chap_v2_ident);
+        debug!("Creating Access-Accept for MS-CHAPv2");
+        debug!("Secret: {}", secret);
 
-        // MS-CHAP2-Success VSA: Vendor-Id 311, Vendor-Type 26
+        // MS-CHAP2-Success (format: 0x00 | ASCII("S=" + 42-char hex))
+        let hex = authenticator_response.iter().map(|b| format!("{:02X}", b)).collect::<String>();
+        let success_str = format!("S={}", hex);
         let mut ms_chap_success = vec![ms_chap_v2_ident];
-        ms_chap_success.extend_from_slice(
-            format!("S={}", hex::encode_upper(authenticator_response)).as_bytes(),
-        );
-
-        let mut vsa = Vec::new();
-        vsa.extend_from_slice(&VENDOR_MICROSOFT.to_be_bytes());
-        vsa.push(26); // Vendor-Type: MS-CHAP2-Success
-        vsa.push((ms_chap_success.len() + 2) as u8); // Vendor-Length
-        vsa.extend_from_slice(&ms_chap_success);
+        ms_chap_success.extend_from_slice(success_str.as_bytes());
 
         response.attributes.push(RadiusAttribute {
             typ: ATTR_VENDOR_SPECIFIC,
-            value: vsa,
+            value: [
+                &VENDOR_MICROSOFT.to_be_bytes()[..],
+                &[VENDOR_ATTR_MS_CHAP2_SUCCESS, (ms_chap_success.len() + 2) as u8],
+                &ms_chap_success[..]
+            ].concat(),
         });
 
-        response.attributes.push(RadiusAttribute {
-            typ: ATTR_REPLY_MESSAGE,
-            value: b"Login OK".to_vec(), // or any message you want
-        });
-
-        // 1. Add MS-MPPE-Encryption-Policy (type 7, value 1)
-        let mut vsa_policy = Vec::new();
-        vsa_policy.extend_from_slice(&VENDOR_MICROSOFT.to_be_bytes());
-        vsa_policy.push(7);
-        vsa_policy.push(6); // 2 (type+len) + 4 (u32 value)
-        vsa_policy.extend_from_slice(&1u32.to_be_bytes());
-        response.attributes.push(RadiusAttribute { typ: ATTR_VENDOR_SPECIFIC, value: vsa_policy });
-
-        // 2. Add MS-MPPE-Encryption-Type (type 8, value 6)
-        let mut vsa_type = Vec::new();
-        vsa_type.extend_from_slice(&VENDOR_MICROSOFT.to_be_bytes());
-        vsa_type.push(8);
-        vsa_type.push(6);
-        vsa_type.extend_from_slice(&6u32.to_be_bytes());
-        response.attributes.push(RadiusAttribute { typ: ATTR_VENDOR_SPECIFIC, value: vsa_type });
-
-        let (session_send_key, session_recv_key) = Self::get_mschapv2_session_keys(password_hash, nt_response);
-
-        // 3. Calculate session keys (see below), then encrypt them:
-        let send_key = Self::encrypt_mppe_key(&session_send_key, secret, &request.authenticator);
-        let recv_key = Self::encrypt_mppe_key(&session_recv_key, secret, &request.authenticator);
-
-        // 4. Add MS-MPPE-Send-Key (type 16)
-        let mut vsa_send = Vec::new();
-        vsa_send.extend_from_slice(&VENDOR_MICROSOFT.to_be_bytes());
-        vsa_send.push(16);
-        vsa_send.push((send_key.len() + 2) as u8);
-        vsa_send.extend_from_slice(&send_key);
-        response.attributes.push(RadiusAttribute { typ: ATTR_VENDOR_SPECIFIC, value: vsa_send });
-
-        // 5. Add MS-MPPE-Recv-Key (type 17)
-        let mut vsa_recv = Vec::new();
-        vsa_recv.extend_from_slice(&VENDOR_MICROSOFT.to_be_bytes());
-        vsa_recv.push(17);
-        vsa_recv.push((recv_key.len() + 2) as u8);
-        vsa_recv.extend_from_slice(&recv_key);
-        response.attributes.push(RadiusAttribute { typ: ATTR_VENDOR_SPECIFIC, value: vsa_recv });
-
-        // Mikrotik-Group: Vendor-Id 14988, Vendor-Type 1
-        let group_name = b"full";
-        let mut mikrotik_vsa = Vec::new();
-        mikrotik_vsa.extend_from_slice(&14988u32.to_be_bytes());
-        mikrotik_vsa.push(3); // Vendor-Type: Mikrotik-Group
-        mikrotik_vsa.push((group_name.len() + 2) as u8);
-        mikrotik_vsa.extend_from_slice(group_name);
-
+        // MS-MPPE-Encryption-Policy
         response.attributes.push(RadiusAttribute {
             typ: ATTR_VENDOR_SPECIFIC,
-            value: mikrotik_vsa,
+            value: [
+                &VENDOR_MICROSOFT.to_be_bytes()[..],
+                &[VENDOR_ATTR_MS_MPPE_ENCRYPTION_POLICY, 6],
+                &[0, 0, 0, 1],
+            ]
+                .concat(),
         });
 
-        // Add Message-Authenticator if present in request
-        if request.attributes.iter().any(|attr| attr.typ == 80) {
-            response.attributes.push(RadiusAttribute {
-                typ: 80,
-                value: vec![0u8; 16],
-            });
-        }
+        // MS-MPPE-Encryption-Types
+        response.attributes.push(RadiusAttribute {
+            typ: ATTR_VENDOR_SPECIFIC,
+            value: [
+                &VENDOR_MICROSOFT.to_be_bytes()[..],
+                &[VENDOR_ATTR_MS_MPPE_ENCRYPTION_TYPES, 6],
+                &[0, 0, 0, 6],
+            ]
+                .concat(),
+        });
 
-        // Encode and finalize as in the original function
+        // Session keys
+        let (send_key, recv_key) = Self::get_mschapv2_session_keys(password_hash, nt_response);
+        let enc_send = Self::encrypt_mppe_key(&send_key, secret, &request.authenticator);
+        let enc_recv = Self::encrypt_mppe_key(&recv_key, secret, &request.authenticator);
+
+        // Send Key
+        response.attributes.push(RadiusAttribute {
+            typ: ATTR_VENDOR_SPECIFIC,
+            value: [
+                &VENDOR_MICROSOFT.to_be_bytes()[..],
+                &[VENDOR_ATTR_MS_MPPE_SEND_KEY, (enc_send.len() + 2) as u8],
+                &enc_send[..],
+            ]
+                .concat(),
+        });
+
+        // Recv Key
+        response.attributes.push(RadiusAttribute {
+            typ: ATTR_VENDOR_SPECIFIC,
+            value: [
+                &VENDOR_MICROSOFT.to_be_bytes()[..],
+                &[VENDOR_ATTR_MS_MPPE_RECV_KEY, (enc_recv.len() + 2) as u8],
+                &enc_recv[..],
+            ]
+                .concat(),
+        });
+
+        // Message-Authenticator placeholder
+        response.attributes.push(RadiusAttribute {
+            typ: ATTR_MESSAGE_AUTHENTICATOR,
+            value: vec![0u8; 16],
+        });
+
+        // === Encode and patch ===
         let mut encoded = response.encode();
-        let length = encoded.len() as u16;
-        encoded[2] = (length >> 8) as u8;
-        encoded[3] = length as u8;
 
-        // Message-Authenticator calculation (if present)
-        if let Some(msg_auth_pos) = encoded.windows(2).position(|w| w[0] == 80) {
-            let mut mac = <Hmac<Md5> as Mac>::new_from_slice(secret.as_bytes())
-                .expect("HMAC can take key of any size");
-            let mut temp_packet = encoded.clone();
-            for i in 0..16 {
-                temp_packet[msg_auth_pos + 2 + i] = 0;
+        encoded[4..20].copy_from_slice(&request.authenticator);
+
+        // Find Message-Authenticator
+        let mut msg_auth_pos = None;
+        let mut pos = 20;
+        while pos + 2 <= encoded.len() {
+            let typ = encoded[pos];
+            let len = encoded[pos + 1] as usize;
+            if typ == ATTR_MESSAGE_AUTHENTICATOR && len == 18 {
+                msg_auth_pos = Some(pos);
+                break;
             }
-            mac.update(&temp_packet);
-            let result = mac.finalize();
-            let message_auth = result.into_bytes();
-            encoded[msg_auth_pos + 2..msg_auth_pos + 18].copy_from_slice(&message_auth);
+            if len < 2 || pos + len > encoded.len() {
+                break;
+            }
+            pos += len;
         }
 
-        // Response Authenticator
-        let mut hasher = md5::Md5::new();
-        hasher.update(&encoded[0..4]);
-        hasher.update(&request.authenticator);
-        hasher.update(&encoded[20..]);
-        hasher.update(secret.as_bytes());
-        let response_auth = hasher.finalize();
-        encoded[4..20].copy_from_slice(&response_auth);
+        if let Some(pos) = msg_auth_pos {
+            let mut temp_for_mac = encoded.clone();
+            for i in 0..16 {
+                temp_for_mac[pos + 2 + i] = 0;
+            }
+            temp_for_mac[4..20].copy_from_slice(&request.authenticator);
 
-        encoded
-    }
+            // Calculate Message-Authenticator = HMAC-MD5 over the whole packet with the secret
+            let mut mac = <HmacMd5 as hmac::digest::KeyInit>::new_from_slice(secret.as_bytes()).unwrap();
 
-    fn encrypt_mppe_key(key: &[u8], secret: &str, authenticator: &[u8]) -> Vec<u8> {
-        use md5::Md5;
-        let mut padded = key.to_vec();
-        let orig_len = padded.len();
-        let pad_len = 16 - (orig_len % 16);
-        padded.extend(vec![0u8; pad_len]);
-        let mut result = Vec::with_capacity(2 + padded.len());
-        result.push(orig_len as u8); // key length
-        result.push(0); // reserved
-        let mut last_block = authenticator.to_vec();
-        for chunk in padded.chunks(16) {
-            let mut hasher = Md5::new();
-            hasher.update(secret.as_bytes());
-            hasher.update(&last_block);
-            let hash = hasher.finalize();
-            let encrypted: Vec<u8> = chunk.iter().zip(hash.iter()).map(|(a, b)| a ^ b).collect();
-            result.extend_from_slice(&encrypted);
-            last_block = encrypted;
+            mac.update(&temp_for_mac);
+            let msg_auth = mac.finalize().into_bytes();
+            // Patch into our encoded buffer (which still has a request authenticator)
+            encoded[pos + 2..pos + 18].copy_from_slice(&msg_auth);
+
+            // --- PASS 3: Now compute the final Response Authenticator
+
+            // Build buffer for Response Authenticator calculation:
+            let mut temp_for_auth = encoded.clone();
+            // Set authenticator to request authenticator (per RFC) for calculation
+            temp_for_auth[4..20].copy_from_slice(&request.authenticator);
+
+            // Compute correct Response Authenticator
+            let mut md5 = Md5::new();
+            md5.update(&temp_for_auth[0..4]);
+            md5.update(&request.authenticator);
+            md5.update(&temp_for_auth[20..]);
+            md5.update(secret.as_bytes());
+            let response_auth = md5.finalize();
+
+            // Patch Response Authenticator into header of the final output
+            encoded[4..20].copy_from_slice(&response_auth);
+
+            debug!("✅ Final Response Authenticator: {:02X?}", response_auth);
+            debug!("✅ Final Message-Authenticator: {:02X?}", msg_auth);
+
+            encoded
+
+        } else {
+            error!("❌ Message-Authenticator not found in packet!");
+            encoded
         }
-        result
+
+
     }
 
-    fn get_mschapv2_session_keys(password_hash: &[u8], nt_response: &[u8]) -> (Vec<u8>, Vec<u8>) {
-        use hmac::{Hmac, Mac};
-        use sha1::Sha1;
+    fn add_mppe_attributes(
+        &self,
+        response: &mut RadiusPacket,
+        secret: &str,
+        authenticator: &[u8],
+        password_hash: &[u8],
+        nt_response: &[u8],
+    ) {
+        // Get session keys
+        let (send_key, recv_key) = Self::get_mschapv2_session_keys(password_hash, nt_response);
 
-        let magic1 = b"This is the MPPE Master Key";
-        let magic2 = b"On the client side, this is the send key; on the server side, it is the receive key.";
-        let magic3 = b"On the client side, this is the receive key; on the server side, it is the send key.";
+        debug!("MPPE Send Key length: {}", send_key.len());
+        debug!("MPPE Recv Key length: {}", recv_key.len());
 
-        // MasterKey = SHA1(PwhashHash, NTResponse, Magic1)
-        let mut sha1 = Sha1::new();
-        sha1.update(password_hash);
-        sha1.update(nt_response);
-        sha1.update(magic1);
-        let master_key = sha1.finalize();
+        // Encrypt the keys
+        let encrypted_send_key = Self::encrypt_mppe_key(&send_key, secret, authenticator);
+        let encrypted_recv_key = Self::encrypt_mppe_key(&recv_key, secret, authenticator);
 
-        // SendKey = SHA1(MasterKey, Magic2)[0..16]
-        let mut sha1 = Sha1::new();
-        sha1.update(&master_key);
-        sha1.update(magic2);
-        let send_key = sha1.finalize()[..16].to_vec();
+        debug!("Encrypted Send Key length: {}", encrypted_send_key.len());
+        debug!("Encrypted Recv Key length: {}", encrypted_recv_key.len());
 
-        // RecvKey = SHA1(MasterKey, Magic3)[0..16]
-        let mut sha1 = Sha1::new();
-        sha1.update(&master_key);
-        sha1.update(magic3);
-        let recv_key = sha1.finalize()[..16].to_vec();
+        // Add MPPE-Send-Key
+        let mut send_key_attr = Vec::new();
+        send_key_attr.extend_from_slice(&VENDOR_MICROSOFT.to_be_bytes());
+        send_key_attr.push(VENDOR_ATTR_MS_MPPE_SEND_KEY); // Vendor-Type: MPPE-Send-Key
 
-        (send_key, recv_key)
-    }
+        // The encrypted key is already truncated if necessary in encrypt_mppe_key
+        debug!("Adding MS-MPPE-Send-Key, encrypted size: {} bytes", encrypted_send_key.len());
+        send_key_attr.push((encrypted_send_key.len() + 2) as u8); // Vendor-Length
+        send_key_attr.extend_from_slice(&encrypted_send_key);
 
-    fn create_accounting_response(&self, request: &RadiusPacket) -> Vec<u8> {
-        let response = RadiusPacket {
-            code: 5, // Accounting-Response
-            identifier: request.identifier,
-            length: 0, // Will be set after adding attributes
-            authenticator: [0u8; 16], // Will be set after adding attributes
-            attributes: Vec::new(),
-        };
+        response.attributes.push(RadiusAttribute {
+            typ: ATTR_VENDOR_SPECIFIC,
+            value: send_key_attr,
+        });
 
-        // Encode the response
-        let mut encoded = response.encode();
+        // Add MPPE-Recv-Key
+        let mut recv_key_attr = Vec::new();
+        recv_key_attr.extend_from_slice(&VENDOR_MICROSOFT.to_be_bytes());
+        recv_key_attr.push(VENDOR_ATTR_MS_MPPE_RECV_KEY); // Vendor-Type: MPPE-Recv-Key
 
-        // Update length field
-        let length = encoded.len() as u16;
-        encoded[2] = (length >> 8) as u8;
-        encoded[3] = length as u8;
+        // The encrypted key is already truncated if necessary in encrypt_mppe_key
+        debug!("Adding MS-MPPE-Recv-Key, encrypted size: {} bytes", encrypted_recv_key.len());
+        recv_key_attr.push((encrypted_recv_key.len() + 2) as u8); // Vendor-Length
+        recv_key_attr.extend_from_slice(&encrypted_recv_key);
 
-        encoded
+        response.attributes.push(RadiusAttribute {
+            typ: ATTR_VENDOR_SPECIFIC,
+            value: recv_key_attr,
+        });
+
+        // Add MPPE-Encryption-Policy
+        let mut policy_attr = Vec::new();
+        policy_attr.extend_from_slice(&VENDOR_MICROSOFT.to_be_bytes());
+        policy_attr.push(VENDOR_ATTR_MS_MPPE_ENCRYPTION_POLICY); // Vendor-Type: MPPE-Encryption-Policy
+        policy_attr.push(6); // Vendor-Length
+        policy_attr.extend_from_slice(&[0, 0, 0, 1]); // Value: 1 (Required)
+
+        response.attributes.push(RadiusAttribute {
+            typ: ATTR_VENDOR_SPECIFIC,
+            value: policy_attr,
+        });
+
+        // Add MPPE-Encryption-Types
+        let mut types_attr = Vec::new();
+        types_attr.extend_from_slice(&VENDOR_MICROSOFT.to_be_bytes());
+        types_attr.push(VENDOR_ATTR_MS_MPPE_ENCRYPTION_TYPES); // Vendor-Type: MPPE-Encryption-Types
+        types_attr.push(6); // Vendor-Length
+        types_attr.extend_from_slice(&[0, 0, 0, 6]); // Value: 6 (RC4)
+
+        response.attributes.push(RadiusAttribute {
+            typ: ATTR_VENDOR_SPECIFIC,
+            value: types_attr,
+        });
     }
 
     async fn handle_eap_request(&self, packet: &RadiusPacket, secret: &str) -> Vec<u8> {
@@ -1662,6 +1915,126 @@ impl RadiusAuthServer {
             }
         }
     }
+
+    fn create_accounting_response(&self, request: &RadiusPacket) -> Vec<u8> {
+        let response = RadiusPacket {
+            code: 5, // Accounting-Response
+            identifier: request.identifier,
+            length: 0, // Will be set after adding attributes
+            authenticator: [0u8; 16], // Will be set after adding attributes
+            attributes: Vec::new(),
+        };
+
+        // Encode the response
+        let encoded = response.encode();
+
+        encoded
+    }
+
+    fn get_mschapv2_session_keys(password_hash: &[u8], nt_response: &[u8]) -> (Vec<u8>, Vec<u8>) {
+        use hmac::{Hmac, Mac};
+        use sha1::Sha1;
+
+        let magic1 = b"This is the MPPE Master Key";
+        let magic2 = b"On the client side, this is the send key; on the server side, it is the receive key.";
+        let magic3 = b"On the client side, this is the receive key; on the server side, it is the send key.";
+
+        // MasterKey = SHA1(PwhashHash, NTResponse, Magic1)
+        let mut sha1 = Sha1::new();
+        sha1.update(password_hash);
+        sha1.update(nt_response);
+        sha1.update(magic1);
+        let master_key = sha1.finalize();
+
+        // SendKey = SHA1(MasterKey, Magic2)[0..16]
+        let mut sha1 = Sha1::new();
+        sha1.update(&master_key);
+        sha1.update(magic2);
+        let send_key = sha1.finalize()[..16].to_vec();
+
+        // RecvKey = SHA1(MasterKey, Magic3)[0..16]
+        let mut sha1 = Sha1::new();
+        sha1.update(&master_key);
+        sha1.update(magic3);
+        let recv_key = sha1.finalize()[..16].to_vec();
+
+        (send_key, recv_key)
+    }
+
+    fn encrypt_mppe_key(key: &[u8], secret: &str, authenticator: &[u8]) -> Vec<u8> {
+        use md5::Md5;
+        use rand::random;
+
+        // Maximum size for the encrypted key (253 bytes for VSA value - 6 bytes for VSA header)
+        const MAX_ENCRYPTED_KEY_SIZE: usize = 247;
+
+        // Generate salt
+        let salt_value: u32 = random();
+        let salt = [
+            0x80 | ((0 & 0x0f) << 3) | ((salt_value & 0x07) as u8),
+            (salt_value & 0xff) as u8
+        ];
+
+        // Calculate maximum key size that can be encrypted without exceeding the limit
+        // Each 16-byte block of the key becomes 16 bytes of encrypted data
+        // We need to reserve 2 bytes for the salt
+        let max_key_blocks = (MAX_ENCRYPTED_KEY_SIZE - 2) / 16;
+        let max_key_size = max_key_blocks * 16;
+
+        // Truncate the key if necessary
+        let key_to_use = if key.len() > max_key_size {
+            debug!("Key size {} exceeds maximum allowed size, truncating to {} bytes", key.len(), max_key_size);
+            &key[0..max_key_size]
+        } else {
+            key
+        };
+
+        // Pad key to multiple of 16 bytes
+        let mut padded_key = key_to_use.to_vec();
+        let pad_len = 16 - (padded_key.len() % 16);
+        if pad_len < 16 {
+            padded_key.extend(vec![0u8; pad_len]);
+        }
+
+        // First block
+        let mut hasher = Md5::new();
+        hasher.update(secret.as_bytes());
+        hasher.update(authenticator);
+        hasher.update(&salt);
+        let first_hash = hasher.finalize();
+
+        let mut result = Vec::with_capacity(2 + padded_key.len());
+        result.extend_from_slice(&salt);
+
+        // XOR first block
+        let mut encrypted = Vec::new();
+        for (a, b) in padded_key[0..16].iter().zip(first_hash.iter()) {
+            encrypted.push(a ^ b);
+        }
+        result.extend_from_slice(&encrypted);
+
+        // Remaining blocks
+        for chunk in padded_key[16..].chunks(16) {
+            let mut hasher = Md5::new();
+            hasher.update(secret.as_bytes());
+            hasher.update(&encrypted);
+            let hash = hasher.finalize();
+
+            encrypted = Vec::new();
+            for (a, b) in chunk.iter().zip(hash.iter()) {
+                encrypted.push(a ^ b);
+            }
+            result.extend_from_slice(&encrypted);
+        }
+
+        // Final check to ensure we don't exceed the maximum size
+        if result.len() > MAX_ENCRYPTED_KEY_SIZE {
+            error!("Encrypted key size {} exceeds maximum allowed size of {} bytes, truncating", result.len(), MAX_ENCRYPTED_KEY_SIZE);
+            result.truncate(MAX_ENCRYPTED_KEY_SIZE);
+        }
+
+        result
+    }
 }
 
 
@@ -1823,15 +2196,23 @@ fn calculate_authenticator_response(
     let magic1 = b"Magic server to client signing constant";
     let magic2 = b"Pad to make it do more than one iteration";
 
+    // First part of the authenticator response
     let mut hmac = <Hmac<Sha1> as KeyInit>::new_from_slice(&password_hash_hash).unwrap();
     hmac.update(nt_response);
     hmac.update(magic1);
-    let digest = hmac.finalize().into_bytes();
+    let digest1 = hmac.finalize().into_bytes();
 
+    // Second part of the authenticator response
     let mut hmac = <Hmac<Sha1> as KeyInit>::new_from_slice(&password_hash_hash).unwrap();
     hmac.update(&challenge_hash[0..8]);
     hmac.update(magic2);
-    hmac.finalize().into_bytes().to_vec()
+    let digest2 = hmac.finalize().into_bytes();
+
+    // Combine both parts
+    let mut response = Vec::with_capacity(40);
+    response.extend_from_slice(&digest1);
+    response.extend_from_slice(&digest2);
+    response
 }
 
 #[derive(Debug, Clone)]

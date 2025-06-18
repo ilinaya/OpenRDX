@@ -35,5 +35,7 @@ rustls-pemfile = "1.0.4"
 tokio-rustls = "0.24.1"
 rustls = "0.21.12"
 hex = "0.4.3"
+log = "0.4.27"
+rand = "0.8.5"
 
 

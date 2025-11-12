@@ -406,6 +406,7 @@ A comprehensive Authentication, Authorization, and Accounting (AAA) system with 
 - [Components](docs/components.md)
 - [Services](docs/services.md)
 - [RADIUS Server](docs/radius-server.md)
+- [MS-CHAPv2 Missing Features](docs/mschapv2-missing-features.md) - Implementation guide for future MS-CHAPv2 enhancements
 - [Contributing](docs/contributing.md)
 
 ## Quick Start

@@ -27,7 +27,7 @@ export class NasService {
   }
 
   createNasGroup(group: { name: string; description: string; parent?: number }): Observable<NasGroup> {
-    return this.http.post<NasGroup>(`${this.apiUrl}/groups`, group);
+    return this.http.post<NasGroup>(`${this.apiUrl}/groups/`, group);
   }
 
   updateNasGroup(id: number, group: { name?: string; description?: string; parent?: number }): Observable<NasGroup> {
@@ -39,7 +39,7 @@ export class NasService {
   }
 
   getNasGroupTree(): Observable<NasGroup[]> {
-    return this.http.get<NasGroup[]>(`${this.apiUrl}/groups/tree`);
+    return this.http.get<NasGroup[]>(`${this.apiUrl}/groups/tree/`);
   }
 
   // NAS Devices

@@ -150,7 +150,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_allowed_by_any_nas(self, obj):
         if obj.allow_any_nas is not None:
-            return obj.allowed_by_any_nas
+            return obj.allow_any_nas
         for each_group in obj.groups.all():
             if each_group.allow_any_nas:
                 return True

@@ -56,7 +56,7 @@ export class NasService {
   }
 
   createNas(nas: NasCreate): Observable<Nas> {
-    return this.http.post<Nas>(this.apiUrl, nas);
+    return this.http.post<Nas>(this.apiUrl, nas + "/");
   }
 
   updateNas(id: number, nas: NasUpdate): Observable<Nas> {
@@ -68,7 +68,7 @@ export class NasService {
   }
 
   getNasByGroup(groupId: number): Observable<Nas[]> {
-    return this.http.get<Nas[]>(`${this.apiUrl}/by_group`, {
+    return this.http.get<Nas[]>(`${this.apiUrl}/by_group/`, {
       params: new HttpParams().set('group_id', groupId.toString())
     });
   }

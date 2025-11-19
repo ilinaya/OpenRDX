@@ -96,6 +96,41 @@ OpenRDX is a modern, scalable platform for managing and processing RADIUS authen
    ```
    ⚠️ **Important**: These are default development credentials. You must change them immediately after first login for security reasons.
 
+### Resetting Admin Password
+
+If you need to reset an admin user's password, you can use the Django management command:
+
+**Via Docker Compose:**
+```bash
+docker-compose exec oss_backend python manage.py reset_admin_password <email> <new_password>
+```
+
+**Via Docker:**
+```bash
+docker exec -it openrdx-backend python manage.py reset_admin_password <email> <new_password>
+```
+
+**Example:**
+```bash
+docker-compose exec oss_backend python manage.py reset_admin_password admin@example.com newSecurePassword123
+```
+
+This command will:
+- Find the admin user by email address
+- Validate the new password according to Django's password validation rules
+- Hash the password using Django's secure password hashing (pbkdf2_sha256)
+- Update the user's password in the database
+
+**Note**: The password must meet Django's password validation requirements (minimum 8 characters, not too common, etc.).
+
+### Password Change via UI
+
+Logged-in users can change their own password through the web interface:
+1. Click on your email address in the top navigation bar
+2. Select "Change Password" from the dropdown menu
+3. Enter your current password and new password
+4. Confirm the new password and submit
+
 ## Architecture
 
 ### Components

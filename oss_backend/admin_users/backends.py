@@ -45,8 +45,21 @@ class EmailBackend(ModelBackend):
             return None
         
         logger.debug("Checking password...")
+        logger.debug(f"Full password hash stored: {user.password}")
+        logger.debug(f"Password hash parts: {user.password.split('$') if user.password else 'None'}")
+        logger.debug(f"Password provided (plaintext): {password}")
+        logger.debug(f"Password provided length: {len(password)}")
+        
         password_valid = user.check_password(password)
         logger.debug(f"Password check result: {password_valid}")
+        
+        # Try to manually verify hash format
+        if user.password and '$' in user.password:
+            hash_parts = user.password.split('$')
+            logger.debug(f"Hash algorithm: {hash_parts[0] if len(hash_parts) > 0 else 'unknown'}")
+            logger.debug(f"Iterations: {hash_parts[1] if len(hash_parts) > 1 else 'unknown'}")
+            logger.debug(f"Salt: {hash_parts[2] if len(hash_parts) > 2 else 'unknown'}")
+            logger.debug(f"Hash length: {len(hash_parts[3]) if len(hash_parts) > 3 else 0}")
         
         if password_valid:
             logger.debug("Password is valid, checking if user can authenticate...")

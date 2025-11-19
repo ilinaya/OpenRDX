@@ -252,6 +252,16 @@ LOGGING = {
             'level': LOGGING_LEVEL,
             'propagate': False,
         },
+        'authentication': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'admin_users': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
     },
 }
 

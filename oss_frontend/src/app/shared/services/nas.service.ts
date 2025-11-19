@@ -56,7 +56,7 @@ export class NasService {
   }
 
   createNas(nas: NasCreate): Observable<Nas> {
-    return this.http.post<Nas>(this.apiUrl + "/", nas);
+    return this.http.post<Nas>(this.apiUrl, nas);
   }
 
   updateNas(id: number, nas: NasUpdate): Observable<Nas> {

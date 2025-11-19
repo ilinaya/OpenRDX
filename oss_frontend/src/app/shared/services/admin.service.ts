@@ -103,4 +103,12 @@ export class AdminService {
       new_password: newPassword
     });
   }
+
+  updateMe(user: Partial<AdminUser>): Observable<AdminUser> {
+    return this.http.patch<AdminUser>(`${this.apiUrl}/me/`, user);
+  }
+
+  getMe(): Observable<AdminUser> {
+    return this.http.get<AdminUser>(`${this.apiUrl}/me/`);
+  }
 }

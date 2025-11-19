@@ -13,6 +13,7 @@ urlpatterns = [
     path('users/list/', AdminUserViewSet.as_view({'get': 'list_all'}), name='admin-user-list-all'),
     path('groups/list/', AdminGroupViewSet.as_view({'get': 'list_all'}), name='admin-group-list-all'),
 
+    path('me/', AdminUserViewSet.as_view({'get': 'me', 'patch': 'me'}), name='admin-user-me'),
     path('change-password/', AdminUserViewSet.as_view({'post': 'change_password'}), name='change-password'),
     path('set-password/', set_password, name='set-password'),
     path('reset-password/', reset_password, name='reset-password'),

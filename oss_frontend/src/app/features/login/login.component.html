@@ -1,6 +1,9 @@
 <div class="login-container">
   <div class="login-card">
-    <h2 class="login-title">Login</h2>
+    <div class="login-header">
+      <img src="assets/images/logo_openrdx.png" alt="OpenRDX Logo" class="login-logo">
+      <h2 class="login-title">Login</h2>
+    </div>
 
     <form [formGroup]="loginForm"
           (ngSubmit)="onSubmit()"
@@ -12,6 +15,7 @@
           id="email"
           formControlName="email"
           class="form-control"
+          placeholder="Enter your email"
           [class.is-invalid]="f['email'].touched && f['email'].errors"
         />
 
@@ -35,6 +39,7 @@
           id="password"
           formControlName="password"
           class="form-control"
+          placeholder="Enter your password"
           [class.is-invalid]="f['password'].touched && f['password'].errors"
         />
         @if (f['password'].touched && f['password'].errors) {
@@ -47,19 +52,19 @@
       </div>
 
       @if (error) {
-        <div class="alert alert-danger mt-3">
+        <div class="alert alert-danger">
           {{ error }}
         </div>
       }
 
-      <div class="form-group">
+      <div class="form-group form-group-submit">
         <button type="submit"
                 [disabled]="loading || loginForm.invalid"
                 class="btn btn-primary">
           @if (loading) {
             <span class="spinner"></span>
           }
-          Login
+          <span>Login</span>
         </button>
       </div>
     </form>

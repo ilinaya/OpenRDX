@@ -147,6 +147,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Custom user model
 AUTH_USER_MODEL = 'admin_users.AdminUser'
 
+# Custom authentication backend
+AUTHENTICATION_BACKENDS = [
+    'admin_users.backends.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 # REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

@@ -6,6 +6,7 @@ from django.conf.urls.static import static
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
+from nas.views import NasViewSet
 
 
 # Health check view
@@ -26,6 +27,9 @@ schema_view = get_schema_view(
     permission_classes=(permissions.AllowAny,),
 )
 
+# Create a view for POST to /api/nas (without trailing slash) to prevent 301 redirect
+nas_create_view = NasViewSet.as_view({'post': 'create'})
+
 urlpatterns = [
     path('admin/', admin.site.urls),
 
@@ -42,6 +46,8 @@ urlpatterns = [
     # API endpoints
     path('auth/', include('authentication.urls')),
     path('admin-users/', include('admin_users.urls')),
+    # Handle POST to /api/nas (without trailing slash) before the nas/ route to prevent 301 redirect
+    path('nas', nas_create_view, name='nas-create-no-slash'),
     path('nas/', include('nas.urls')),
     path('users/', include('users.urls')),
     path('accounting/', include('accounting.urls')),

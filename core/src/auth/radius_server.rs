@@ -713,14 +713,15 @@ impl RadiusAuthServer {
                         let vendor_data = &attr.value[6..];
 
                         match vendor_type {
-                            VENDOR_ATTR_MS_CHAP_CHALLENGE => {
-                                debug!("Found MS-CHAP-Challenge in VSA");
-                                mschap_challenge = Some(vendor_data.to_vec());
-                            }
-                            VENDOR_ATTR_MS_CHAP_RESPONSE => {
-                                debug!("Found MS-CHAP-Response in VSA");
-                                if vendor_data.len() >= 49 {
-                                    mschap_response = Some(vendor_data[26..50].to_vec());
+                            // Check MS-CHAPv2-Challenge first (before MS-CHAP-Challenge) since they both use attribute 11
+                            VENDOR_ATTR_MS_CHAP2_CHALLENGE => {
+                                debug!("Found MS-CHAPv2-Challenge in VSA");
+                                // MS-CHAPv2-Challenge is 16 bytes
+                                if vendor_data.len() >= 16 {
+                                    mschap_challenge = Some(vendor_data[0..16].to_vec());
+                                    debug!("Extracted MS-CHAPv2-Challenge: {} bytes", vendor_data[0..16].len());
+                                } else {
+                                    warn!("MS-CHAPv2-Challenge VSA too short: {} bytes (expected at least 16)", vendor_data.len());
                                 }
                             }
                             VENDOR_ATTR_MS_CHAP2_RESPONSE => {
@@ -740,14 +741,17 @@ impl RadiusAuthServer {
                                     warn!("MS-CHAPv2-Response VSA too short: {} bytes (expected at least 50)", vendor_data.len());
                                 }
                             }
-                            VENDOR_ATTR_MS_CHAP2_CHALLENGE => {
-                                debug!("Found MS-CHAPv2-Challenge in VSA");
-                                // MS-CHAPv2-Challenge is 16 bytes
-                                if vendor_data.len() >= 16 {
-                                    mschap_challenge = Some(vendor_data[0..16].to_vec());
-                                    debug!("Extracted MS-CHAPv2-Challenge: {} bytes", vendor_data[0..16].len());
-                                } else {
-                                    warn!("MS-CHAPv2-Challenge VSA too short: {} bytes (expected at least 16)", vendor_data.len());
+                            VENDOR_ATTR_MS_CHAP_CHALLENGE => {
+                                debug!("Found MS-CHAP-Challenge in VSA (v1, not v2)");
+                                // For MS-CHAPv2, we should NOT use MS-CHAP-Challenge (v1)
+                                // We'll use the RADIUS authenticator instead
+                                // Only set this if we're doing MS-CHAP v1 (not v2)
+                                // For now, we'll ignore it for MS-CHAPv2 and use authenticator
+                            }
+                            VENDOR_ATTR_MS_CHAP_RESPONSE => {
+                                debug!("Found MS-CHAP-Response in VSA");
+                                if vendor_data.len() >= 49 {
+                                    mschap_response = Some(vendor_data[26..50].to_vec());
                                 }
                             }
 
@@ -834,15 +838,20 @@ impl RadiusAuthServer {
                     return self.create_access_reject(packet, secret, "MS-CHAPv2: Missing NT-Response in MS-CHAPv2-Response");
                 }
                 
-                // For MS-CHAPv2, if no explicit challenge is provided, use the RADIUS authenticator
+                // For MS-CHAPv2, the authenticator challenge should come from:
+                // 1. MS-CHAPv2-Challenge attribute (if present in Access-Request, which is unusual)
+                // 2. RADIUS authenticator from the Access-Request (most common for first request)
+                // 3. RADIUS authenticator from a previous Access-Challenge (for subsequent requests)
+                // For the first Access-Request, we use the RADIUS authenticator
                 let auth_challenge = if let Some(challenge) = mschap_challenge {
                     if challenge.len() != 16 {
                         return self.create_access_reject(packet, secret, 
                             &format!("MS-CHAPv2: Invalid challenge length: {} bytes (expected 16)", challenge.len()));
                     }
+                    debug!("MS-CHAPv2: Using MS-CHAPv2-Challenge attribute as authenticator challenge: {:02x?}", challenge);
                     challenge
                 } else {
-                    debug!("No MS-CHAPv2-Challenge found, using RADIUS authenticator as challenge");
+                    debug!("MS-CHAPv2: No MS-CHAPv2-Challenge attribute found, using RADIUS authenticator as challenge: {:02x?}", packet.authenticator);
                     packet.authenticator.to_vec()
                 };
 
@@ -1100,8 +1109,10 @@ impl RadiusAuthServer {
                     debug!("MS-CHAPv2: Generated password hash: {} bytes", password_hash.len());
 
                     // Generate the challenge using SHA1(peer_challenge + authenticator + username)
+                    debug!("MS-CHAPv2: Challenge inputs - peer_challenge: {:02x?}, authenticator: {:02x?}, username: {}", 
+                           peer_challenge, authenticator, username);
                     let challenge = generate_nt_response_challenge(peer_challenge, authenticator, username);
-                    debug!("MS-CHAPv2: Generated challenge: {} bytes", challenge.len());
+                    debug!("MS-CHAPv2: Generated challenge: {} bytes, value: {:02x?}", challenge.len(), challenge);
 
                     // Generate expected response
                     let expected_response = generate_nt_response(&password_hash, &challenge);
@@ -2230,15 +2241,18 @@ fn decode_pap_password(encrypted: Vec<u8>, authenticator: &[u8], secret: &str) -
 }
 
 // Helper function to generate the challenge for NT-Response
+// According to RFC 2759, ChallengeHash = SHA1(PeerChallenge || AuthenticatorChallenge || UserName)[0..8]
 fn generate_nt_response_challenge(peer_challenge: &[u8], authenticator_challenge: &[u8], username: &str) -> Vec<u8> {
     use sha1::{Sha1, Digest};
 
     let mut hasher = Sha1::new();
-    // The challenge should use peer challenge first, then authenticator challenge
+    // The challenge should use peer challenge first, then authenticator challenge, then username
+    // Username should be in ASCII/UTF-8 encoding (not UTF-16LE)
     hasher.update(peer_challenge);
     hasher.update(authenticator_challenge);
     hasher.update(username.as_bytes());
     let hash = hasher.finalize();
+    // Take first 8 bytes as the challenge
     hash[0..8].to_vec()
 }
 

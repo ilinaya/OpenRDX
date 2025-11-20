@@ -1138,7 +1138,9 @@ impl RadiusAuthServer {
                             authenticator,
                             username,
                         ));
-                        debug!("MS-CHAPv2: Generated authenticator response: {} bytes", authenticator_response.as_ref().map(|r| r.len()).unwrap_or(0));
+                        debug!("MS-CHAPv2: Generated authenticator response: {} bytes, value: {:02x?}", 
+                               authenticator_response.as_ref().map(|r| r.len()).unwrap_or(0),
+                               authenticator_response.as_ref().map(|r| r.as_slice()));
                         Ok(Mschapv2Result {
                             result: AuthResult::Success,
                             authenticator_response,
@@ -1317,9 +1319,12 @@ impl RadiusAuthServer {
 
         // Session keys
         let (send_key, recv_key) = Self::get_mschapv2_session_keys(password_hash, nt_response);
+        debug!("MS-CHAPv2: Generated session keys - send_key: {} bytes, recv_key: {} bytes", send_key.len(), recv_key.len());
+        debug!("MS-CHAPv2: Send key: {:02x?}, Recv key: {:02x?}", &send_key, &recv_key);
         // Use offset 0 for send key, offset 1 for recv key (matching JavaScript implementation)
         let enc_send = Self::encrypt_mppe_key_with_offset(&send_key, secret, &request.authenticator, 0);
         let enc_recv = Self::encrypt_mppe_key_with_offset(&recv_key, secret, &request.authenticator, 1);
+        debug!("MS-CHAPv2: Encrypted MPPE keys - send: {} bytes, recv: {} bytes", enc_send.len(), enc_recv.len());
 
         // Send Key
         response.attributes.push(RadiusAttribute {
@@ -2370,8 +2375,8 @@ fn calculate_authenticator_response(
     authenticator_challenge: &[u8],
     username: &str,
 ) -> Vec<u8> {
-    use hmac::{Hmac, Mac};
     use sha1::Sha1;
+    use digest::Digest;
 
     // Generate PasswordHashHash = SHA1(password_hash)
     let mut sha1 = Sha1::new();
@@ -2393,6 +2398,8 @@ fn calculate_authenticator_response(
     let magic2 = b"Pad to make it do more than one iteration";
 
     // SHA1 of concatenated inputs (not HMAC)
+    // According to RFC 2759 and JavaScript implementation:
+    // SHA1(PasswordHashHash || NT-Response || Magic1 || ChallengeHash[0..8] || Magic2)
     let mut sha1 = Sha1::new();
     sha1.update(&password_hash_hash);             // PasswordHashHash (20 bytes)
     sha1.update(nt_response);                    // NT-Response (24 bytes)
@@ -2400,6 +2407,9 @@ fn calculate_authenticator_response(
     sha1.update(&challenge_hash[0..8]);          // First 8 bytes of ChallengeHash
     sha1.update(magic2);                         // Magic2 constant
     let authenticator_response = sha1.finalize();
+    
+    debug!("Authenticator Response calculation: PasswordHashHash={:02x?}, NT-Response={:02x?}, ChallengeHash[0..8]={:02x?}, result={:02x?}",
+           &password_hash_hash[..], &nt_response[..], &challenge_hash[0..8], &authenticator_response[..]);
 
     // Return single 20-byte authenticator response
     authenticator_response.to_vec()

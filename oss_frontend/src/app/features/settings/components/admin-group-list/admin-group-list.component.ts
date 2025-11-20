@@ -3,14 +3,11 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AdminService } from '../../../../shared/services/admin.service';
 import { AdminGroup } from '../../../../shared/models/admin.model';
 import { PagedResponse, PaginationParams } from '../../../../shared/models/pagination.model';
-import {DatePipe} from '@angular/common';
 
 @Component({
   selector: 'app-admin-group-list',
   templateUrl: './admin-group-list.component.html',
-  imports: [
-    DatePipe,
-  ],
+  imports: [],
   styleUrls: ['./admin-group-list.component.scss'],
 })
 export class AdminGroupListComponent implements OnInit {

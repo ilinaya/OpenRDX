@@ -1,8 +1,22 @@
 <div class="user-list-container">
   <div class="header">
-    <button class="btn btn-primary" (click)="createUser()">
-      <i class="bi bi-plus"></i> {{ 'users.list.create' | translate }}
-    </button>
+    <div class="header-actions">
+      <button class="btn btn-secondary"
+              (click)="downloadTemplate()"
+              title="Download Excel Template">
+        <i class="fas fa-download"></i> Download Template
+      </button>
+      <label class="btn btn-secondary" style="margin: 0; cursor: pointer;">
+        <i class="fas fa-upload"></i> Upload Excel
+        <input type="file" 
+               accept=".xlsx,.xls" 
+               style="display: none;" 
+               (change)="onFileSelected($event)">
+      </label>
+      <button class="btn btn-primary" (click)="createUser()">
+        <i class="fas fa-plus"></i> {{ 'users.list.create' | translate }}
+      </button>
+    </div>
   </div>
 
   @if (loading) {
@@ -24,6 +38,7 @@
         <table class="table">
           <thead>
             <tr>
+              <th>{{ 'users.list.externalId' | translate }}</th>
               <th>{{ 'users.list.email' | translate }}</th>
               <th>{{ 'users.list.fullName' | translate }}</th>
               <th>{{ 'users.list.phone' | translate }}</th>
@@ -38,6 +53,7 @@
           <tbody>
             @for (user of users; track user.id) {
               <tr>
+                <td>{{ user.external_id || ('common.notAvailable' | translate) }}</td>
                 <td>{{ user.email }}</td>
                 <td>{{ user.full_name }}</td>
                 <td>{{ user.phone_number }}</td>
@@ -59,13 +75,13 @@
                 <td>
                   <div class="btn-group">
                     <button class="btn btn-info" (click)="viewUser(user)">
-                      <i class="bi bi-eye"></i> {{ 'users.list.view' | translate }}
+                      <i class="fas fa-eye"></i> {{ 'users.list.view' | translate }}
                     </button>
                     <button class="btn btn-primary" (click)="editUser(user)">
-                      <i class="bi bi-pencil"></i> {{ 'users.list.edit' | translate }}
+                      <i class="fas fa-edit"></i> {{ 'users.list.edit' | translate }}
                     </button>
                     <button class="btn btn-danger" (click)="deleteUser(user)">
-                      <i class="bi bi-trash"></i> {{ 'users.list.delete' | translate }}
+                      <i class="fas fa-trash"></i> {{ 'users.list.delete' | translate }}
                     </button>
                   </div>
                 </td>
@@ -73,7 +89,7 @@
             }
             @if (users.length === 0) {
               <tr>
-                <td colspan="7" class="text-center">{{ 'users.list.noUsers' | translate }}</td>
+                <td colspan="9" class="text-center">{{ 'users.list.noUsers' | translate }}</td>
               </tr>
             }
           </tbody>

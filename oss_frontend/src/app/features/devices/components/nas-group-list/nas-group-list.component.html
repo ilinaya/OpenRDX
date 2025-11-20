@@ -2,7 +2,18 @@
   <div class="header">
     <h2>{{ 'devices.nasGroups.list.title' | translate }}</h2>
     <div class="header-actions">
-
+      <button class="btn btn-secondary"
+              (click)="downloadTemplate()"
+              title="Download Excel Template">
+        <i class="fas fa-download"></i> Download Template
+      </button>
+      <label class="btn btn-secondary" style="margin: 0; cursor: pointer;">
+        <i class="fas fa-upload"></i> Upload Excel
+        <input type="file" 
+               accept=".xlsx,.xls" 
+               style="display: none;" 
+               (change)="onFileSelected($event)">
+      </label>
       <button class="btn btn-primary"
               (click)="createNewGroup()">
         <i class="fas fa-plus"></i> {{ 'devices.nasGroups.list.create' | translate }}
@@ -39,7 +50,6 @@
             <th>{{ 'devices.nasGroups.list.name' | translate }}</th>
             <th>{{ 'devices.nasGroups.list.description' | translate }}</th>
             <th>{{ 'devices.nasGroups.list.parentGroup' | translate }}</th>
-            <th>{{ 'devices.nasGroups.list.status' | translate }}</th>
             <th>{{ 'common.actions' | translate }}</th>
           </tr>
           </thead>

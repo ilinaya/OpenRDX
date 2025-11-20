@@ -175,6 +175,34 @@ Authorization: Bearer <your_api_key_here>
 
 **Note**: API keys cannot be edited. If you need to change an API key, revoke the old one and create a new one.
 
+### Excel Template Import/Export
+
+The system provides Excel template download and upload functionality for bulk operations:
+
+**Available Templates:**
+- **User Groups Template**: Download template with columns (Name, Description, Parent Group Name, Allow Any NAS) and upload to bulk import user groups
+- **Users Template**: Download template with 3 sheets:
+  - **Users Sheet**: Email, External ID, First Name, Last Name, Phone Number, Group Names (comma-separated), Allow Any NAS, Is Active
+  - **Identifiers Sheet**: User Email/External ID, Identifier Type Code, Value, Password, Is Enabled, Comment, Auth Attribute Group Name, Expiration Date, Reject Expired, Expired Auth Attribute Group Name
+  - **NAS Authorizations Sheet**: User Email/External ID, Identifier Value, NAS Name, Auth Attribute Group Name
+- **NAS Groups Template**: Download template with columns (Name, Description, Parent Group Name) and upload to bulk import NAS groups
+- **NAS Devices Template**: Download template with columns (Name, IP Address, Description, Vendor ID, Secret ID, Timezone ID, CoA Enabled, CoA Port, Group Names (comma-separated), Is Active) and upload to bulk import NAS devices
+
+**How to Use:**
+1. Navigate to the relevant list page (Users, User Groups, NAS Groups, or NAS Devices)
+2. Click "Download Template" to get the Excel template file
+3. Fill in the template with your data
+4. Click "Upload Excel" and select the filled template
+5. The system will validate and import the data, showing any errors
+
+**Template Features:**
+- Pre-filled example rows showing the expected format
+- Column headers with clear descriptions
+- Validation of all data before import
+- Detailed error messages for any issues
+- Support for hierarchical groups (parent groups must exist)
+- Support for relationships (users → identifiers → NAS authorizations)
+
 ### Northbound API
 
 The Northbound API is a high-performance REST API built with Rust/Actix-web that provides programmatic access to OpenRDX. It's accessible at `/northbound-api/` via Nginx.
@@ -282,6 +310,11 @@ See `northbound_api/README.md` for detailed API documentation.
   - RESTful API built with Django REST Framework
   - User management and system configuration
   - API key generation and management
+  - Excel template download/upload for bulk operations:
+    - User Groups: Download template and upload Excel files to bulk import groups
+    - Users: Download template with 3 sheets (Users, Identifiers, NAS Authorizations) and upload to bulk import users with their identifiers and NAS authorizations
+    - NAS Groups: Download template and upload Excel files to bulk import groups
+    - NAS Devices: Download template and upload Excel files to bulk import devices
   - Accessible through Nginx at /api
   - Internal service, not directly accessible from outside
   - Uses PostgreSQL for relational data

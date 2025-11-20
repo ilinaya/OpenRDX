@@ -100,3 +100,12 @@ Structure of all available endpoints in the northbound API:
 - **Vendors**: List all available vendors
 - **Secrets**: List all available secrets
 
+### Excel Template Import/Export
+The system provides Excel template download and upload functionality through the Django backend:
+- **User Groups**: Download template (Name, Description, Parent Group Name, Allow Any NAS) and upload to bulk import groups
+- **Users**: Download template with 3 sheets (Users, Identifiers, NAS Authorizations) and upload to bulk import users with their identifiers and NAS authorizations
+- **NAS Groups**: Download template (Name, Description, Parent Group Name) and upload to bulk import groups
+- **NAS Devices**: Download template (Name, IP Address, Description, Vendor ID, Secret ID, Timezone ID, CoA Enabled, CoA Port, Group Names, Is Active) and upload to bulk import devices
+- All templates include example rows and proper validation
+- Upload endpoints validate data and provide detailed error messages
+

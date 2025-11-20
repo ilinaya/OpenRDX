@@ -1,9 +1,23 @@
 <div class="nas-list-container">
   <div class="header">
-    <button class="btn btn-primary"
-            (click)="createNas()">
-      <i class="fas fa-plus"></i> {{ 'devices.nas.list.create' | translate }}
-    </button>
+    <div class="header-actions">
+      <button class="btn btn-secondary"
+              (click)="downloadTemplate()"
+              title="Download Excel Template">
+        <i class="fas fa-download"></i> Download Template
+      </button>
+      <label class="btn btn-secondary" style="margin: 0; cursor: pointer;">
+        <i class="fas fa-upload"></i> Upload Excel
+        <input type="file" 
+               accept=".xlsx,.xls" 
+               style="display: none;" 
+               (change)="onFileSelected($event)">
+      </label>
+      <button class="btn btn-primary"
+              (click)="createNas()">
+        <i class="fas fa-plus"></i> {{ 'devices.nas.list.create' | translate }}
+      </button>
+    </div>
   </div>
 
   @if (loading) {

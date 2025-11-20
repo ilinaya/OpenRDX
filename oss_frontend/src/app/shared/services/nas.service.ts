@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, forkJoin } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { Nas, NasCreate, NasUpdate, NasGroup } from '../models/nas.model';
 import { PagedResponse, PaginationParams } from '../models/pagination.model';
@@ -74,26 +75,114 @@ export class NasService {
   }
 
   getAuthorizedNas(userId: number, identifierId: number): Observable<Nas[]> {
-    return this.http.get<Nas[]>(`${this.apiUrl}/authorized/${userId}/${identifierId}`);
+    const usersApiUrl = `${environment.apiUrl}/users`;
+    return this.http.get<any[]>(`${usersApiUrl}/users/${userId}/identifiers/${identifierId}/nas-authorizations/`).pipe(
+      // Transform the response to extract NAS objects from authorization objects
+      map((authorizations: any[]) => {
+        return authorizations.map((auth: any) => {
+          // The authorization object has a nas field which can be an object or just an ID
+          if (auth.nas && typeof auth.nas === 'object') {
+            return auth.nas;
+          } else if (auth.nas_id) {
+            // If nas is just an ID, we'll need to fetch it or use nas_name as fallback
+            return {
+              id: auth.nas_id || auth.nas,
+              name: auth.nas_name || `NAS ${auth.nas_id || auth.nas}`,
+              // Add other required fields with defaults
+              ip_address: '',
+              description: '',
+              coa_enabled: false,
+              groups: []
+            } as Nas;
+          }
+          return auth;
+        }).filter((nas: any) => nas !== null && nas !== undefined);
+      })
+    );
   }
 
   getAvailableNas(userId: number, identifierId: number): Observable<Nas[]> {
-    return this.http.get<Nas[]>(`${this.apiUrl}/available/${userId}/${identifierId}`);
+    const usersApiUrl = `${environment.apiUrl}/users`;
+    return this.http.get<Nas[]>(`${usersApiUrl}/users/${userId}/identifiers/${identifierId}/available-nas/`);
   }
 
   authorizeNas(userId: number, identifierId: number, nasId: number): Observable<any> {
-    return this.http.post(`${this.apiUrl}/authorize/${userId}/${identifierId}/${nasId}`, {});
+    const usersApiUrl = `${environment.apiUrl}/users`;
+    return this.http.post(`${usersApiUrl}/users/${userId}/identifiers/${identifierId}/nas-authorizations/`, {
+      nas: nasId
+    });
   }
 
   revokeAuthorization(userId: number, identifierId: number, nasId: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/authorize/${userId}/${identifierId}/${nasId}`);
+    const usersApiUrl = `${environment.apiUrl}/users`;
+    // First, get the authorization ID by fetching all authorizations and finding the one with matching nas_id
+    return this.http.get<any[]>(`${usersApiUrl}/users/${userId}/identifiers/${identifierId}/nas-authorizations/`).pipe(
+      switchMap((authorizations: any[]) => {
+        const auth = authorizations.find((a: any) => {
+          const authNasId = a.nas?.id || a.nas_id || a.nas;
+          return authNasId === nasId;
+        });
+        if (!auth || !auth.id) {
+          throw new Error('Authorization not found');
+        }
+        const authId = auth.id;
+        return this.http.delete(`${usersApiUrl}/users/${userId}/identifiers/${identifierId}/nas-authorizations/${authId}/`);
+      })
+    );
   }
 
   authorizeAllNas(userId: number, identifierId: number): Observable<any> {
-    return this.http.post(`${this.apiUrl}/authorize-all/${userId}/${identifierId}`, {});
+    // Get all available NAS and authorize each one
+    return this.getAvailableNas(userId, identifierId).pipe(
+      switchMap((nasList: Nas[]) => {
+        if (nasList.length === 0) {
+          return forkJoin([]);
+        }
+        const requests = nasList.map((nas: Nas) => 
+          this.authorizeNas(userId, identifierId, nas.id)
+        );
+        return forkJoin(requests);
+      })
+    );
   }
 
   revokeAllAuthorizations(userId: number, identifierId: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/authorize-all/${userId}/${identifierId}`);
+    // Get all authorized NAS and revoke each one
+    return this.getAuthorizedNas(userId, identifierId).pipe(
+      switchMap((nasList: Nas[]) => {
+        if (nasList.length === 0) {
+          return forkJoin([]);
+        }
+        const requests = nasList.map((nas: Nas) => 
+          this.revokeAuthorization(userId, identifierId, nas.id)
+        );
+        return forkJoin(requests);
+      })
+    );
+  }
+
+  // Excel Template Download and Upload
+  downloadNasGroupTemplate(): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/groups/download_template/`, {
+      responseType: 'blob'
+    });
+  }
+
+  uploadNasGroupsExcel(file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post(`${this.apiUrl}/groups/upload_excel/`, formData);
+  }
+
+  downloadNasDeviceTemplate(): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/nas/download_template/`, {
+      responseType: 'blob'
+    });
+  }
+
+  uploadNasDevicesExcel(file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post(`${this.apiUrl}/nas/upload_excel/`, formData);
   }
 }

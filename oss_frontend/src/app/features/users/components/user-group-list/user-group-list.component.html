@@ -1,10 +1,24 @@
 <div class="admin-group-list-container">
   <div class="header">
     <h2>{{ 'users.userGroups.title' | translate }}</h2>
-    <button class="btn btn-primary"
-            (click)="createNewGroup()">
-      {{ 'users.userGroups.create' | translate }}
-    </button>
+    <div class="header-actions">
+      <button class="btn btn-secondary"
+              (click)="downloadTemplate()"
+              title="Download Excel Template">
+        <i class="fas fa-download"></i> Download Template
+      </button>
+      <label class="btn btn-secondary" style="margin: 0; cursor: pointer;">
+        <i class="fas fa-upload"></i> Upload Excel
+        <input type="file" 
+               accept=".xlsx,.xls" 
+               style="display: none;" 
+               (change)="onFileSelected($event)">
+      </label>
+      <button class="btn btn-primary"
+              (click)="createNewGroup()">
+        {{ 'users.userGroups.create' | translate }}
+      </button>
+    </div>
   </div>
 
   @if (loading) {
@@ -34,8 +48,6 @@
           <th>{{ 'users.userGroups.name' | translate }}</th>
           <th>{{ 'users.userGroups.description' | translate }}</th>
           <th>{{ 'users.userGroups.allowAnyNas' | translate }}</th>
-          <th>{{ 'users.userGroups.createdAt' | translate }}</th>
-          <th>{{ 'users.userGroups.updatedAt' | translate }}</th>
           <th>{{ 'common.actions' | translate }}</th>
         </tr>
         </thead>
@@ -45,8 +57,6 @@
               <td>{{ group.name }}</td>
               <td>{{ group.description || ('common.notAvailable' | translate) }}</td>
               <td>{{ group.allow_any_nas ? ('common.yes' | translate) : ('common.no' | translate) }}</td>
-              <td>{{ group.created_at | date:'medium' }}</td>
-              <td>{{ group.updated_at | date:'medium' }}</td>
               <td class="actions">
                 <button class="btn btn-info"
                         (click)="viewGroupDetails(group.id)">

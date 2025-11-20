@@ -121,10 +121,12 @@ export class UserFormComponent implements OnInit {
             const editResult = result as EditModeResult;
             const userData = {
               email: editResult.user.email,
+              external_id: editResult.user.external_id || null,
               first_name: editResult.user.first_name,
               last_name: editResult.user.last_name,
               phone_number: editResult.user.phone_number,
               is_active: editResult.user.is_active,
+              allow_any_nas: editResult.user.allow_any_nas ?? null,
               group_ids: editResult.user.groups.map(g => g.id)
             };
             this.userForm.patchValue(userData);

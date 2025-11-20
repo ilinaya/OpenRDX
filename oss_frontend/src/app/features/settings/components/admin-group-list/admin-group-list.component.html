@@ -33,8 +33,6 @@
         <tr>
           <th>Name</th>
           <th>Description</th>
-          <th>Created At</th>
-          <th>Updated At</th>
           <th>Actions</th>
         </tr>
         </thead>
@@ -43,8 +41,6 @@
             <tr>
               <td>{{ group.name }}</td>
               <td>{{ group.description || 'N/A' }}</td>
-              <td>{{ group.created_at | date:'medium' }}</td>
-              <td>{{ group.updated_at | date:'medium' }}</td>
               <td class="actions">
                 <button class="btn btn-info"
                         (click)="viewGroupDetails(group.id)">

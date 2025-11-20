@@ -63,4 +63,30 @@ export class UserService {
   deleteUser(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/users/${id}/`);
   }
+
+  // Excel Template Download and Upload for User Groups
+  downloadUserGroupTemplate(): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/groups/download_template/`, {
+      responseType: 'blob'
+    });
+  }
+
+  uploadUserGroupsExcel(file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post(`${this.apiUrl}/groups/upload_excel/`, formData);
+  }
+
+  // Excel Template Download and Upload for Users
+  downloadUserTemplate(): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/users/download_template/`, {
+      responseType: 'blob'
+    });
+  }
+
+  uploadUsersExcel(file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post(`${this.apiUrl}/users/upload_excel/`, formData);
+  }
 }

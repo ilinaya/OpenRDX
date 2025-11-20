@@ -3,14 +3,11 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { SecretService } from '../../../../shared/services/secret.service';
 import { Secret } from '../../../../shared/models/secret.model';
 import { PagedResponse, PaginationParams } from '../../../../shared/models/pagination.model';
-import {DatePipe} from '@angular/common';
 
 @Component({
   selector: 'app-secret-list',
   templateUrl: './secret-list.component.html',
-  imports: [
-    DatePipe,
-  ],
+  imports: [],
   styleUrls: ['./secret-list.component.scss'],
 })
 export class SecretListComponent implements OnInit {

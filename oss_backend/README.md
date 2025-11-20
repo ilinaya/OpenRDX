@@ -9,6 +9,11 @@ A Django REST Framework API with JWT authentication, Swagger documentation, and 
 - Admin users management with email invitations and password reset
 - Regular users management with group support
 - NAS (Network Access Server) management with group support
+- Excel template download and bulk import:
+  - **User Groups**: Download template and upload Excel files to bulk import groups
+  - **Users**: Download template with 3 sheets (Users, Identifiers, NAS Authorizations) and upload to bulk import users with their identifiers and NAS authorizations
+  - **NAS Groups**: Download template and upload Excel files to bulk import groups
+  - **NAS Devices**: Download template and upload Excel files to bulk import devices
 - System settings management
 - Accounting data from MongoDB for session tracking
 - RADIUS authentication attribute management
@@ -158,12 +163,16 @@ python manage.py runserver
 - `GET /api/users/{id}/`: Retrieve a user
 - `PUT /api/users/{id}/`: Update a user
 - `DELETE /api/users/{id}/`: Delete a user
+- `GET /api/users/download_template/`: Download Excel template for importing users with identifiers and NAS authorizations
+- `POST /api/users/upload_excel/`: Upload Excel file to bulk import users, identifiers, and NAS authorizations
 - `GET /api/users/groups/`: List all user groups
 - `POST /api/users/groups/`: Create a new user group
 - `GET /api/users/groups/{id}/`: Retrieve a user group
 - `PUT /api/users/groups/{id}/`: Update a user group
 - `DELETE /api/users/groups/{id}/`: Delete a user group
 - `GET /api/users/groups/tree/`: Get user groups as a tree structure
+- `GET /api/users/groups/download_template/`: Download Excel template for importing user groups
+- `POST /api/users/groups/upload_excel/`: Upload Excel file to bulk import user groups
 
 ### NAS (Network Access Server)
 
@@ -173,12 +182,16 @@ python manage.py runserver
 - `PUT /api/nas/nas/{id}/`: Update a NAS device
 - `DELETE /api/nas/nas/{id}/`: Delete a NAS device
 - `GET /api/nas/nas/by-group/`: Filter NAS devices by group
+- `GET /api/nas/nas/download_template/`: Download Excel template for importing NAS devices
+- `POST /api/nas/nas/upload_excel/`: Upload Excel file to bulk import NAS devices
 - `GET /api/nas/groups/`: List all NAS groups
 - `POST /api/nas/groups/`: Create a new NAS group
 - `GET /api/nas/groups/{id}/`: Retrieve a NAS group
 - `PUT /api/nas/groups/{id}/`: Update a NAS group
 - `DELETE /api/nas/groups/{id}/`: Delete a NAS group
 - `GET /api/nas/groups/tree/`: Get NAS groups as a tree structure
+- `GET /api/nas/groups/download_template/`: Download Excel template for importing NAS groups
+- `POST /api/nas/groups/upload_excel/`: Upload Excel file to bulk import NAS groups
 
 ### Settings
 

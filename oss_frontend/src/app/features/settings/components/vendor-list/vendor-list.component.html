@@ -41,8 +41,6 @@
               <th>Name</th>
               <th>Vendor ID</th>
               <th>Description</th>
-              <th>Created At</th>
-              <th>Updated At</th>
               <th>Actions</th>
             </tr>
             </thead>
@@ -52,8 +50,6 @@
                   <td>{{ vendor.name }}</td>
                   <td>{{ vendor.vendor_id }}</td>
                   <td>{{ vendor.description || 'No description provided' }}</td>
-                  <td>{{ vendor.created_at | date:'medium' }}</td>
-                  <td>{{ vendor.updated_at | date:'medium' }}</td>
                   <td class="actions">
                     <a class="btn btn-sm btn-info"
                        [routerLink]="[vendor.id]"

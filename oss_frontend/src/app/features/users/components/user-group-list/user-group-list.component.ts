@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { PaginationParams } from '../../../../shared/models/pagination.model';
-import {DatePipe} from '@angular/common';
 import {UserService} from "../../../../shared/services/user.service";
 import {UserGroup} from "../../../../shared/models/user-group.model";
 import {TranslateModule} from "@ngx-translate/core";
@@ -10,7 +9,6 @@ import {TranslateModule} from "@ngx-translate/core";
   selector: 'app-user-group-list',
   templateUrl: './user-group-list.component.html',
   imports: [
-    DatePipe,
     TranslateModule,
   ],
   styleUrls: ['./user-group-list.component.scss'],
@@ -104,5 +102,59 @@ export class UserGroupListComponent implements OnInit {
         queryParams: { page: page }
       });
     }
+  }
+
+  downloadTemplate(): void {
+    this.userService.downloadUserGroupTemplate().subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'user_groups_template.xlsx';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        this.error = 'Failed to download template. Please try again later.';
+        console.error('Error downloading template:', err);
+      }
+    });
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      this.uploadExcel(file);
+    }
+  }
+
+  uploadExcel(file: File): void {
+    this.loading = true;
+    this.error = '';
+    
+    this.userService.uploadUserGroupsExcel(file).subscribe({
+      next: (response) => {
+        this.loading = false;
+        if (response.success) {
+          const message = `Successfully imported ${response.created} group(s).`;
+          if (response.errors && response.errors.length > 0) {
+            alert(message + '\n\nErrors:\n' + response.errors.join('\n'));
+          } else {
+            alert(message);
+          }
+          this.loadGroups();
+        }
+      },
+      error: (err) => {
+        this.loading = false;
+        const errorMessage = err.error?.error || err.error?.message || 'Failed to upload file. Please try again later.';
+        this.error = errorMessage;
+        console.error('Error uploading file:', err);
+        alert('Error uploading file: ' + errorMessage);
+      }
+    });
   }
 }

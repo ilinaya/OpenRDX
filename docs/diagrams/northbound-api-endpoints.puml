@@ -201,4 +201,29 @@ note right of ListUserIdentifierTypes
   Used for user identifier management
 end note
 
+note right of CreateNASGroup
+  Create new NAS group
+  Body: NasGroupCreate
+  Required: name
+  Optional: description, parent_id
+end note
+
+note right of UpdateNASGroup
+  Update existing NAS group
+  Body: NasGroupUpdate
+  Can update:
+  - name, description
+  - parent_id
+end note
+
+note right of DeleteNASGroup
+  Delete NAS group
+  Cascades to children if any
+end note
+
+note right of DeleteNAS
+  Delete NAS device
+  Removes all associations
+end note
+
 @enduml

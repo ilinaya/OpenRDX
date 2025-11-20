@@ -40,13 +40,14 @@
       </div>
 
       <div class="form-group">
-        <label for="ip_address">{{ 'devices.nas.form.ipAddress' | translate }} *</label>
+        <label for="ip_address">{{ 'devices.nas.form.ipOrHost' | translate }} *</label>
         <input
           type="text"
           id="ip_address"
           formControlName="ip_address"
           class="form-control"
           [class.is-invalid]="nasForm.get('ip_address')?.touched && nasForm.get('ip_address')?.invalid"
+          placeholder="192.168.1.1 or nas.example.com"
         >
         @if (nasForm.get('ip_address')?.touched && nasForm.get('ip_address')?.invalid) {
           <div class="error-message">

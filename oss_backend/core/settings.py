@@ -45,7 +45,8 @@ INSTALLED_APPS = [
     'accounting',
     'radius',
     'radsec',
-    'shared'
+    'shared',
+    'api_keys',
 ]
 
 MIDDLEWARE = [
@@ -210,6 +211,11 @@ DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@example.com')
 
 # Google Chat Webhook
 GOOGLE_CHAT_WEBHOOK_URL = os.environ.get('GOOGLE_CHAT_WEBHOOK_URL', '')
+
+# API Key JWT Secret - used specifically for generating API keys
+# This should be a separate secret from the main SECRET_KEY
+# Generate it using: python manage.py generate_api_key_secret
+API_KEY_JWT_SECRET = os.environ.get('API_KEY_JWT_SECRET', None)
 
 # Template directories
 TEMPLATES[0]['DIRS'] = [os.path.join(BASE_DIR, 'admin_users', 'templates')]

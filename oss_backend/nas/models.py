@@ -3,6 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from mptt.models import MPTTModel, TreeForeignKey
 from django.db.models.signals import post_migrate
 from django.dispatch import receiver
+from django.conf import settings
 
 
 class Vendor(models.Model):
@@ -92,13 +93,15 @@ class Nas(models.Model):
     """
     name = models.CharField(_("NAS Name"), max_length=255)
     description = models.TextField(_("Description"), blank=True)
-    ip_address = models.GenericIPAddressField(_("IP Address"))
+    ip_address = models.CharField(_("IP Address or Hostname"), max_length=255)
     coa_enabled = models.BooleanField(_("CoA Enabled"), default=False)
     coa_port = models.PositiveIntegerField(_("CoA Port"), default=3799)
     groups = models.ManyToManyField(NasGroup, related_name="nas_devices", blank=True, 
                                    verbose_name=_("NAS Groups"))
     vendor = models.ForeignKey(Vendor, on_delete=models.SET_NULL, null=True, blank=True,
                               related_name="nas_devices", verbose_name=_("Vendor"))
+    secret = models.ForeignKey('radius.Secret', on_delete=models.PROTECT, null=True, blank=True,
+                              related_name="nas_devices", verbose_name=_("Secret"))
 
     created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated At"), auto_now=True)

@@ -1,7 +1,8 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, HostListener, OnInit} from '@angular/core';
 import {Router, RouterLink, RouterOutlet} from '@angular/router';
 import {AuthService} from '../../core/auth/auth.service';
 import {AdminUser} from '../../shared/models/admin.model';
+import {AdminService} from '../../shared/services/admin.service';
 import {TranslateService} from '@ngx-translate/core';
 import {NavbarComponent} from './components/navbar/navbar.component';
 
@@ -19,14 +20,43 @@ export class DashboardComponent implements OnInit {
   constructor(
     private router: Router,
     private authService: AuthService,
+    private adminService: AdminService,
     private translate: TranslateService,
   ) {
     this.currentLang = this.translate.currentLang;
   }
 
   ngOnInit(): void {
-    this.currentUser = this.authService.getCurrentUser();
+    this.loadCurrentUser();
     this.initializeLanguage();
+  }
+
+  private loadCurrentUser(): void {
+    // First try to get from auth service
+    const authUser = this.authService.getCurrentUser();
+    if (authUser) {
+      // Try to fetch full user details from API
+      this.adminService.getMe().subscribe({
+        next: (user: AdminUser) => {
+          this.currentUser = user;
+        },
+        error: () => {
+          // If API call fails, use basic user info
+          this.currentUser = authUser as AdminUser;
+        }
+      });
+    }
+  }
+
+  getUserDisplayName(): string {
+    if (!this.currentUser) return 'User';
+    if (this.currentUser.first_name && this.currentUser.last_name) {
+      return `${this.currentUser.first_name} ${this.currentUser.last_name}`;
+    }
+    if (this.currentUser.first_name) {
+      return this.currentUser.first_name;
+    }
+    return this.currentUser.email || 'User';
   }
 
   private initializeLanguage(): void {
@@ -55,6 +85,14 @@ export class DashboardComponent implements OnInit {
 
   toggleUserMenu(): void {
     this.isUserMenuOpen = !this.isUserMenuOpen;
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.user-menu')) {
+      this.isUserMenuOpen = false;
+    }
   }
 
   logout(): void {

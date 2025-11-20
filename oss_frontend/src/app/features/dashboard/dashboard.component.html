@@ -5,22 +5,34 @@
     <div class="header">
       <h1>OSS</h1>
       <div class="user-info">
-
-
         <div class="user-menu"
              [class.active]="isUserMenuOpen">
           <div class="user-menu-trigger"
                (click)="toggleUserMenu()">
-            <span class="user-email">{{ currentUser?.email }}</span>
-            <i class="fas fa-chevron-down"></i>
+            <div class="user-avatar">
+              <i class="fas fa-user"></i>
+            </div>
+            <span class="user-name">{{ getUserDisplayName() }}</span>
+            <i class="fas fa-chevron-down chevron-icon"></i>
           </div>
 
           @if (isUserMenuOpen) {
             <div class="dropdown-menu">
+              <div class="dropdown-header">
+                <div class="dropdown-avatar">
+                  <i class="fas fa-user"></i>
+                </div>
+                <div class="dropdown-user-info">
+                  <div class="dropdown-name">{{ getUserDisplayName() }}</div>
+                  <div class="dropdown-email">{{ currentUser?.email }}</div>
+                </div>
+              </div>
+              <div class="dropdown-divider"></div>
               <a class="dropdown-item"
-                 routerLink="/settings/change-password">
+                 routerLink="/settings/change-password"
+                 (click)="isUserMenuOpen = false">
                 <i class="fas fa-key"></i>
-                Change Password
+                <span>Change Password</span>
               </a>
             </div>
           }

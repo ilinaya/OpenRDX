@@ -1,0 +1,108 @@
+@startuml Component Interaction
+!theme plain
+skinparam componentStyle rectangle
+skinparam linetype ortho
+
+title OpenRDX Component Interaction
+
+package "Frontend (Angular)" {
+  [App Component] as app
+  [Header Component] as header
+  [Sidebar Component] as sidebar
+  [NAS List Component] as nas_list
+  [NAS Form Component] as nas_form
+  [User List Component] as user_list
+  [User Form Component] as user_form
+}
+
+package "Services Layer" {
+  [Auth Service] as auth_service
+  [NAS Service] as nas_service
+  [User Service] as user_service
+  [Admin Service] as admin_service
+  [HTTP Service] as http_service
+  [Notification Service] as notify_service
+}
+
+package "Backend API (Django)" {
+  [NAS ViewSet] as nas_viewset
+  [User ViewSet] as user_viewset
+  [Admin ViewSet] as admin_viewset
+  [Auth ViewSet] as auth_viewset
+}
+
+package "Core Services (Rust)" {
+  [RADIUS Auth] as radius_auth
+  [RADIUS Acct] as radius_acct
+}
+
+package "Databases" {
+  database "PostgreSQL" as postgres
+  database "MongoDB" as mongodb
+  database "Redis" as redis
+}
+
+' Frontend component interactions
+app --> header : Renders
+app --> sidebar : Renders
+app --> nas_list : Routes
+app --> user_list : Routes
+
+' Component to Service interactions
+nas_list --> nas_service : Get NAS Devices
+nas_form --> nas_service : Create/Update NAS
+user_list --> user_service : Get Users
+user_form --> user_service : Create/Update User
+header --> auth_service : Check Auth
+header --> notify_service : Show Notifications
+
+' Service to HTTP interactions
+nas_service --> http_service : API Calls
+user_service --> http_service : API Calls
+admin_service --> http_service : API Calls
+auth_service --> http_service : Auth Calls
+
+' HTTP to Backend
+http_service --> nas_viewset : REST API
+http_service --> user_viewset : REST API
+http_service --> admin_viewset : REST API
+http_service --> auth_viewset : REST API
+
+' Backend to Core Services
+nas_viewset --> radius_auth : CoA Requests
+user_viewset --> radius_auth : User Updates
+
+' Backend to Databases
+nas_viewset --> postgres : CRUD Operations
+user_viewset --> postgres : CRUD Operations
+admin_viewset --> postgres : CRUD Operations
+auth_viewset --> postgres : User Auth
+
+' Core Services to Databases
+radius_auth --> postgres : Read User Data
+radius_auth --> redis : Cache
+radius_acct --> mongodb : Store Accounting
+radius_acct --> redis : Cache
+
+' Service to Service
+http_service --> notify_service : Error Handling
+auth_service --> notify_service : Auth Events
+
+note right of http_service
+  Handles:
+  - Request/Response Interceptors
+  - Token Management
+  - Error Handling
+  - Retry Logic
+end note
+
+note right of radius_auth
+  Authentication Methods:
+  - PAP
+  - CHAP
+  - MS-CHAP
+  - MS-CHAPv2
+end note
+
+@enduml
+

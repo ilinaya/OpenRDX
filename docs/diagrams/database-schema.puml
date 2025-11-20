@@ -1,0 +1,244 @@
+@startuml Database Schema
+!theme plain
+skinparam linetype ortho
+skinparam roundcorner 10
+
+title OpenRDX Database Schema
+
+package "PostgreSQL - User Management" {
+  entity "AdminUser" {
+    * id : INT <<PK>>
+    --
+    * username : VARCHAR
+    * email : VARCHAR
+    * password : VARCHAR
+    * first_name : VARCHAR
+    * last_name : VARCHAR
+    * is_active : BOOLEAN
+    * is_staff : BOOLEAN
+    * created_at : TIMESTAMP
+    * updated_at : TIMESTAMP
+  }
+
+  entity "AdminGroup" {
+    * id : INT <<PK>>
+    --
+    * name : VARCHAR
+    * description : TEXT
+    * created_at : TIMESTAMP
+    * updated_at : TIMESTAMP
+  }
+
+  entity "AdminUserGroup" {
+    * id : INT <<PK>>
+    --
+    * admin_user_id : INT <<FK>>
+    * admin_group_id : INT <<FK>>
+  }
+
+  entity "User" {
+    * id : INT <<PK>>
+    --
+    * first_name : VARCHAR
+    * last_name : VARCHAR
+    * email : VARCHAR
+    * phone_number : VARCHAR
+    * password : VARCHAR
+    * is_active : BOOLEAN
+    * allow_any_nas : BOOLEAN
+    * created_at : TIMESTAMP
+    * updated_at : TIMESTAMP
+    * last_login : TIMESTAMP
+  }
+
+  entity "UserGroup" {
+    * id : INT <<PK>>
+    --
+    * name : VARCHAR
+    * description : TEXT
+    * allow_any_nas : BOOLEAN
+    * parent_id : INT <<FK>>
+    * created_at : TIMESTAMP
+    * updated_at : TIMESTAMP
+  }
+
+  entity "UserUserGroup" {
+    * id : INT <<PK>>
+    --
+    * user_id : INT <<FK>>
+    * user_group_id : INT <<FK>>
+  }
+
+  entity "UserIdentifier" {
+    * id : INT <<PK>>
+    --
+    * user_id : INT <<FK>>
+    * identifier_type : VARCHAR
+    * identifier_value : VARCHAR
+    * is_enabled : BOOLEAN
+    * expiration_date : DATE
+    * auth_attribute_group_id : INT <<FK>>
+    * created_at : TIMESTAMP
+    * updated_at : TIMESTAMP
+  }
+}
+
+package "PostgreSQL - Device Management" {
+  entity "Nas" {
+    * id : INT <<PK>>
+    --
+    * name : VARCHAR
+    * description : TEXT
+    * ip_address : VARCHAR
+    * coa_enabled : BOOLEAN
+    * coa_port : INT
+    * vendor_id : INT <<FK>>
+    * secret_id : INT <<FK>>
+    * timezone_id : INT <<FK>>
+    * is_active : BOOLEAN
+    * created_at : TIMESTAMP
+    * updated_at : TIMESTAMP
+  }
+
+  entity "NasGroup" {
+    * id : INT <<PK>>
+    --
+    * name : VARCHAR
+    * description : TEXT
+    * parent_id : INT <<FK>>
+    * created_at : TIMESTAMP
+    * updated_at : TIMESTAMP
+  }
+
+  entity "NasNasGroup" {
+    * id : INT <<PK>>
+    --
+    * nas_id : INT <<FK>>
+    * nas_group_id : INT <<FK>>
+  }
+
+  entity "Vendor" {
+    * id : INT <<PK>>
+    --
+    * name : VARCHAR
+    * description : TEXT
+    * vendor_id : INT
+    * created_at : TIMESTAMP
+    * updated_at : TIMESTAMP
+  }
+
+  entity "VendorAttribute" {
+    * id : INT <<PK>>
+    --
+    * vendor_id : INT <<FK>>
+    * name : VARCHAR
+    * attribute_id : INT
+    * attribute_type : VARCHAR
+    * created_at : TIMESTAMP
+    * updated_at : TIMESTAMP
+  }
+}
+
+package "PostgreSQL - RADIUS Configuration" {
+  entity "Secret" {
+    * id : INT <<PK>>
+    --
+    * name : VARCHAR
+    * secret : VARCHAR
+    * description : TEXT
+    * source_subnets : JSON
+    * created_at : TIMESTAMP
+    * updated_at : TIMESTAMP
+  }
+
+  entity "AuthAttributeGroup" {
+    * id : INT <<PK>>
+    --
+    * name : VARCHAR
+    * description : TEXT
+    * is_system : BOOLEAN
+    * created_at : TIMESTAMP
+    * updated_at : TIMESTAMP
+  }
+
+  entity "RadiusAttribute" {
+    * id : INT <<PK>>
+    --
+    * group_id : INT <<FK>>
+    * vendor_id : INT
+    * attribute_id : INT
+    * attribute_name : VARCHAR
+    * attribute_type : VARCHAR
+    * attribute_value : VARCHAR
+    * created_at : TIMESTAMP
+    * updated_at : TIMESTAMP
+  }
+
+  entity "UserNasRelationship" {
+    * id : INT <<PK>>
+    --
+    * user_id : INT <<FK>>
+    * nas_id : INT <<FK>>
+    * attribute_group_id : INT <<FK>>
+    * attribute_overrides : JSON
+    * created_at : TIMESTAMP
+    * updated_at : TIMESTAMP
+  }
+}
+
+package "PostgreSQL - Shared" {
+  entity "Timezone" {
+    * id : INT <<PK>>
+    --
+    * name : VARCHAR
+    * offset : INT
+    * offset_formatted : VARCHAR
+  }
+}
+
+package "MongoDB - Accounting" {
+  entity "AccountingRecord" {
+    * _id : ObjectId <<PK>>
+    --
+    * session_id : STRING
+    * user_id : INT
+    * nas_id : INT
+    * nas_ip : STRING
+    * username : STRING
+    * acct_status_type : STRING
+    * acct_session_time : INT
+    * acct_input_octets : LONG
+    * acct_output_octets : LONG
+    * acct_input_packets : INT
+    * acct_output_packets : INT
+    * framed_ip_address : STRING
+    * timestamp : DATETIME
+    * attributes : JSON
+  }
+}
+
+' Relationships
+AdminUser ||--o{ AdminUserGroup
+AdminGroup ||--o{ AdminUserGroup
+
+User ||--o{ UserUserGroup
+UserGroup ||--o{ UserUserGroup
+UserGroup ||--o{ UserGroup : parent
+
+User ||--o{ UserIdentifier
+User ||--o{ UserNasRelationship
+
+Nas ||--o{ NasNasGroup
+NasGroup ||--o{ NasNasGroup
+NasGroup ||--o{ NasGroup : parent
+Vendor ||--o{ Nas
+Vendor ||--o{ VendorAttribute
+Secret ||--o{ Nas
+Timezone ||--o{ Nas
+
+AuthAttributeGroup ||--o{ RadiusAttribute
+AuthAttributeGroup ||--o{ UserNasRelationship
+AuthAttributeGroup ||--o{ UserIdentifier
+
+@enduml
+

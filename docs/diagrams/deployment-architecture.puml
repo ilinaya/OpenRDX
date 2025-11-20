@@ -1,0 +1,162 @@
+@startuml Deployment Architecture
+!theme plain
+skinparam componentStyle rectangle
+skinparam linetype ortho
+skinparam backgroundColor #FEFEFE
+
+title OpenRDX Deployment Architecture
+
+package "Internet" {
+  [RADIUS Clients] as clients
+  [Web Users] as web_users
+}
+
+package "Load Balancer Layer" {
+  [UDP Load Balancer\n1812/1813] as udp_lb
+  [TCP Load Balancer\n2083] as tcp_lb
+  [HTTP/HTTPS Load Balancer\n80/443] as http_lb
+}
+
+package "Application Layer" {
+  package "Core Services (Rust)" {
+    [Auth Service 1] as auth1
+    [Auth Service 2] as auth2
+    [Auth Service N] as authN
+    [Acct Service 1] as acct1
+    [Acct Service 2] as acct2
+    [Acct Service N] as acctN
+    [RadSec Proxy 1] as radsec1
+    [RadSec Proxy 2] as radsec2
+  }
+  
+  package "Backend Services" {
+    [Django API 1] as django1
+    [Django API 2] as django2
+    [Celery Worker 1] as celery1
+    [Celery Worker 2] as celery2
+  }
+  
+  package "Frontend" {
+    [Nginx Static] as nginx_static
+  }
+}
+
+package "Data Layer" {
+  database "PostgreSQL\nPrimary" as postgres_primary
+  database "PostgreSQL\nReplica" as postgres_replica
+  database "MongoDB\nReplica Set" as mongodb_cluster {
+    [MongoDB Node 1] as mongo1
+    [MongoDB Node 2] as mongo2
+    [MongoDB Node 3] as mongo3
+  }
+  database "Redis\nCluster" as redis_cluster {
+    [Redis Node 1] as redis1
+    [Redis Node 2] as redis2
+    [Redis Node 3] as redis3
+  }
+}
+
+' External connections
+clients --> udp_lb : RADIUS
+clients --> tcp_lb : RadSec
+web_users --> http_lb : HTTPS
+
+' Load balancer to services
+udp_lb --> auth1
+udp_lb --> auth2
+udp_lb --> authN
+udp_lb --> acct1
+udp_lb --> acct2
+udp_lb --> acctN
+
+tcp_lb --> radsec1
+tcp_lb --> radsec2
+
+http_lb --> nginx_static
+http_lb --> django1
+http_lb --> django2
+
+' RadSec to core services
+radsec1 --> auth1
+radsec1 --> acct1
+radsec2 --> auth2
+radsec2 --> acct2
+
+' Backend to databases
+django1 --> postgres_primary
+django2 --> postgres_primary
+celery1 --> postgres_primary
+celery2 --> postgres_primary
+
+django1 --> postgres_replica : Read Replica
+django2 --> postgres_replica : Read Replica
+
+django1 --> mongodb_cluster
+django2 --> mongodb_cluster
+celery1 --> mongodb_cluster
+celery2 --> mongodb_cluster
+
+django1 --> redis_cluster
+django2 --> redis_cluster
+celery1 --> redis_cluster
+celery2 --> redis_cluster
+
+' Core services to databases
+auth1 --> postgres_primary
+auth2 --> postgres_primary
+authN --> postgres_primary
+
+acct1 --> mongodb_cluster
+acct2 --> mongodb_cluster
+acctN --> mongodb_cluster
+
+auth1 --> redis_cluster
+auth2 --> redis_cluster
+authN --> redis_cluster
+acct1 --> redis_cluster
+acct2 --> redis_cluster
+acctN --> redis_cluster
+
+' Database replication
+postgres_primary --> postgres_replica : Replication
+mongo1 --> mongo2 : Replication
+mongo1 --> mongo3 : Replication
+redis1 --> redis2 : Replication
+redis1 --> redis3 : Replication
+
+note right of udp_lb
+  UDP Load Balancing
+  - Session Persistence
+  - Health Checks
+  - Automatic Failover
+end note
+
+note right of http_lb
+  HTTP/HTTPS Load Balancing
+  - SSL Termination
+  - Path-based Routing
+  - Health Checks
+end note
+
+note right of postgres_primary
+  Primary Database
+  - Write Operations
+  - Transaction Logs
+end note
+
+note right of mongodb_cluster
+  Replica Set
+  - High Availability
+  - Automatic Failover
+  - Read Scaling
+end note
+
+note right of redis_cluster
+  Redis Cluster
+  - High Availability
+  - Data Sharding
+  - Automatic Failover
+end note
+
+@enduml
+

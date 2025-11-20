@@ -18,6 +18,8 @@ import {AttributeGroupFormComponent} from './components/attribute-group-form/att
 import {RadsecSourceListComponent} from "./components/radsec/radsec-source-list/radsec-source-list.component";
 import {RadsecSourceFormComponent} from "./components/radsec/radsec-source-form/radsec-source-form.component";
 import {RadsecSourceDetailComponent} from "./components/radsec/radsec-source-detail/radsec-source-detail.component";
+import {ApiKeyListComponent} from "./components/api-key-list/api-key-list.component";
+import {ApiKeyFormComponent} from "./components/api-key-form/api-key-form.component";
 
 export const routes: Routes = [
   {
@@ -79,6 +81,13 @@ export const routes: Routes = [
           {path: '', component: AttributeGroupListComponent},
           {path: 'create', component: AttributeGroupFormComponent},
           {path: ':id/edit', component: AttributeGroupFormComponent},
+        ],
+      },
+      {
+        path: 'api-keys',
+        children: [
+          {path: '', component: ApiKeyListComponent},
+          {path: 'new', component: ApiKeyFormComponent},
         ],
       },
       {path: '', redirectTo: 'admins', pathMatch: 'full'},

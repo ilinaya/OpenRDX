@@ -1,0 +1,73 @@
+<div class="user-group-detail-container">
+  <div class="header">
+    <div class="header-left">
+      <button class="btn btn-secondary"
+              (click)="goBack()">
+        <i class="fas fa-arrow-left"></i> Back to List
+      </button>
+      <h2>User Group Details</h2>
+    </div>
+    <div class="actions">
+      <button class="btn btn-warning"
+              (click)="editGroup()">Edit
+      </button>
+      <button class="btn btn-danger"
+              (click)="deleteGroup()">Delete
+      </button>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading user group details...</p>
+    </div>
+  }
+
+  @if (error) {
+    <div class="alert alert-danger">
+      {{ error }}
+    </div>
+  }
+
+  @if (!loading && group) {
+    <div class="group-details">
+      <div class="detail-section">
+        <h3>Group Information</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <label>Name</label>
+            <p>{{ group.name }}</p>
+          </div>
+          <div class="detail-item">
+            <label>Description</label>
+            <p>{{ group.description || 'N/A' }}</p>
+          </div>
+          <div class="detail-item">
+            <label>Allow Any NAS</label>
+            <span class="status-badge"
+                  [class.active]="group.allow_any_nas"
+                  [class.inactive]="!group.allow_any_nas">
+              {{ group.allow_any_nas ? 'Yes' : 'No' }}
+            </span>
+          </div>
+          <div class="detail-item">
+            <label>Created At</label>
+            <p>{{ group.created_at | date:'medium' }}</p>
+          </div>
+          <div class="detail-item">
+            <label>Last Updated</label>
+            <p>{{ group.updated_at | date:'medium' }}</p>
+          </div>
+          @if (group.parent) {
+            <div class="detail-item">
+              <label>Parent Group</label>
+              <p>{{ group.parent.name }}</p>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>
+

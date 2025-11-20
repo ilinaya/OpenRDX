@@ -45,7 +45,7 @@ export class NasFormComponent implements OnInit {
     this.nasForm = this.fb.group({
       name: ['', [Validators.required, Validators.maxLength(255)]],
       description: [''],
-      ip_address: ['', [Validators.required, Validators.pattern('^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$')]],
+      ip_address: ['', [Validators.required, Validators.maxLength(255)]],
       coa_enabled: [false],
       coa_port: [3799, [Validators.min(1), Validators.max(65535)]],
       group_ids: [[]],

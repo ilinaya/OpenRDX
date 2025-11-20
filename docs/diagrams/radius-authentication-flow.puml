@@ -1,0 +1,88 @@
+@startuml RADIUS Authentication Flow
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 60
+
+title RADIUS Authentication Flow
+
+actor "NAS Device" as nas
+participant "RADIUS Auth Service" as auth
+participant "PostgreSQL" as db
+participant "Redis" as redis
+participant "MongoDB" as mongo
+
+== Authentication Request ==
+
+nas -> auth: Access-Request\n(User, Password, NAS-IP)
+activate auth
+
+auth -> db: Query User Credentials
+activate db
+db --> auth: User Data (Password Hash, Groups, Attributes)
+deactivate db
+
+auth -> auth: Validate Password\n(PAP/CHAP/MS-CHAP/MS-CHAPv2)
+
+alt Authentication Success
+  auth -> db: Get User Attributes\n(Attribute Groups, NAS Relationships)
+  activate db
+  db --> auth: RADIUS Attributes
+  deactivate db
+  
+  auth -> auth: Build Access-Accept\n(Include Attributes)
+  
+  auth -> redis: Cache Session Info
+  activate redis
+  redis --> auth: OK
+  deactivate redis
+  
+  auth --> nas: Access-Accept\n(Attributes)
+  
+  nas -> auth: Accounting-Start
+  activate auth
+  auth -> mongo: Store Accounting Record
+  activate mongo
+  mongo --> auth: OK
+  deactivate mongo
+  auth --> nas: Accounting-Response
+  deactivate auth
+  
+else Authentication Failure
+  auth -> mongo: Log Failed Attempt
+  activate mongo
+  mongo --> auth: OK
+  deactivate mongo
+  
+  auth --> nas: Access-Reject\n(Reason)
+end
+
+deactivate auth
+
+== Session Updates ==
+
+nas -> auth: Accounting-Interim-Update
+activate auth
+auth -> mongo: Update Accounting Record
+activate mongo
+mongo --> auth: OK
+deactivate mongo
+auth --> nas: Accounting-Response
+deactivate auth
+
+== Session Termination ==
+
+nas -> auth: Accounting-Stop
+activate auth
+auth -> mongo: Finalize Accounting Record
+activate mongo
+mongo --> auth: OK
+deactivate mongo
+auth -> redis: Clear Session Cache
+activate redis
+redis --> auth: OK
+deactivate redis
+auth --> nas: Accounting-Response
+deactivate auth
+
+@enduml
+

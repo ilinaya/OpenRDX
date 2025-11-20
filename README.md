@@ -131,6 +131,73 @@ Logged-in users can change their own password through the web interface:
 3. Enter your current password and new password
 4. Confirm the new password and submit
 
+### API Key Management
+
+To use API keys for programmatic access, you need to generate the API key JWT secret first:
+
+**Generate API Key Secret:**
+```bash
+# Via Docker Compose
+docker-compose exec oss_backend python manage.py generate_api_key_secret
+
+# Via Docker
+docker exec -it openrdx-backend python manage.py generate_api_key_secret
+```
+
+This will:
+- Generate a secure 64-character random secret
+- Display the secret in the console
+- Optionally update your `.env` file if it exists
+
+After generating the secret, add it to your `.env` file:
+```env
+API_KEY_JWT_SECRET=your_generated_secret_here
+```
+
+Then restart both backend and northbound API services:
+```bash
+docker-compose restart oss_backend northbound_api
+```
+
+**Creating API Keys:**
+1. Log into the web interface
+2. Navigate to Settings → API Keys
+3. Click "Create API Key"
+4. Enter a name for the key
+5. Set the validity period (1 day to 10 years)
+6. Copy the generated key immediately - you won't be able to see it again
+
+**Using API Keys:**
+API keys can be used for authentication by including them in the `Authorization` header:
+```
+Authorization: Bearer <your_api_key_here>
+```
+
+**Note**: API keys cannot be edited. If you need to change an API key, revoke the old one and create a new one.
+
+### Northbound API
+
+The Northbound API is a high-performance REST API built with Rust/Actix-web that provides programmatic access to OpenRDX. It's accessible at `/northbound-api/` via Nginx.
+
+**Features:**
+- JWT authentication using API keys
+- OpenAPI/Swagger documentation at `/northbound-api/swagger`
+- High-performance asynchronous request handling
+- CORS support for cross-origin requests
+
+**Access Points:**
+- Swagger UI: `https://your-domain/northbound-api/swagger`
+- API Endpoints: `https://your-domain/northbound-api/api/v1/*`
+- Health Check: `https://your-domain/northbound-api/health`
+
+**Using the Northbound API:**
+1. Generate an API key from the web interface (Settings → API Keys)
+2. Copy the generated JWT token
+3. Include it in requests: `Authorization: Bearer <token>`
+4. Access the Swagger UI to explore and test endpoints
+
+See `northbound_api/README.md` for detailed API documentation.
+
 ## Architecture
 
 ### Components
@@ -214,11 +281,34 @@ Logged-in users can change their own password through the web interface:
 - **Backend Service (Django)**:
   - RESTful API built with Django REST Framework
   - User management and system configuration
+  - API key generation and management
   - Accessible through Nginx at /api
   - Internal service, not directly accessible from outside
   - Uses PostgreSQL for relational data
   - Integrates with MongoDB for accounting data
   - Health check endpoint available at `/health` for Kubernetes and Docker health monitoring
+  
+- **Northbound API Service (Rust/Actix-web)**:
+  - High-performance REST API for programmatic access
+  - Direct PostgreSQL database access with connection pooling
+  - JWT authentication using API keys from backend
+  - OpenAPI/Swagger documentation at `/northbound-api/swagger`
+  - Accessible through Nginx at `/northbound-api/`
+  - Internal service, not directly accessible from outside
+  - Asynchronous request handling with Tokio
+  - Full CRUD operations for users, NAS groups, and NAS devices
+  - Environment variables:
+    ```env
+    # JWT Authentication
+    API_KEY_JWT_SECRET=your_jwt_secret_here  # Must match backend secret
+    
+    # Database connection
+    DATABASE_URL=postgres://postgres:postgres@postgres:5432/postgres
+    
+    # Server settings
+    NORTHBOUND_BIND_ADDRESS=0.0.0.0:8080
+    RUST_LOG=info
+    ```
   - Environment variables:
     ```env
     # Django settings
@@ -402,6 +492,12 @@ Please report any security issues to security@openrdx.org
 ## Support
 
 For support, please open an issue in the GitHub repository or contact support@openrdx.org
+
+## Performance Testing
+
+For measuring RADIUS performance, we provide a dedicated performance testing tool:
+
+- **[ILINAIA RADIUS Performance Tester](https://github.com/ilinaya/ilinaia-radius-perormance-tester)**: A comprehensive tool for measuring and benchmarking RADIUS server performance, including authentication and accounting throughput, latency metrics, and stress testing capabilities.
 
 # OpenRDX Core
 

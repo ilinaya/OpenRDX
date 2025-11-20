@@ -20,7 +20,9 @@
     "active": "Active",
     "parent_group": "Parent",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "done": "Done",
+    "unknown": "Unknown"
   },
   "settings": {
     "title": "Settings",
@@ -31,7 +33,8 @@
       "secrets": "Secrets",
       "vendors": "Vendors",
       "attributeGroups": "Attribute Groups",
-      "radsec_sources": "RadSec Sources"
+      "radsec_sources": "RadSec Sources",
+      "apiKeys": "API Keys"
     },
     "userGroups": {
       "title": "User Groups",
@@ -100,6 +103,35 @@
       "confirmPassword": "Confirm New Password",
       "submit": "Change Password",
       "success": "Password changed successfully. Redirecting..."
+    },
+    "apiKeys": {
+      "title": "API Keys",
+      "create": "Create API Key",
+      "generate": "Generate API Key",
+      "name": "Name",
+      "nameRequired": "Name is required",
+      "nameMaxLength": "Name cannot exceed 255 characters",
+      "key": "API Key",
+      "expiresAt": "Expires At",
+      "daysUntilExpiry": "Days Until Expiry",
+      "status": "Status",
+      "createdBy": "Created By",
+      "createdAt": "Created At",
+      "validityDays": "Validity (Days)",
+      "validityDaysRequired": "Validity days is required",
+      "validityDaysMin": "Validity must be at least 1 day",
+      "validityDaysMax": "Validity cannot exceed 3650 days (10 years)",
+      "validityDaysHelp": "Enter the number of days the API key should be valid",
+      "days": "days",
+      "years": "years",
+      "expired": "Expired",
+      "revoke": "Revoke",
+      "activate": "Activate",
+      "copy": "Copy",
+      "copyWarning": "Copy this API key now. You won't be able to see it again after leaving this page.",
+      "keyGenerated": "API Key Generated",
+      "noKeys": "No API keys found. Create your first API key to get started.",
+      "unknown": "Unknown"
     }
   },
   "devices": {
@@ -142,8 +174,9 @@
         "nameRequired": "Name is required",
         "nameMaxLength": "Name cannot exceed 255 characters",
         "ipAddress": "IP Address",
-        "ipAddressRequired": "IP Address is required",
-        "ipAddressInvalid": "Please enter a valid IP address",
+        "ipOrHost": "IP or Host",
+        "ipAddressRequired": "IP Address or Hostname is required",
+        "ipAddressInvalid": "Please enter a valid IP address or hostname",
         "description": "Description",
         "coaEnabled": "CoA Enabled",
         "coaPort": "CoA Port",

@@ -54,6 +54,7 @@ urlpatterns = [
     path('radius/', include('radius.urls')),
     path('radsec/', include('radsec.urls')),
     path('shared/', include('shared.urls')),
+    path('api-keys/', include('api_keys.urls')),
 ]
 
 if settings.DEBUG:

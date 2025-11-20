@@ -1,0 +1,117 @@
+<div class="api-key-form-container">
+  <div class="header">
+    <h2>{{ 'settings.apiKeys.create' | translate }}</h2>
+  </div>
+
+  @if (error) {
+    <div class="alert alert-danger">
+      {{ error }}
+    </div>
+  }
+
+  @if (success) {
+    <div class="alert alert-success">
+      {{ success }}
+    </div>
+  }
+
+  @if (!generatedKey) {
+    <form [formGroup]="apiKeyForm"
+          (ngSubmit)="onSubmit()"
+          class="api-key-form">
+      <div class="form-group">
+        <label for="name">{{ 'settings.apiKeys.name' | translate }} *</label>
+        <input
+          type="text"
+          id="name"
+          formControlName="name"
+          class="form-control"
+          [class.is-invalid]="apiKeyForm.get('name')?.touched && apiKeyForm.get('name')?.invalid"
+          placeholder="My API Key"
+        >
+        @if (apiKeyForm.get('name')?.touched && apiKeyForm.get('name')?.invalid) {
+          <div class="error-message">
+            @if (apiKeyForm.get('name')?.errors?.['required']) {
+              <div>{{ 'settings.apiKeys.nameRequired' | translate }}</div>
+            }
+            @if (apiKeyForm.get('name')?.errors?.['maxlength']) {
+              <div>{{ 'settings.apiKeys.nameMaxLength' | translate }}</div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="validity_days">{{ 'settings.apiKeys.validityDays' | translate }} *</label>
+        <input
+          type="number"
+          id="validity_days"
+          formControlName="validity_days"
+          class="form-control"
+          [class.is-invalid]="apiKeyForm.get('validity_days')?.touched && apiKeyForm.get('validity_days')?.invalid"
+          min="1"
+          max="3650"
+          placeholder="30"
+        >
+        <small class="form-text">
+          {{ 'settings.apiKeys.validityDaysHelp' | translate }} (1 {{ 'settings.apiKeys.days' | translate }} - 3650 {{ 'settings.apiKeys.days' | translate }} / 10 {{ 'settings.apiKeys.years' | translate }})
+        </small>
+        @if (apiKeyForm.get('validity_days')?.touched && apiKeyForm.get('validity_days')?.invalid) {
+          <div class="error-message">
+            @if (apiKeyForm.get('validity_days')?.errors?.['required']) {
+              <div>{{ 'settings.apiKeys.validityDaysRequired' | translate }}</div>
+            }
+            @if (apiKeyForm.get('validity_days')?.errors?.['min']) {
+              <div>{{ 'settings.apiKeys.validityDaysMin' | translate }}</div>
+            }
+            @if (apiKeyForm.get('validity_days')?.errors?.['max']) {
+              <div>{{ 'settings.apiKeys.validityDaysMax' | translate }}</div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="form-actions">
+        <button type="button"
+                class="btn btn-secondary"
+                (click)="cancel()">{{ 'common.cancel' | translate }}
+        </button>
+        <button type="submit"
+                class="btn btn-primary"
+                [disabled]="submitting || apiKeyForm.invalid">
+          @if (submitting) {
+            <span class="spinner-sm"></span>
+          }
+          {{ 'settings.apiKeys.generate' | translate }}
+        </button>
+      </div>
+    </form>
+  } @else {
+    <div class="generated-key-container">
+      <div class="generated-key-card">
+        <div class="key-header">
+          <h3>{{ 'settings.apiKeys.keyGenerated' | translate }}</h3>
+          <p class="key-name">{{ generatedKeyName }}</p>
+        </div>
+        <div class="key-content">
+          <div class="key-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            {{ 'settings.apiKeys.copyWarning' | translate }}
+          </div>
+          <div class="key-display">
+            <code class="api-key-value">{{ generatedKey }}</code>
+            <button class="btn-copy-large" (click)="copyToClipboard(generatedKey!)">
+              <i class="fas fa-copy"></i> {{ 'settings.apiKeys.copy' | translate }}
+            </button>
+          </div>
+        </div>
+        <div class="key-actions">
+          <button class="btn btn-primary" (click)="onDone()">
+            {{ 'common.done' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+

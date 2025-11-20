@@ -1,0 +1,67 @@
+@startuml Northbound API Architecture
+!theme plain
+skinparam backgroundColor #FAFAFA
+skinparam componentStyle rectangle
+
+title OpenRDX Northbound API Architecture
+
+package "External Applications" {
+  [Client Application] as Client
+  [Swagger UI] as Swagger
+}
+
+cloud "Load Balancer / Nginx" {
+  [Nginx Proxy] as Nginx
+}
+
+package "Northbound API (Rust/Actix-web)" {
+  [API Gateway] as NorthboundAPI
+  [JWT Middleware] as JWT
+  [Request Handlers] as Handlers
+  [OpenAPI Generator] as OpenAPI
+}
+
+package "Backend API (Django)" {
+  [Django REST API] as Backend
+  [API Key Management] as APIKeys
+}
+
+database "PostgreSQL" {
+  [Database] as DB
+}
+
+Client --> Nginx : HTTPS
+Swagger --> Nginx : HTTPS
+Nginx --> NorthboundAPI : HTTP (internal)
+NorthboundAPI --> JWT : Verify Token
+JWT --> Handlers : Valid Token
+Handlers --> Backend : Forward Requests
+NorthboundAPI --> OpenAPI : Generate Spec
+Backend --> APIKeys : Manage Keys
+APIKeys --> DB : Store Keys
+Backend --> DB : Data Access
+
+note right of JWT
+  Verifies JWT tokens using
+  API_KEY_JWT_SECRET
+  Checks:
+  - Token signature
+  - Expiration
+  - Token type (api_key)
+end note
+
+note right of NorthboundAPI
+  High-performance Rust API
+  - Asynchronous handling
+  - Low latency
+  - Secure authentication
+end note
+
+note right of Swagger
+  Interactive API documentation
+  Accessible at:
+  /northbound-api/swagger
+end note
+
+@enduml
+

@@ -1,0 +1,63 @@
+@startuml Northbound API Authentication Flow
+!theme plain
+skinparam backgroundColor #FAFAFA
+skinparam sequenceMessageAlign center
+
+title Northbound API Authentication Flow
+
+actor "External Client" as Client
+participant "Nginx Proxy" as Nginx
+participant "Northbound API" as API
+participant "JWT Middleware" as JWT
+participant "Request Handler" as Handler
+participant "Backend API" as Backend
+
+== API Key Generation ==
+Client -> Backend: Create API Key\n(name, validity_days)
+activate Backend
+Backend -> Backend: Generate JWT Token\n(signed with API_KEY_JWT_SECRET)
+Backend --> Client: Return JWT Token
+deactivate Backend
+note right: Token includes:\n- api_key_id\n- type: "api_key"\n- created_by\n- exp (expiration)\n- name
+
+== API Request Flow ==
+Client -> Nginx: HTTPS Request\nAuthorization: Bearer <token>
+activate Nginx
+Nginx -> API: HTTP Request\n(proxied to /northbound-api/)
+activate API
+
+API -> JWT: Extract & Verify Token
+activate JWT
+
+alt Token Valid
+  JWT -> JWT: Verify Signature\n(using API_KEY_JWT_SECRET)
+  JWT -> JWT: Check Expiration
+  JWT -> JWT: Validate Token Type
+  JWT -> API: Token Valid\n(Claims extracted)
+  deactivate JWT
+  
+  API -> Handler: Process Request\n(with Claims)
+  activate Handler
+  Handler -> Backend: Forward to Backend API
+  activate Backend
+  Backend --> Handler: Response Data
+  deactivate Backend
+  Handler --> API: Formatted Response
+  deactivate Handler
+else Token Invalid
+  JWT --> API: 401 Unauthorized\n(Invalid token)
+  deactivate JWT
+  API --> Nginx: Error Response
+else Token Expired
+  JWT --> API: 401 Unauthorized\n(Token expired)
+  deactivate JWT
+  API --> Nginx: Error Response
+end
+
+API --> Nginx: Response
+deactivate API
+Nginx --> Client: HTTPS Response
+deactivate Nginx
+
+@enduml
+

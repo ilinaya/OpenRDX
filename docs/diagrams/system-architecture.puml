@@ -1,0 +1,112 @@
+@startuml System Architecture
+!theme plain
+skinparam componentStyle rectangle
+skinparam linetype ortho
+
+title OpenRDX System Architecture
+
+package "External Clients" {
+  [RADIUS Clients] as clients
+  [Web Browser] as browser
+}
+
+package "Load Balancer (Optional)" {
+  [UDP Load Balancer] as udp_lb
+  [TCP Load Balancer] as tcp_lb
+}
+
+package "Core Services (Rust)" {
+  [RADIUS Auth Service\nUDP:1812] as auth_service
+  [RADIUS Acct Service\nUDP:1813] as acct_service
+  [RadSec Proxy Service\nTCP:2083] as radsec_proxy
+}
+
+package "Reverse Proxy" {
+  [Nginx] as nginx
+}
+
+package "Backend Services" {
+  [Django REST API] as django_api
+  [Celery Worker] as celery
+}
+
+package "Frontend" {
+  [Angular SPA] as angular
+}
+
+package "Databases" {
+  database "PostgreSQL" as postgres {
+    [User Data]
+    [Configurations]
+    [System State]
+  }
+  database "MongoDB" as mongodb {
+    [Accounting Data]
+    [Logs]
+  }
+  database "Redis" as redis {
+    [Cache]
+    [Message Broker]
+    [Sessions]
+  }
+}
+
+' External connections
+clients --> udp_lb : RADIUS Auth/Acct
+clients --> tcp_lb : RadSec (TLS)
+browser --> nginx : HTTPS
+
+' Load balancer to services
+udp_lb --> auth_service : UDP 1812
+udp_lb --> acct_service : UDP 1813
+tcp_lb --> radsec_proxy : TCP 2083
+
+' RadSec proxy to core services
+radsec_proxy --> auth_service : Internal
+radsec_proxy --> acct_service : Internal
+
+' Nginx routing
+nginx --> angular : Static Files
+nginx --> django_api : /api
+
+' Core services to databases
+auth_service --> postgres : Read User Data
+auth_service --> redis : Cache/Queue
+acct_service --> mongodb : Store Accounting
+acct_service --> redis : Cache/Queue
+
+' Backend to databases
+django_api --> postgres : CRUD Operations
+django_api --> mongodb : Query Accounting
+django_api --> redis : Cache/Sessions
+celery --> redis : Message Queue
+celery --> postgres : Async Tasks
+celery --> mongodb : Async Tasks
+
+' Frontend to backend
+angular --> django_api : REST API
+angular --> django_api : WebSocket
+
+note right of auth_service
+  Handles:
+  - PAP
+  - CHAP
+  - MS-CHAP
+  - MS-CHAPv2
+end note
+
+note right of acct_service
+  Handles:
+  - Start/Stop
+  - Interim-Update
+  - Session Tracking
+end note
+
+note right of radsec_proxy
+  Secure RADIUS over TLS
+  - TLS 1.2/1.3
+  - Certificate Auth
+end note
+
+@enduml
+

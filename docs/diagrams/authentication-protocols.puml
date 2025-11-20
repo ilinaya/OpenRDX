@@ -1,0 +1,102 @@
+@startuml Authentication Protocols
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 60
+
+title RADIUS Authentication Protocols
+
+actor "NAS Device" as nas
+participant "RADIUS Server" as server
+database "PostgreSQL" as db
+
+== PAP (Password Authentication Protocol) ==
+
+nas -> server: Access-Request\n(User-Name, User-Password)
+activate server
+
+server -> db: Get User Password Hash
+activate db
+db --> server: Password Hash
+deactivate db
+
+server -> server: Compare Password\n(Plain Text)
+
+alt Password Match
+  server --> nas: Access-Accept
+else Password Mismatch
+  server --> nas: Access-Reject
+end
+
+deactivate server
+
+== CHAP (Challenge Handshake) ==
+
+nas -> server: Access-Request\n(User-Name, CHAP-Challenge, CHAP-Password)
+activate server
+
+server -> db: Get User Password
+activate db
+db --> server: Password
+deactivate db
+
+server -> server: Generate CHAP Response\nMD5(Id + Password + Challenge)
+
+alt Response Match
+  server --> nas: Access-Accept
+else Response Mismatch
+  server --> nas: Access-Reject
+end
+
+deactivate server
+
+== MS-CHAP ==
+
+nas -> server: Access-Request\n(User-Name, MS-CHAP-Challenge, MS-CHAP-Response)
+activate server
+
+server -> db: Get User Password
+activate db
+db --> server: Password (NT Hash)
+deactivate db
+
+server -> server: Generate MS-CHAP Response\nDES(Challenge, NT Hash)
+
+alt Response Match
+  server --> nas: Access-Accept\n(MS-CHAP-Success)
+else Response Mismatch
+  server --> nas: Access-Reject\n(MS-CHAP-Error)
+end
+
+deactivate server
+
+== MS-CHAPv2 ==
+
+nas -> server: Access-Request\n(User-Name, MS-CHAP-Challenge, MS-CHAP2-Response)
+activate server
+
+server -> db: Get User Password
+activate db
+db --> server: Password (NT Hash)
+deactivate db
+
+server -> server: Generate MS-CHAPv2 Response\nSHA1(Peer Challenge, Authenticator Challenge, User, NT Hash)
+
+alt Response Match
+  server -> server: Generate MS-CHAP2-Success\nSHA1(Response, Peer Challenge, Authenticator Challenge, User)
+  server --> nas: Access-Accept\n(MS-CHAP2-Success)
+else Response Mismatch
+  server --> nas: Access-Reject\n(MS-CHAP2-Error)
+end
+
+deactivate server
+
+legend right
+  |<#LightBlue> Protocol | Security | Complexity |
+  | PAP | Low | Low |
+  | CHAP | Medium | Medium |
+  | MS-CHAP | Medium | Medium |
+  | MS-CHAPv2 | High | High |
+endlegend
+
+@enduml
+

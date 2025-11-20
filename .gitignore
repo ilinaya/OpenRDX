@@ -43,6 +43,12 @@ oss_frontend/typings/
 # IDE
 .idea/
 .vscode/
+
+# Rust
+**/target/
+**/*.rs.bk
+northbound_api/target/
+northbound_api/Cargo.lock
 *.swp
 *.swo
 .DS_Store

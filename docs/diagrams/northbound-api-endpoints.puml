@@ -1,0 +1,60 @@
+@startuml Northbound API Endpoints
+!theme plain
+skinparam backgroundColor #FAFAFA
+skinparam componentStyle rectangle
+
+title Northbound API Endpoints Structure
+
+package "Public Endpoints" {
+  [GET /health] as Health
+  [GET /swagger] as Swagger
+  [GET /api/v1/openapi.json] as OpenAPI
+}
+
+package "Authenticated Endpoints\n(Require Bearer Token)" {
+  package "Health" {
+    [GET /api/v1/status] as Status
+  }
+  
+  package "Users" {
+    [GET /api/v1/users] as ListUsers
+    [GET /api/v1/users/{id}] as GetUser
+  }
+  
+  package "NAS Devices" {
+    [GET /api/v1/nas] as ListNAS
+    [GET /api/v1/nas/{id}] as GetNAS
+  }
+}
+
+note right of Health
+  Public health check
+  No authentication required
+end note
+
+note right of Swagger
+  Interactive API documentation
+  Swagger UI interface
+end note
+
+note right of Status
+  Authenticated health check
+  Returns API key info
+end note
+
+note right of ListUsers
+  Paginated user list
+  Query params:
+  - page
+  - page_size
+end note
+
+note right of ListNAS
+  Paginated NAS list
+  Query params:
+  - page
+  - page_size
+end note
+
+@enduml
+

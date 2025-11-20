@@ -1,0 +1,115 @@
+<div class="api-key-list-container">
+  <div class="header">
+    <h2>{{ 'settings.apiKeys.title' | translate }}</h2>
+    <button class="btn btn-primary" (click)="createApiKey()">
+      <i class="fas fa-plus"></i> {{ 'settings.apiKeys.create' | translate }}
+    </button>
+  </div>
+
+  @if (loading) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>{{ 'common.loading' | translate }}</p>
+    </div>
+  }
+
+  @if (error) {
+    <div class="alert alert-danger">
+      {{ error }}
+    </div>
+  }
+
+  @if (!loading && apiKeys.length === 0) {
+    <div class="empty-state">
+      <p>{{ 'settings.apiKeys.noKeys' | translate }}</p>
+    </div>
+  }
+
+  @if (!loading && apiKeys.length > 0) {
+    <div class="api-keys-table-container">
+      <table class="api-keys-table">
+        <thead>
+        <tr>
+          <th>{{ 'settings.apiKeys.name' | translate }}</th>
+          <th>{{ 'settings.apiKeys.key' | translate }}</th>
+          <th>{{ 'settings.apiKeys.expiresAt' | translate }}</th>
+          <th>{{ 'settings.apiKeys.daysUntilExpiry' | translate }}</th>
+          <th>{{ 'settings.apiKeys.status' | translate }}</th>
+          <th>{{ 'settings.apiKeys.createdBy' | translate }}</th>
+          <th>{{ 'settings.apiKeys.createdAt' | translate }}</th>
+          <th>{{ 'common.actions' | translate }}</th>
+        </tr>
+        </thead>
+        <tbody>
+          @for (apiKey of apiKeys; track apiKey.id) {
+            <tr>
+              <td>{{ apiKey.name }}</td>
+              <td class="key-cell">
+                <div class="key-container">
+                  <code class="api-key-value">{{ apiKey.key }}</code>
+                  <button class="btn-copy" (click)="copyToClipboard(apiKey.key)" title="Copy to clipboard">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                </div>
+              </td>
+              <td>{{ apiKey.expires_at | date:'medium' }}</td>
+              <td>
+                <span class="days-badge" [class.expired]="apiKey.is_expired" [class.warning]="apiKey.days_until_expiry <= 30 && !apiKey.is_expired">
+                  {{ apiKey.days_until_expiry }} {{ 'settings.apiKeys.days' | translate }}
+                </span>
+              </td>
+              <td>
+                <span class="status-badge" [class.active]="apiKey.is_active && !apiKey.is_expired" [class.inactive]="!apiKey.is_active || apiKey.is_expired">
+                  @if (apiKey.is_expired) {
+                    {{ 'settings.apiKeys.expired' | translate }}
+                  } @else if (apiKey.is_active) {
+                    {{ 'common.active' | translate }}
+                  } @else {
+                    {{ 'common.inactive' | translate }}
+                  }
+                </span>
+              </td>
+              <td>{{ apiKey.created_by_email || ('common.unknown' | translate) }}</td>
+              <td>{{ apiKey.created_at | date:'medium' }}</td>
+              <td class="actions">
+                @if (apiKey.is_active && !apiKey.is_expired) {
+                  <button class="btn btn-sm btn-warning" (click)="revokeApiKey(apiKey)" title="{{ 'settings.apiKeys.revoke' | translate }}">
+                    <i class="fas fa-ban"></i> {{ 'settings.apiKeys.revoke' | translate }}
+                  </button>
+                } @else if (!apiKey.is_active && !apiKey.is_expired) {
+                  <button class="btn btn-sm btn-info" (click)="activateApiKey(apiKey)" title="{{ 'settings.apiKeys.activate' | translate }}">
+                    <i class="fas fa-check"></i> {{ 'settings.apiKeys.activate' | translate }}
+                  </button>
+                }
+                <button class="btn btn-sm btn-danger" (click)="deleteApiKey(apiKey)" title="{{ 'common.delete' | translate }}">
+                  <i class="fas fa-trash"></i> {{ 'common.delete' | translate }}
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      @if (totalPages > 1) {
+        <div class="pagination">
+          <button
+            class="btn btn-outline-primary"
+            [disabled]="currentPage === 1"
+            (click)="onPageChange(currentPage - 1)"
+          >
+            <i class="fas fa-chevron-left"></i> {{ 'common.previous' | translate }}
+          </button>
+          <span class="page-info">{{ 'common.page' | translate }} {{ currentPage }} {{ 'common.of' | translate }} {{ totalPages }}</span>
+          <button
+            class="btn btn-outline-primary"
+            [disabled]="currentPage === totalPages"
+            (click)="onPageChange(currentPage + 1)"
+          >
+            {{ 'common.next' | translate }} <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      }
+    </div>
+  }
+</div>
+

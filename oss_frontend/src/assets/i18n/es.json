@@ -21,7 +21,9 @@
     "inactive": "Inactivo",
     "parent_group": "Padre",
     "yes": "Sí",
-    "no": "No"
+    "no": "No",
+    "done": "Hecho",
+    "unknown": "Desconocido"
   },
   "settings": {
     "title": "Configuración",
@@ -32,7 +34,8 @@
       "secrets": "Secretos",
       "vendors": "Vendedores",
       "attributeGroups": "Grupos de Atributos",
-      "radsec_sources": "Origenes RadSec"
+      "radsec_sources": "Origenes RadSec",
+      "apiKeys": "Claves API"
 
     },
     "userGroups": {
@@ -102,6 +105,35 @@
       "confirmPassword": "Confirmar Nueva Contraseña",
       "submit": "Cambiar Contraseña",
       "success": "Contraseña cambiada exitosamente. Redirigiendo..."
+    },
+    "apiKeys": {
+      "title": "Claves API",
+      "create": "Crear Clave API",
+      "generate": "Generar Clave API",
+      "name": "Nombre",
+      "nameRequired": "El nombre es requerido",
+      "nameMaxLength": "El nombre no puede exceder 255 caracteres",
+      "key": "Clave API",
+      "expiresAt": "Expira En",
+      "daysUntilExpiry": "Días Hasta Expirar",
+      "status": "Estado",
+      "createdBy": "Creado Por",
+      "createdAt": "Creado En",
+      "validityDays": "Validez (Días)",
+      "validityDaysRequired": "Los días de validez son requeridos",
+      "validityDaysMin": "La validez debe ser al menos 1 día",
+      "validityDaysMax": "La validez no puede exceder 3650 días (10 años)",
+      "validityDaysHelp": "Ingrese el número de días que la clave API debe ser válida",
+      "days": "días",
+      "years": "años",
+      "expired": "Expirada",
+      "revoke": "Revocar",
+      "activate": "Activar",
+      "copy": "Copiar",
+      "copyWarning": "Copie esta clave API ahora. No podrá verla nuevamente después de abandonar esta página.",
+      "keyGenerated": "Clave API Generada",
+      "noKeys": "No se encontraron claves API. Cree su primera clave API para comenzar.",
+      "unknown": "Desconocido"
     }
   },
   "devices": {
@@ -144,8 +176,9 @@
         "nameRequired": "El nombre es requerido",
         "nameMaxLength": "El nombre no puede exceder 255 caracteres",
         "ipAddress": "Dirección IP",
-        "ipAddressRequired": "La dirección IP es requerida",
-        "ipAddressInvalid": "Por favor ingrese una dirección IP válida",
+        "ipOrHost": "IP o Host",
+        "ipAddressRequired": "La dirección IP o nombre de host es requerida",
+        "ipAddressInvalid": "Por favor ingrese una dirección IP o nombre de host válido",
         "description": "Descripción",
         "coaEnabled": "CoA Habilitado",
         "coaPort": "Puerto CoA",

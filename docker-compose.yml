@@ -10,6 +10,7 @@ services:
     depends_on:
       - oss_frontend
       - oss_backend
+      - northbound_api
     volumes:
       - ./nginx/ssl:/etc/nginx/ssl
     networks:
@@ -140,6 +141,26 @@ services:
     networks:
       - openrdx-network
     depends_on:
+      - oss_backend
+    restart: unless-stopped
+
+  northbound_api:
+    container_name: 'openrdx-northbound-api'
+    hostname: 'openrdx-northbound-api'
+    build:
+      context: ./northbound_api
+      dockerfile: Dockerfile
+    environment:
+      - API_KEY_JWT_SECRET=${API_KEY_JWT_SECRET}
+      - NORTHBOUND_BIND_ADDRESS=0.0.0.0:8080
+      - RUST_LOG=info
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/postgres
+    expose:
+      - "8080"
+    networks:
+      - openrdx-network
+    depends_on:
+      - postgres
       - oss_backend
     restart: unless-stopped
 

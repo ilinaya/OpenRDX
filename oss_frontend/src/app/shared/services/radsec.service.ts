@@ -34,11 +34,11 @@ export class RadsecService {
   }
 
   updateSource(id: number, source: RadSecSourceUpdate): Observable<RadSecSource> {
-    return this.http.patch<RadSecSource>(`${this.apiUrl}/sources/${id}`, source);
+    return this.http.patch<RadSecSource>(`${this.apiUrl}/sources/${id}/`, source);
   }
 
   deleteSource(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/sources/${id}`);
+    return this.http.delete<void>(`${this.apiUrl}/sources/${id}/`);
   }
 
 

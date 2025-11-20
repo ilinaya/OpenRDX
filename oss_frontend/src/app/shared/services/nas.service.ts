@@ -61,7 +61,7 @@ export class NasService {
   }
 
   updateNas(id: number, nas: NasUpdate): Observable<Nas> {
-    return this.http.patch<Nas>(`${this.apiUrl}/nas/${id}`, nas);
+    return this.http.patch<Nas>(`${this.apiUrl}/nas/${id}/`, nas);
   }
 
   deleteNas(id: number): Observable<void> {

@@ -156,10 +156,11 @@
           id="secret_id"
           formControlName="secret_id"
           class="form-control"
+          [class.is-invalid]="nasForm.get('secret_id')?.touched && nasForm.get('secret_id')?.invalid"
         >
-          <option [value]="null">{{ 'common.none' | translate }}</option>
+          <option [ngValue]="null">{{ 'common.none' | translate }}</option>
           @for (secret of secrets; track secret.id) {
-            <option [value]="secret.id">{{ secret.name }}</option>
+            <option [ngValue]="secret.id">{{ secret.name }}</option>
           }
         </select>
         @if (nasForm.get('secret_id')?.touched && nasForm.get('secret_id')?.invalid) {

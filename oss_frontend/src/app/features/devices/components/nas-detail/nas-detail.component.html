@@ -44,6 +44,10 @@
             <span class="detail-value">{{ nas.ip_address }}</span>
           </div>
           <div class="detail-item">
+            <label class="detail-label">{{ 'devices.nas.detail.nasIdentifier' | translate }}</label>
+            <span class="detail-value">{{ nas.nas_identifier }}</span>
+          </div>
+          <div class="detail-item">
             <label class="detail-label">{{ 'devices.nas.detail.description' | translate }}</label>
             <span class="detail-value">{{ nas.description || ('common.none' | translate) }}</span>
           </div>

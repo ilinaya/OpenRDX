@@ -1,6 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {ActivatedRoute, Router} from '@angular/router';
+import {CommonModule} from '@angular/common';
 import {NasService} from '../../../../shared/services/nas.service';
 import {SecretService} from '../../../../shared/services/secret.service';
 import {VendorService} from '../../../../shared/services/vendor.service';
@@ -15,6 +16,7 @@ import {TranslatePipe} from '@ngx-translate/core';
   selector: 'app-nas-form',
   templateUrl: './nas-form.component.html',
   imports: [
+    CommonModule,
     TranslatePipe,
     ReactiveFormsModule,
   ],
@@ -138,7 +140,16 @@ export class NasFormComponent implements OnInit {
     this.nasService.getNasById(id)
       .subscribe({
         next: (nas) => {
+          console.log('Loaded NAS details:', nas);
+          console.log('Available secrets:', this.secrets);
           // Populate the form with NAS details
+          // Ensure secret_id is set as a number to match option values
+          const secretId = nas.secret_id ? Number(nas.secret_id) : null;
+          const vendorId = nas.vendor_id ? Number(nas.vendor_id) : null;
+          const timezoneId = nas.timezone_id ? Number(nas.timezone_id) : null;
+          
+          console.log('Setting secret_id to:', secretId, 'type:', typeof secretId);
+          
           this.nasForm.patchValue({
             name: nas.name,
             description: nas.description,
@@ -147,10 +158,12 @@ export class NasFormComponent implements OnInit {
             coa_enabled: nas.coa_enabled,
             coa_port: nas.coa_port,
             group_ids: nas.groups.map(g => g.id),
-            secret_id: nas.secret_id || null,
-            vendor_id: nas.vendor_id || null,
-            timezone_id: nas.timezone_id || null,
+            secret_id: secretId,
+            vendor_id: vendorId,
+            timezone_id: timezoneId,
           });
+          
+          
           this.loading = false;
         },
         error: (err) => {

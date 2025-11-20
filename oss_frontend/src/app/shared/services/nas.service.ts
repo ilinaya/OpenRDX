@@ -90,9 +90,16 @@ export class NasService {
               name: auth.nas_name || `NAS ${auth.nas_id || auth.nas}`,
               // Add other required fields with defaults
               ip_address: '',
+              nas_identifier: auth.nas_identifier || '',
               description: '',
               coa_enabled: false,
-              groups: []
+              coa_port: 3799,
+              groups: [],
+              secret_id: auth.secret_id || 0,
+              vendor_id: auth.vendor_id || 0,
+              timezone_id: auth.timezone_id,
+              created_at: auth.created_at || new Date().toISOString(),
+              updated_at: auth.updated_at || new Date().toISOString()
             } as Nas;
           }
           return auth;

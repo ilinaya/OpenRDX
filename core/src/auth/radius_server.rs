@@ -1102,7 +1102,9 @@ impl RadiusAuthServer {
         debug!("Creating Access-Accept for MS-CHAPv2");
         debug!("Secret: {}", secret);
 
-        // MS-CHAP2-Success (format: 0x00 | ASCII("S=" + 42-char hex))
+        // MS-CHAP2-Success (format: 1 byte identifier | ASCII("S=" + 40-char hex))
+        // Authenticator response is 20 bytes, which becomes 40 hex characters
+        assert_eq!(authenticator_response.len(), 20, "Authenticator response must be exactly 20 bytes");
         let hex = authenticator_response.iter().map(|b| format!("{:02X}", b)).collect::<String>();
         let success_str = format!("S={}", hex);
         let mut ms_chap_success = vec![ms_chap_v2_ident];
@@ -2193,26 +2195,22 @@ fn calculate_authenticator_response(
     let challenge_hash = sha1.finalize();
 
     // Generate the Authenticator Response
+    // According to RFC 2759 Section 8.7, the authenticator response is:
+    // SHA1(PasswordHashHash, NT-Response, Magic1, ChallengeHash[0..8], Magic2)
+    // This produces a single 20-byte value (SHA1 output)
     let magic1 = b"Magic server to client signing constant";
     let magic2 = b"Pad to make it do more than one iteration";
 
-    // First part of the authenticator response
+    // Single HMAC-SHA1 calculation combining all inputs
     let mut hmac = <Hmac<Sha1> as KeyInit>::new_from_slice(&password_hash_hash).unwrap();
-    hmac.update(nt_response);
-    hmac.update(magic1);
-    let digest1 = hmac.finalize().into_bytes();
+    hmac.update(nt_response);                    // NT-Response (24 bytes)
+    hmac.update(magic1);                         // Magic1 constant
+    hmac.update(&challenge_hash[0..8]);          // First 8 bytes of ChallengeHash
+    hmac.update(magic2);                         // Magic2 constant
+    let authenticator_response = hmac.finalize().into_bytes();
 
-    // Second part of the authenticator response
-    let mut hmac = <Hmac<Sha1> as KeyInit>::new_from_slice(&password_hash_hash).unwrap();
-    hmac.update(&challenge_hash[0..8]);
-    hmac.update(magic2);
-    let digest2 = hmac.finalize().into_bytes();
-
-    // Combine both parts
-    let mut response = Vec::with_capacity(40);
-    response.extend_from_slice(&digest1);
-    response.extend_from_slice(&digest2);
-    response
+    // Return single 20-byte authenticator response
+    authenticator_response.to_vec()
 }
 
 #[derive(Debug, Clone)]

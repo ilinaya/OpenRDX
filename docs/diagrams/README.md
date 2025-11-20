@@ -73,11 +73,27 @@ Docker Compose deployment showing all services, networks, and volumes.
 Various RADIUS authentication protocols (PAP, CHAP, MS-CHAP, MS-CHAPv2).
 
 ### Northbound API Architecture
-Architecture of the northbound API showing its role as a gateway and integration points.
+Architecture of the northbound API showing:
+- Direct PostgreSQL database connection via deadpool-postgres connection pooling
+- JWT authentication middleware
+- Connection pool management with exponential backoff and automatic reconnection
+- All database tables accessed (Users, NAS, NAS Groups, Vendors, Secrets, etc.)
+- OpenAPI/Swagger documentation generation via utoipa
 
 ### Northbound API Authentication Flow
-Sequence diagram showing how API keys are generated and used for authentication.
+Sequence diagram showing:
+- API key generation process from the backend
+- JWT token verification flow
+- Database query execution for both read and write operations
+- Connection pool management during requests
+- Transaction handling for create/update operations
 
 ### Northbound API Endpoints
-Structure of all available endpoints in the northbound API.
+Structure of all available endpoints in the northbound API:
+- **Public Endpoints**: Health check, Swagger UI, OpenAPI spec
+- **Users**: Full CRUD operations (GET, POST, PUT, DELETE) with pagination, identities, and groups
+- **NAS Groups**: Full CRUD operations for hierarchical NAS group management
+- **NAS Devices**: Full CRUD operations with secrets, vendors, groups, and timezones
+- **Vendors**: List all available vendors
+- **Secrets**: List all available secrets
 

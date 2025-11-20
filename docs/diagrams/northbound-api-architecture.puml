@@ -18,7 +18,8 @@ package "Northbound API (Rust/Actix-web)" {
   [API Gateway] as NorthboundAPI
   [JWT Middleware] as JWT
   [Request Handlers] as Handlers
-  [OpenAPI Generator] as OpenAPI
+  [Connection Pool Manager] as PoolManager
+  [OpenAPI Generator\n(utoipa)] as OpenAPI
 }
 
 package "Backend API (Django)" {
@@ -27,41 +28,82 @@ package "Backend API (Django)" {
 }
 
 database "PostgreSQL" {
-  [Database] as DB
+  [Database\nConnection Pool] as DBPool
+  [Users Table] as Users
+  [NAS Table] as NAS
+  [NAS Groups Table] as NASGroups
+  [Vendors Table] as Vendors
+  [Secrets Table] as Secrets
+  [User Groups Table] as UserGroups
+  [User Identifiers Table] as Identifiers
 }
 
-Client --> Nginx : HTTPS
-Swagger --> Nginx : HTTPS
-Nginx --> NorthboundAPI : HTTP (internal)
+Client --> Nginx : HTTPS\n/northbound-api/*
+Swagger --> Nginx : HTTPS\n/northbound-api/swagger
+Nginx --> NorthboundAPI : HTTP (internal)\nPort 8080
 NorthboundAPI --> JWT : Verify Token
-JWT --> Handlers : Valid Token
-Handlers --> Backend : Forward Requests
+JWT --> Handlers : Valid Token\n(Claims extracted)
+Handlers --> PoolManager : Get Connection
+PoolManager --> DBPool : Connection Pool\n(deadpool-postgres)
+DBPool --> Users : CRUD Operations
+DBPool --> NAS : CRUD Operations
+DBPool --> NASGroups : CRUD Operations
+DBPool --> Vendors : Read Operations
+DBPool --> Secrets : Read Operations
+DBPool --> UserGroups : Read Operations
+DBPool --> Identifiers : CRUD Operations
 NorthboundAPI --> OpenAPI : Generate Spec
-Backend --> APIKeys : Manage Keys
-APIKeys --> DB : Store Keys
-Backend --> DB : Data Access
+Backend --> APIKeys : Manage API Keys
+APIKeys --> DBPool : Store Keys\n(api_keys table)
 
 note right of JWT
   Verifies JWT tokens using
   API_KEY_JWT_SECRET
   Checks:
   - Token signature
-  - Expiration
+  - Expiration (exp claim)
   - Token type (api_key)
+  Extracts Claims:
+  - api_key_id
+  - name
+  - created_by
 end note
 
 note right of NorthboundAPI
   High-performance Rust API
-  - Asynchronous handling
+  - Asynchronous handling (Tokio)
   - Low latency
   - Secure authentication
+  - Direct database access
+  - No backend API dependency
+end note
+
+note right of PoolManager
+  Connection Pool Features:
+  - deadpool-postgres
+  - Exponential backoff
+  - Automatic reconnection
+  - Health checks (30s interval)
+  - Persistent connections
+  - Max connection limit
+end note
+
+note right of DBPool
+  Direct PostgreSQL Access:
+  - Users CRUD
+  - NAS Devices CRUD
+  - NAS Groups CRUD
+  - Vendors (Read)
+  - Secrets (Read)
+  - User Identifiers CRUD
+  - User Groups (Read)
 end note
 
 note right of Swagger
   Interactive API documentation
+  Generated via utoipa
   Accessible at:
   /northbound-api/swagger
 end note
 
 @enduml
-

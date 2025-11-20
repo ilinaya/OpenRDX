@@ -3,25 +3,28 @@
 skinparam backgroundColor #FAFAFA
 skinparam sequenceMessageAlign center
 
-title Northbound API Authentication Flow
+title Northbound API Authentication and Request Flow
 
 actor "External Client" as Client
 participant "Nginx Proxy" as Nginx
 participant "Northbound API" as API
 participant "JWT Middleware" as JWT
 participant "Request Handler" as Handler
+participant "Connection Pool" as Pool
+participant "PostgreSQL Database" as DB
 participant "Backend API" as Backend
 
 == API Key Generation ==
-Client -> Backend: Create API Key\n(name, validity_days)
+Client -> Backend: POST /api/api-keys/\n(name, validity_days)
 activate Backend
 Backend -> Backend: Generate JWT Token\n(signed with API_KEY_JWT_SECRET)
-Backend --> Client: Return JWT Token
+Backend -> Backend: Store API Key in DB
+Backend --> Client: Return JWT Token\n(one-time display)
 deactivate Backend
-note right: Token includes:\n- api_key_id\n- type: "api_key"\n- created_by\n- exp (expiration)\n- name
+note right: Token includes:\n- api_key_id\n- type: "api_key"\n- created_by\n- exp (expiration)\n- name\n\nMust be copied immediately!
 
-== API Request Flow ==
-Client -> Nginx: HTTPS Request\nAuthorization: Bearer <token>
+== API Request Flow (Read/List) ==
+Client -> Nginx: HTTPS Request\nAuthorization: Bearer <token>\nGET /northbound-api/api/v1/users
 activate Nginx
 Nginx -> API: HTTP Request\n(proxied to /northbound-api/)
 activate API
@@ -31,18 +34,35 @@ activate JWT
 
 alt Token Valid
   JWT -> JWT: Verify Signature\n(using API_KEY_JWT_SECRET)
-  JWT -> JWT: Check Expiration
-  JWT -> JWT: Validate Token Type
+  JWT -> JWT: Check Expiration (exp)
+  JWT -> JWT: Validate Token Type (api_key)
   JWT -> API: Token Valid\n(Claims extracted)
   deactivate JWT
   
   API -> Handler: Process Request\n(with Claims)
   activate Handler
-  Handler -> Backend: Forward to Backend API
-  activate Backend
-  Backend --> Handler: Response Data
-  deactivate Backend
-  Handler --> API: Formatted Response
+  Handler -> Pool: Get Connection\nfrom Pool
+  activate Pool
+  Pool --> Handler: Database Connection
+  deactivate Pool
+  
+  Handler -> DB: Query: SELECT * FROM users\nLIMIT/OFFSET for pagination
+  activate DB
+  DB --> Handler: User Data
+  deactivate DB
+  
+  Handler -> DB: Query: SELECT * FROM users_groups\nWHERE user_id IN (...)
+  activate DB
+  DB --> Handler: Group Associations
+  deactivate DB
+  
+  Handler -> DB: Query: SELECT * FROM user_identifiers\nWHERE user_id IN (...)
+  activate DB
+  DB --> Handler: Identifier Data
+  deactivate DB
+  
+  Handler -> Handler: Format Response\nCombine all data
+  Handler --> API: JSON Response
   deactivate Handler
 else Token Invalid
   JWT --> API: 401 Unauthorized\n(Invalid token)
@@ -54,10 +74,58 @@ else Token Expired
   API --> Nginx: Error Response
 end
 
+API --> Nginx: JSON Response
+deactivate API
+Nginx --> Client: HTTPS Response
+deactivate Nginx
+
+== API Request Flow (Create/Update) ==
+Client -> Nginx: HTTPS Request\nAuthorization: Bearer <token>\nPOST /northbound-api/api/v1/users\nBody: UserCreate
+activate Nginx
+Nginx -> API: HTTP Request
+activate API
+
+API -> JWT: Verify Token
+activate JWT
+JWT --> API: Token Valid
+deactivate JWT
+
+API -> Handler: Create User Request
+activate Handler
+
+Handler -> Pool: Get Connection
+activate Pool
+Pool --> Handler: Database Connection
+deactivate Pool
+
+Handler -> DB: BEGIN TRANSACTION
+activate DB
+Handler -> DB: INSERT INTO users\n(email, first_name, ...)
+DB --> Handler: User ID
+Handler -> DB: INSERT INTO users_groups\n(user_id, group_id)
+Handler -> DB: INSERT INTO user_identifiers\n(user_id, identifier_type_id, ...)
+Handler -> DB: COMMIT TRANSACTION
+DB --> Handler: Success
+deactivate DB
+
+Handler -> DB: SELECT * FROM users\nWHERE id = ...
+activate DB
+DB --> Handler: Created User Data
+deactivate DB
+
+Handler --> API: JSON Response\n(201 Created)
+deactivate Handler
 API --> Nginx: Response
 deactivate API
 Nginx --> Client: HTTPS Response
 deactivate Nginx
 
-@enduml
+note over Pool,DB
+  Connection Pool Management:
+  - Automatic retry with exponential backoff
+  - Health checks every 30 seconds
+  - Reconnection on failure
+  - Connection reuse for performance
+end note
 
+@enduml

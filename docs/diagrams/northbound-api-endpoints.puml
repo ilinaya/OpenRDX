@@ -18,12 +18,34 @@ package "Authenticated Endpoints\n(Require Bearer Token)" {
   
   package "Users" {
     [GET /api/v1/users] as ListUsers
+    [POST /api/v1/users] as CreateUser
     [GET /api/v1/users/{id}] as GetUser
+    [PUT /api/v1/users/{id}] as UpdateUser
+    [DELETE /api/v1/users/{id}] as DeleteUser
+  }
+  
+  package "NAS Groups" {
+    [GET /api/v1/nas-groups] as ListNASGroups
+    [POST /api/v1/nas-groups] as CreateNASGroup
+    [GET /api/v1/nas-groups/{id}] as GetNASGroup
+    [PUT /api/v1/nas-groups/{id}] as UpdateNASGroup
+    [DELETE /api/v1/nas-groups/{id}] as DeleteNASGroup
   }
   
   package "NAS Devices" {
     [GET /api/v1/nas] as ListNAS
+    [POST /api/v1/nas] as CreateNAS
     [GET /api/v1/nas/{id}] as GetNAS
+    [PUT /api/v1/nas/{id}] as UpdateNAS
+    [DELETE /api/v1/nas/{id}] as DeleteNAS
+  }
+  
+  package "Vendors" {
+    [GET /api/v1/vendors] as ListVendors
+  }
+  
+  package "Secrets" {
+    [GET /api/v1/secrets] as ListSecrets
   }
 }
 
@@ -34,7 +56,7 @@ end note
 
 note right of Swagger
   Interactive API documentation
-  Swagger UI interface
+  Swagger UI via utoipa
 end note
 
 note right of Status
@@ -45,16 +67,81 @@ end note
 note right of ListUsers
   Paginated user list
   Query params:
-  - page
-  - page_size
+  - page (default: 1)
+  - page_size (default: 10)
+  Returns users with:
+  - Identifiers
+  - User groups
+end note
+
+note right of CreateUser
+  Create new user
+  Body: UserCreate
+  Includes:
+  - User data
+  - Group IDs
+  - Identifiers array
+end note
+
+note right of UpdateUser
+  Update existing user
+  Body: UserUpdate
+  Can update:
+  - User fields
+  - Group associations
+  - Identifiers
 end note
 
 note right of ListNAS
-  Paginated NAS list
+  Paginated NAS devices list
   Query params:
-  - page
-  - page_size
+  - page (default: 1)
+  - page_size (default: 10)
+  Returns NAS with:
+  - Groups
+  - Vendor info
+  - Secret info
+  - Timezone
+end note
+
+note right of CreateNAS
+  Create new NAS device
+  Body: NasCreate
+  Required:
+  - name, ip_address
+  - vendor_id
+  - secret_id
+  - timezone_id
+  Optional:
+  - group_ids
+  - coa_enabled, coa_port
+end note
+
+note right of UpdateNAS
+  Update existing NAS device
+  Body: NasUpdate
+  Can update:
+  - NAS fields
+  - Group associations
+  - Vendor, Secret, Timezone
+end note
+
+note right of ListNASGroups
+  List all NAS groups
+  Returns tree structure
+  Supports hierarchical groups
+end note
+
+note right of ListVendors
+  List all vendors
+  Returns vendor definitions
+  Used for NAS device creation
+end note
+
+note right of ListSecrets
+  List all secrets
+  Returns secret definitions
+  Used for NAS device creation
 end note
 
 @enduml
-

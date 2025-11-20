@@ -675,6 +675,7 @@ impl RadiusAuthServer {
 
         let mut mschap2_peer_challenge = None;
         let mut mschap2_nt_response = None;
+        let mut mschap2_identifier = None;
 
 
         // Extract all relevant attributes
@@ -733,6 +734,9 @@ impl RadiusAuthServer {
                                     // Bytes 2-17: Peer-Challenge (16 bytes)
                                     // Bytes 18-25: Reserved (8 bytes)
                                     // Bytes 26-49: NT-Response (24 bytes)
+                                    let ms_chap_v2_identifier = vendor_data[0];
+                                    debug!("MS-CHAPv2-Response identifier: {}", ms_chap_v2_identifier);
+                                    mschap2_identifier = Some(ms_chap_v2_identifier);
                                     mschap2_peer_challenge = Some(vendor_data[2..18].to_vec());
                                     mschap2_nt_response = Some(vendor_data[26..50].to_vec());
                                     debug!("Extracted peer_challenge: {} bytes, nt_response: {} bytes", 
@@ -869,26 +873,31 @@ impl RadiusAuthServer {
                         &format!("MS-CHAPv2: Invalid NT-Response length: {} bytes (expected at least 24)", nt_response.len()));
                 }
 
-                // Extract MS-CHAPv2 identifier from the VSA
-                let ms_chap_v2_ident = packet.attributes.iter()
-                    .find_map(|attr| {
-                        if attr.typ == ATTR_VENDOR_SPECIFIC && attr.value.len() >= 6 {
-                            let vendor_id = u32::from_be_bytes([attr.value[0], attr.value[1], attr.value[2], attr.value[3]]);
-                            let vendor_type = attr.value[4];
-                            if vendor_id == VENDOR_MICROSOFT && vendor_type == VENDOR_ATTR_MS_CHAP2_RESPONSE {
-                                if attr.value.len() >= 7 {
-                                    Some(attr.value[6]) // <-- This is the identifier
+                // Use the identifier we extracted from MS-CHAPv2-Response
+                let ms_chap_v2_ident = mschap2_identifier.unwrap_or_else(|| {
+                    warn!("MS-CHAPv2 identifier not found in Response, attempting to extract from packet");
+                    // Fallback: try to extract from packet attributes
+                    packet.attributes.iter()
+                        .find_map(|attr| {
+                            if attr.typ == ATTR_VENDOR_SPECIFIC && attr.value.len() >= 7 {
+                                let vendor_id = u32::from_be_bytes([attr.value[0], attr.value[1], attr.value[2], attr.value[3]]);
+                                let vendor_type = attr.value[4];
+                                if vendor_id == VENDOR_MICROSOFT && vendor_type == VENDOR_ATTR_MS_CHAP2_RESPONSE {
+                                    Some(attr.value[6]) // First byte of vendor data is the identifier
                                 } else {
                                     None
                                 }
                             } else {
                                 None
                             }
-                        } else {
-                            None
-                        }
-                    })
-                    .unwrap_or(0); // fallback
+                        })
+                        .unwrap_or_else(|| {
+                            warn!("MS-CHAPv2 identifier not found anywhere, defaulting to 0");
+                            0 // Default to 0 if not found
+                        })
+                });
+                
+                debug!("Using MS-CHAPv2 identifier: {} for MS-CHAP2-Success", ms_chap_v2_ident);
 
                 match self.authenticate_mschap2(&username.clone().unwrap(), &peer_challenge, &nt_response, &auth_challenge, secret).await {
                     Ok(mschapv2_result) => match mschapv2_result.result {
@@ -1263,12 +1272,18 @@ impl RadiusAuthServer {
         assert_eq!(authenticator_response.len(), 20, "Authenticator response must be exactly 20 bytes");
         let mut ms_chap_success = vec![ms_chap_v2_ident];
         ms_chap_success.extend_from_slice(&authenticator_response);
+        
+        debug!("MS-CHAP2-Success: identifier={}, authenticator_response={:02x?}, total_length={}", 
+               ms_chap_v2_ident, authenticator_response, ms_chap_success.len());
 
+        let vendor_length = (ms_chap_success.len() + 2) as u8;
+        debug!("MS-CHAP2-Success VSA: vendor_length={}, data_length={}", vendor_length, ms_chap_success.len());
+        
         response.attributes.push(RadiusAttribute {
             typ: ATTR_VENDOR_SPECIFIC,
             value: [
                 &VENDOR_MICROSOFT.to_be_bytes()[..],
-                &[VENDOR_ATTR_MS_CHAP2_SUCCESS, (ms_chap_success.len() + 2) as u8],
+                &[VENDOR_ATTR_MS_CHAP2_SUCCESS, vendor_length],
                 &ms_chap_success[..]
             ].concat(),
         });
@@ -1297,8 +1312,9 @@ impl RadiusAuthServer {
 
         // Session keys
         let (send_key, recv_key) = Self::get_mschapv2_session_keys(password_hash, nt_response);
-        let enc_send = Self::encrypt_mppe_key(&send_key, secret, &request.authenticator);
-        let enc_recv = Self::encrypt_mppe_key(&recv_key, secret, &request.authenticator);
+        // Use offset 0 for send key, offset 1 for recv key (matching JavaScript implementation)
+        let enc_send = Self::encrypt_mppe_key_with_offset(&send_key, secret, &request.authenticator, 0);
+        let enc_recv = Self::encrypt_mppe_key_with_offset(&recv_key, secret, &request.authenticator, 1);
 
         // Send Key
         response.attributes.push(RadiusAttribute {
@@ -1409,9 +1425,9 @@ impl RadiusAuthServer {
         debug!("MPPE Send Key length: {}", send_key.len());
         debug!("MPPE Recv Key length: {}", recv_key.len());
 
-        // Encrypt the keys
-        let encrypted_send_key = Self::encrypt_mppe_key(&send_key, secret, authenticator);
-        let encrypted_recv_key = Self::encrypt_mppe_key(&recv_key, secret, authenticator);
+        // Encrypt the keys - use offset 0 for send key, offset 1 for recv key (matching JavaScript)
+        let encrypted_send_key = Self::encrypt_mppe_key_with_offset(&send_key, secret, authenticator, 0);
+        let encrypted_recv_key = Self::encrypt_mppe_key_with_offset(&recv_key, secret, authenticator, 1);
 
         debug!("Encrypted Send Key length: {}", encrypted_send_key.len());
         debug!("Encrypted Recv Key length: {}", encrypted_recv_key.len());
@@ -2088,16 +2104,22 @@ impl RadiusAuthServer {
     }
 
     fn get_mschapv2_session_keys(password_hash: &[u8], nt_response: &[u8]) -> (Vec<u8>, Vec<u8>) {
-        use hmac::{Hmac, Mac};
         use sha1::Sha1;
+        use digest::Digest;
 
         let magic1 = b"This is the MPPE Master Key";
         let magic2 = b"On the client side, this is the send key; on the server side, it is the receive key.";
         let magic3 = b"On the client side, this is the receive key; on the server side, it is the send key.";
 
-        // MasterKey = SHA1(PwhashHash, NTResponse, Magic1)
+        // First, compute PasswordHashHash = SHA1(NT-PasswordHash)
         let mut sha1 = Sha1::new();
         sha1.update(password_hash);
+        let password_hash_hash = sha1.finalize();
+
+        // MasterKey = GetMasterKey(PasswordHashHash, NTResponse)
+        // According to RFC 3079, GetMasterKey = SHA1(PasswordHashHash, NTResponse, Magic1)
+        let mut sha1 = Sha1::new();
+        sha1.update(&password_hash_hash);
         sha1.update(nt_response);
         sha1.update(magic1);
         let master_key = sha1.finalize();
@@ -2118,16 +2140,22 @@ impl RadiusAuthServer {
     }
 
     fn encrypt_mppe_key(key: &[u8], secret: &str, authenticator: &[u8]) -> Vec<u8> {
+        Self::encrypt_mppe_key_with_offset(key, secret, authenticator, 0)
+    }
+
+    fn encrypt_mppe_key_with_offset(key: &[u8], secret: &str, authenticator: &[u8], offset: u8) -> Vec<u8> {
         use md5::Md5;
-        use rand::random;
+        use rand::Rng;
 
         // Maximum size for the encrypted key (253 bytes for VSA value - 6 bytes for VSA header)
         const MAX_ENCRYPTED_KEY_SIZE: usize = 247;
 
-        // Generate salt
-        let salt_value: u32 = random();
+        // Generate salt - matching JavaScript implementation
+        // salt = [0x80 | ((offset & 0x0f) << 3) | (salt_value & 0x07), salt_value & 0xff]
+        let mut rng = rand::thread_rng();
+        let salt_value: u32 = rng.gen();
         let salt = [
-            0x80 | ((0 & 0x0f) << 3) | ((salt_value & 0x07) as u8),
+            0x80 | ((offset & 0x0f) << 3) | ((salt_value & 0x07) as u8),
             (salt_value & 0xff) as u8
         ];
 
@@ -2169,18 +2197,20 @@ impl RadiusAuthServer {
         }
         result.extend_from_slice(&encrypted);
 
-        // Remaining blocks
+        // Remaining blocks - use the last encrypted block for next hash
+        let mut last_block = encrypted.clone();
         for chunk in padded_key[16..].chunks(16) {
             let mut hasher = Md5::new();
             hasher.update(secret.as_bytes());
-            hasher.update(&encrypted);
+            hasher.update(&last_block); // Use last encrypted block, not just "encrypted"
             let hash = hasher.finalize();
 
-            encrypted = Vec::new();
+            let mut block_encrypted = Vec::new();
             for (a, b) in chunk.iter().zip(hash.iter()) {
-                encrypted.push(a ^ b);
+                block_encrypted.push(a ^ b);
             }
-            result.extend_from_slice(&encrypted);
+            last_block = block_encrypted.clone();
+            result.extend_from_slice(&block_encrypted);
         }
 
         // Final check to ensure we don't exceed the maximum size

@@ -1279,13 +1279,18 @@ impl RadiusAuthServer {
         let vendor_length = (ms_chap_success.len() + 2) as u8;
         debug!("MS-CHAP2-Success VSA: vendor_length={}, data_length={}", vendor_length, ms_chap_success.len());
         
+        let vsa_value = [
+            &VENDOR_MICROSOFT.to_be_bytes()[..],
+            &[VENDOR_ATTR_MS_CHAP2_SUCCESS, vendor_length],
+            &ms_chap_success[..]
+        ].concat();
+        
+        debug!("MS-CHAP2-Success VSA value (hex): {:02x?}", vsa_value);
+        debug!("MS-CHAP2-Success VSA value length: {} bytes", vsa_value.len());
+        
         response.attributes.push(RadiusAttribute {
             typ: ATTR_VENDOR_SPECIFIC,
-            value: [
-                &VENDOR_MICROSOFT.to_be_bytes()[..],
-                &[VENDOR_ATTR_MS_CHAP2_SUCCESS, vendor_length],
-                &ms_chap_success[..]
-            ].concat(),
+            value: vsa_value,
         });
 
         // MS-MPPE-Encryption-Policy
@@ -2383,17 +2388,18 @@ fn calculate_authenticator_response(
     // Generate the Authenticator Response
     // According to RFC 2759 Section 8.7, the authenticator response is:
     // SHA1(PasswordHashHash, NT-Response, Magic1, ChallengeHash[0..8], Magic2)
-    // This produces a single 20-byte value (SHA1 output)
+    // This means SHA1 of the concatenation, not HMAC
     let magic1 = b"Magic server to client signing constant";
     let magic2 = b"Pad to make it do more than one iteration";
 
-    // Single HMAC-SHA1 calculation combining all inputs
-    let mut hmac = <Hmac<Sha1> as KeyInit>::new_from_slice(&password_hash_hash).unwrap();
-    hmac.update(nt_response);                    // NT-Response (24 bytes)
-    hmac.update(magic1);                         // Magic1 constant
-    hmac.update(&challenge_hash[0..8]);          // First 8 bytes of ChallengeHash
-    hmac.update(magic2);                         // Magic2 constant
-    let authenticator_response = hmac.finalize().into_bytes();
+    // SHA1 of concatenated inputs (not HMAC)
+    let mut sha1 = Sha1::new();
+    sha1.update(&password_hash_hash);             // PasswordHashHash (20 bytes)
+    sha1.update(nt_response);                    // NT-Response (24 bytes)
+    sha1.update(magic1);                         // Magic1 constant
+    sha1.update(&challenge_hash[0..8]);          // First 8 bytes of ChallengeHash
+    sha1.update(magic2);                         // Magic2 constant
+    let authenticator_response = sha1.finalize();
 
     // Return single 20-byte authenticator response
     authenticator_response.to_vec()

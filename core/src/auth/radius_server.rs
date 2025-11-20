@@ -19,6 +19,8 @@ type HmacMd5 = Hmac<Md5>; // alias for clarity
 const ATTR_USER_PASSWORD: u8 = 2;      // PAP
 const ATTR_CHAP_PASSWORD: u8 = 3;      // CHAP
 const VENDOR_MICROSOFT: u32 = 311;       // Microsoft's Vendor-ID
+const VENDOR_MIKROTIK: u32 = 14988;     // MikroTik's Vendor-ID
+const VENDOR_ATTR_MIKROTIK_GROUP: u8 = 3; // MikroTik-Group attribute type
 
 const VENDOR_ATTR_MS_CHAP_CHALLENGE: u8 = 11;  // Microsoft's MS-CHAP-Challenge
 const VENDOR_ATTR_MS_CHAP_RESPONSE: u8 = 1;    // Microsoft's MS-CHAP-Response
@@ -1416,6 +1418,26 @@ impl RadiusAuthServer {
         response.attributes.push(RadiusAttribute {
             typ: ATTR_VENDOR_SPECIFIC,
             value: recv_key_vsa,
+        });
+
+        // MikroTik-Group attribute (Vendor ID 14988, Type 3, Value "full")
+        let mikrotik_group_value = b"full";
+        let mikrotik_group_vendor_length = (mikrotik_group_value.len() + 2) as u8; // Vendor-Type + Vendor-Length + Data
+        let mikrotik_group_vsa = [
+            &VENDOR_MIKROTIK.to_be_bytes()[..],
+            &[VENDOR_ATTR_MIKROTIK_GROUP, mikrotik_group_vendor_length],
+            mikrotik_group_value,
+        ].concat();
+        
+        debug!("MikroTik-Group VSA: vendor_id={}, vendor_type={}, vendor_length={}, data_length={}, total_vsa_length={}", 
+               VENDOR_MIKROTIK, VENDOR_ATTR_MIKROTIK_GROUP, mikrotik_group_vendor_length, 
+               mikrotik_group_value.len(), mikrotik_group_vsa.len());
+        debug!("MikroTik-Group VSA (hex): {:02x?}", &mikrotik_group_vsa);
+        debug!("MikroTik-Group value: {}", String::from_utf8_lossy(mikrotik_group_value));
+        
+        response.attributes.push(RadiusAttribute {
+            typ: ATTR_VENDOR_SPECIFIC,
+            value: mikrotik_group_vsa,
         });
 
         // Message-Authenticator placeholder

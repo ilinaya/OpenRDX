@@ -13,7 +13,10 @@ The Northbound API is a high-performance REST API built with Actix-web (Rust) th
 - **Health Check Endpoints**: Public and authenticated health check endpoints
 - **Full CRUD Operations**: Complete Create, Read, Update, Delete operations for:
   - Users (with identities and user groups)
-  - NAS Groups
+  - User Groups (full CRUD)
+  - User Identifiers (update)
+  - User Identifier Types (list)
+  - NAS Groups (full CRUD)
   - NAS Devices (with secrets, vendors, groups, timezones)
   - Vendors (list)
   - Secrets (list)
@@ -88,6 +91,19 @@ All endpoints under `/api/v1` require authentication via JWT Bearer token:
 - `GET /api/v1/users/{id}` - Get user by ID
 - `PUT /api/v1/users/{id}` - Update user (with identities and groups)
 - `DELETE /api/v1/users/{id}` - Delete user
+
+#### User Groups
+- `GET /api/v1/user-groups` - List all user groups
+- `POST /api/v1/user-groups` - Create a new user group
+- `GET /api/v1/user-groups/{id}` - Get user group by ID
+- `PUT /api/v1/user-groups/{id}` - Update user group
+- `DELETE /api/v1/user-groups/{id}` - Delete user group
+
+#### User Identifiers
+- `PUT /api/v1/user-identifiers/{id}` - Update user identifier
+
+#### User Identifier Types
+- `GET /api/v1/user-identifier-types` - List all user identifier types
 
 #### NAS Groups
 - `GET /api/v1/nas-groups` - List all NAS groups

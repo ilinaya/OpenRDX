@@ -296,7 +296,15 @@ See `northbound_api/README.md` for detailed API documentation.
   - Accessible through Nginx at `/northbound-api/`
   - Internal service, not directly accessible from outside
   - Asynchronous request handling with Tokio
-  - Full CRUD operations for users, NAS groups, and NAS devices
+  - Full CRUD operations for:
+    - Users (with identities and user groups)
+    - User Groups (full CRUD)
+    - User Identifiers (update)
+    - User Identifier Types (list)
+    - NAS Groups (full CRUD)
+    - NAS Devices (with secrets, vendors, groups, timezones)
+    - Vendors (list)
+    - Secrets (list)
   - Environment variables:
     ```env
     # JWT Authentication

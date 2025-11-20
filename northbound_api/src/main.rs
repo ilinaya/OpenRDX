@@ -3,7 +3,6 @@ use actix_cors::Cors;
 use std::sync::Arc;
 use log::info;
 use config::Config;
-use deadpool_postgres::Pool;
 
 mod auth;
 mod handlers;
@@ -17,7 +16,6 @@ use handlers::*;
 use db::{Database, start_reconnect_task};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
-use openapi::ApiDoc;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -42,7 +40,7 @@ async fn main() -> std::io::Result<()> {
             let user = settings.get_string("db_user").unwrap_or_else(|_| "postgres".to_string());
             let password = settings.get_string("db_password").unwrap_or_else(|_| "postgres".to_string());
             let dbname = settings.get_string("db_name").unwrap_or_else(|_| "postgres".to_string());
-            Ok(format!("postgres://{}:{}@{}:{}/{}", user, password, host, port, dbname))
+            Ok::<String, config::ConfigError>(format!("postgres://{}:{}@{}:{}/{}", user, password, host, port, dbname))
         })
         .expect("DATABASE_URL or database components must be set");
     
@@ -82,7 +80,7 @@ async fn main() -> std::io::Result<()> {
             .route("/health", web::get().to(health_check_public))
             .service(
                 SwaggerUi::new("/swagger/{_:.*}")
-                    .url("/api/v1/openapi.json", ApiDoc::openapi())
+                    .url("/api/v1/openapi.json", <openapi::ApiDoc as OpenApi>::openapi())
             )
             .service(
                 web::scope("/api/v1")
@@ -94,6 +92,15 @@ async fn main() -> std::io::Result<()> {
                     .route("/users/{id}", web::get().to(get_user))
                     .route("/users/{id}", web::put().to(update_user))
                     .route("/users/{id}", web::delete().to(delete_user))
+                    // User Groups endpoints
+                    .route("/user-groups", web::get().to(list_user_groups))
+                    .route("/user-groups", web::post().to(create_user_group))
+                    .route("/user-groups/{id}", web::get().to(get_user_group))
+                    .route("/user-groups/{id}", web::put().to(update_user_group))
+                    .route("/user-groups/{id}", web::delete().to(delete_user_group))
+                    // User Identifier endpoints
+                    .route("/user-identifiers/{id}", web::put().to(update_user_identifier))
+                    .route("/user-identifier-types", web::get().to(list_user_identifier_types))
                     // NAS Groups endpoints
                     .route("/nas-groups", web::get().to(list_nas_groups))
                     .route("/nas-groups", web::post().to(create_nas_group))

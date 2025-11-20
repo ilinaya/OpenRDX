@@ -24,6 +24,22 @@ package "Authenticated Endpoints\n(Require Bearer Token)" {
     [DELETE /api/v1/users/{id}] as DeleteUser
   }
   
+  package "User Groups" {
+    [GET /api/v1/user-groups] as ListUserGroups
+    [POST /api/v1/user-groups] as CreateUserGroup
+    [GET /api/v1/user-groups/{id}] as GetUserGroup
+    [PUT /api/v1/user-groups/{id}] as UpdateUserGroup
+    [DELETE /api/v1/user-groups/{id}] as DeleteUserGroup
+  }
+  
+  package "User Identifiers" {
+    [PUT /api/v1/user-identifiers/{id}] as UpdateUserIdentifier
+  }
+  
+  package "User Identifier Types" {
+    [GET /api/v1/user-identifier-types] as ListUserIdentifierTypes
+  }
+  
   package "NAS Groups" {
     [GET /api/v1/nas-groups] as ListNASGroups
     [POST /api/v1/nas-groups] as CreateNASGroup
@@ -142,6 +158,47 @@ note right of ListSecrets
   List all secrets
   Returns secret definitions
   Used for NAS device creation
+end note
+
+note right of ListUserGroups
+  List all user groups
+  Returns hierarchical groups
+  Supports parent-child relationships
+end note
+
+note right of CreateUserGroup
+  Create new user group
+  Body: UserGroupCreate
+  Required: name
+  Optional: description, parent_id
+  Optional: allow_any_nas (default: false)
+end note
+
+note right of UpdateUserGroup
+  Update existing user group
+  Body: UserGroupUpdate
+  Can update:
+  - name, description
+  - parent_id
+  - allow_any_nas
+end note
+
+note right of UpdateUserIdentifier
+  Update existing user identifier
+  Body: UserIdentifierUpdate
+  Can update:
+  - identifier_type_id
+  - value, plain_password
+  - is_enabled, comment
+  - auth_attribute_group_id
+  - expiration_date
+  - reject_expired
+end note
+
+note right of ListUserIdentifierTypes
+  List all user identifier types
+  Returns identifier type definitions
+  Used for user identifier management
 end note
 
 @enduml

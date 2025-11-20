@@ -92,6 +92,9 @@ Sequence diagram showing:
 Structure of all available endpoints in the northbound API:
 - **Public Endpoints**: Health check, Swagger UI, OpenAPI spec
 - **Users**: Full CRUD operations (GET, POST, PUT, DELETE) with pagination, identities, and groups
+- **User Groups**: Full CRUD operations for hierarchical user group management (GET, POST, PUT, DELETE)
+- **User Identifiers**: Update operation (PUT) for user identifier modifications
+- **User Identifier Types**: List all available identifier types (GET)
 - **NAS Groups**: Full CRUD operations for hierarchical NAS group management
 - **NAS Devices**: Full CRUD operations with secrets, vendors, groups, and timezones
 - **Vendors**: List all available vendors

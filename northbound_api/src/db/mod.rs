@@ -15,9 +15,34 @@ pub struct Database {
 impl Database {
     pub async fn new(database_url: &str) -> Result<Self> {
         // Parse the connection string into a Config
+        // deadpool-postgres Config has individual fields, so we parse the URL and set them
+        let url = url::Url::parse(database_url)
+            .map_err(|e| anyhow::anyhow!("Invalid database URL: {}", e))?;
+        
         let mut config = Config::new();
-        config.url = Some(database_url.parse()
-            .map_err(|e| anyhow::anyhow!("Invalid database URL: {}", e))?);
+        
+        if let Some(host) = url.host_str() {
+            config.host = Some(host.to_string());
+        }
+        if let Some(port) = url.port() {
+            config.port = Some(port);
+        } else if url.scheme() == "postgres" || url.scheme() == "postgresql" {
+            config.port = Some(5432); // Default PostgreSQL port
+        }
+        if !url.username().is_empty() {
+            config.user = Some(url.username().to_string());
+        }
+        if let Some(password) = url.password() {
+            config.password = Some(password.to_string());
+        }
+        if let Some(path) = url.path_segments() {
+            if let Some(dbname) = path.last() {
+                if !dbname.is_empty() {
+                    config.dbname = Some(dbname.to_string());
+                }
+            }
+        }
+        
         let pool = config.create_pool(Some(Runtime::Tokio1), NoTls)?;
 
         // Test connection with exponential backoff
@@ -62,10 +87,6 @@ impl Database {
             sleep(delay).await;
             delay = Duration::from_secs(delay.as_secs() * 2).min(Duration::from_secs(60)); // Exponential backoff, max 60s
         }
-    }
-
-    pub fn get_pool(&self) -> &Pool {
-        &self.pool
     }
 }
 

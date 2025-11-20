@@ -8,6 +8,7 @@ use std::pin::Pin;
 use actix_web::dev::{forward_ready, Service, ServiceResponse, Transform};
 use actix_web::http::header::AUTHORIZATION;
 use log::{warn, debug};
+use crate::error::ApiError;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
@@ -27,12 +28,7 @@ impl FromRequest for Claims {
         let claims = req.extensions().get::<Claims>().cloned();
         Box::pin(async move {
             claims.ok_or_else(|| {
-                actix_web::error::ErrorUnauthorized(
-                    serde_json::json!({
-                        "error": "unauthorized",
-                        "message": "Claims not found in request. Authentication required."
-                    })
-                )
+                Error::from(ApiError::Authentication("Claims not found in request. Authentication required.".to_string()))
             })
         })
     }
@@ -80,12 +76,7 @@ where
             None => {
                 warn!("JWT secret not found in app data");
                 return Box::pin(async move {
-                    Err(actix_web::error::ErrorInternalServerError(
-                        serde_json::json!({
-                            "error": "internal_error",
-                            "message": "JWT secret not configured"
-                        })
-                    ))
+                    Err(Error::from(ApiError::Internal("JWT secret not configured".to_string())))
                 });
             }
         };
@@ -115,12 +106,7 @@ where
                             if claims.exp < now {
                                 warn!("Token expired. exp={}, now={}", claims.exp, now);
                                 return Box::pin(async move {
-                                    Err(actix_web::error::ErrorUnauthorized(
-                                        serde_json::json!({
-                                            "error": "unauthorized",
-                                            "message": "Token expired"
-                                        })
-                                    ))
+                                    Err(Error::from(ApiError::Authentication("Token expired".to_string())))
                                 });
                             }
 
@@ -128,12 +114,7 @@ where
                             if claims.type_ != "api_key" {
                                 warn!("Invalid token type: {}", claims.type_);
                                 return Box::pin(async move {
-                                    Err(actix_web::error::ErrorUnauthorized(
-                                        serde_json::json!({
-                                            "error": "unauthorized",
-                                            "message": "Invalid token type. Expected 'api_key'"
-                                        })
-                                    ))
+                                    Err(Error::from(ApiError::Authentication("Invalid token type. Expected 'api_key'".to_string())))
                                 });
                             }
 
@@ -144,43 +125,23 @@ where
                         Err(e) => {
                             warn!("JWT decode error: {:?}", e);
                             return Box::pin(async move {
-                                Err(actix_web::error::ErrorUnauthorized(
-                                    serde_json::json!({
-                                        "error": "unauthorized",
-                                        "message": format!("Invalid token: {}", e)
-                                    })
-                                ))
+                                Err(Error::from(ApiError::Authentication(format!("Invalid token: {}", e))))
                             });
                         }
                     }
                 } else {
                     return Box::pin(async move {
-                        Err(actix_web::error::ErrorUnauthorized(
-                            serde_json::json!({
-                                "error": "unauthorized",
-                                "message": "Invalid authorization header format. Expected 'Bearer <token>'"
-                            })
-                        ))
+                        Err(Error::from(ApiError::Authentication("Invalid authorization header format. Expected 'Bearer <token>'".to_string())))
                     });
                 }
             } else {
                 return Box::pin(async move {
-                    Err(actix_web::error::ErrorUnauthorized(
-                        serde_json::json!({
-                            "error": "unauthorized",
-                            "message": "Invalid authorization header"
-                        })
-                    ))
+                    Err(Error::from(ApiError::Authentication("Invalid authorization header".to_string())))
                 });
             }
         } else {
             return Box::pin(async move {
-                Err(actix_web::error::ErrorUnauthorized(
-                    serde_json::json!({
-                        "error": "unauthorized",
-                        "message": "Missing authorization header. Include 'Authorization: Bearer <token>'"
-                    })
-                ))
+                Err(Error::from(ApiError::Authentication("Missing authorization header. Include 'Authorization: Bearer <token>'".to_string())))
             });
         }
 

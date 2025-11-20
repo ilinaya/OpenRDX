@@ -1,8 +1,8 @@
 use deadpool_postgres::Pool;
 use tokio_postgres::Row;
-use chrono::{DateTime, Utc};
+use tokio_postgres::types::ToSql;
+use std::time::SystemTime;
 use anyhow::Result;
-use serde_json::Value;
 
 // User queries
 pub async fn list_users(pool: &Pool, page: i64, page_size: i64) -> Result<Vec<Row>> {
@@ -43,7 +43,7 @@ pub async fn create_user(
     allow_any_nas: Option<bool>,
 ) -> Result<i64> {
     let client = pool.get().await?;
-    let now = Utc::now();
+    let now = SystemTime::now();
     
     let row = client.query_one(
         "INSERT INTO users (email, first_name, last_name, phone_number, external_id, is_active, allow_any_nas, created_at, updated_at) 
@@ -67,53 +67,82 @@ pub async fn update_user(
     allow_any_nas: Option<bool>,
 ) -> Result<bool> {
     let client = pool.get().await?;
-    let now = Utc::now();
+    let now = SystemTime::now();
     
-    // Build dynamic UPDATE query
+    // Build dynamic UPDATE query - two phase approach
+    // Phase 1: Collect all string values
+    let mut string_params: Vec<String> = Vec::new();
     let mut updates = Vec::new();
-    let mut params: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = Vec::new();
     let mut param_index = 1;
     
-    if let Some(email) = email {
+    if email.is_some() {
         updates.push(format!("email = ${}", param_index));
-        params.push(email);
+        string_params.push(email.unwrap().to_string());
         param_index += 1;
     }
-    if let Some(first_name) = first_name {
+    if first_name.is_some() {
         updates.push(format!("first_name = ${}", param_index));
-        params.push(first_name);
+        string_params.push(first_name.unwrap().to_string());
         param_index += 1;
     }
-    if let Some(last_name) = last_name {
+    if last_name.is_some() {
         updates.push(format!("last_name = ${}", param_index));
-        params.push(last_name);
+        string_params.push(last_name.unwrap().to_string());
         param_index += 1;
     }
-    if let Some(phone_number) = phone_number {
+    if phone_number.is_some() {
         updates.push(format!("phone_number = ${}", param_index));
-        params.push(phone_number);
+        string_params.push(phone_number.unwrap().to_string());
         param_index += 1;
     }
-    if let Some(external_id) = external_id {
+    if external_id.is_some() {
         updates.push(format!("external_id = ${}", param_index));
-        params.push(external_id);
+        string_params.push(external_id.unwrap().to_string());
         param_index += 1;
     }
-    if let Some(is_active) = is_active {
+    if is_active.is_some() {
         updates.push(format!("is_active = ${}", param_index));
-        params.push(&is_active);
         param_index += 1;
     }
-    if let Some(allow_any_nas) = allow_any_nas {
+    if allow_any_nas.is_some() {
         updates.push(format!("allow_any_nas = ${}", param_index));
-        params.push(&allow_any_nas);
         param_index += 1;
     }
     
     updates.push(format!("updated_at = ${}", param_index));
-    params.push(&now);
     param_index += 1;
     
+    // Phase 2: Build params array - all values collected, safe to take references
+    let mut params: Vec<&(dyn ToSql + Sync)> = Vec::new();
+    let mut string_idx = 0;
+    
+    if email.is_some() {
+        params.push(&string_params[string_idx]);
+        string_idx += 1;
+    }
+    if first_name.is_some() {
+        params.push(&string_params[string_idx]);
+        string_idx += 1;
+    }
+    if last_name.is_some() {
+        params.push(&string_params[string_idx]);
+        string_idx += 1;
+    }
+    if phone_number.is_some() {
+        params.push(&string_params[string_idx]);
+        string_idx += 1;
+    }
+    if external_id.is_some() {
+        params.push(&string_params[string_idx]);
+        // No need to increment - this is the last string parameter
+    }
+    if let Some(ref val) = is_active {
+        params.push(val);
+    }
+    if let Some(ref val) = allow_any_nas {
+        params.push(val);
+    }
+    params.push(&now);
     params.push(&id);
     
     let query = format!(
@@ -171,7 +200,7 @@ pub async fn create_user_group(
     allow_any_nas: bool,
 ) -> Result<i64> {
     let client = pool.get().await?;
-    let now = Utc::now();
+    let now = SystemTime::now();
     
     let row = client.query_one(
         "INSERT INTO user_groups (name, description, parent_id, allow_any_nas, created_at, updated_at) 
@@ -192,37 +221,53 @@ pub async fn update_user_group(
     allow_any_nas: Option<bool>,
 ) -> Result<bool> {
     let client = pool.get().await?;
-    let now = Utc::now();
+    let now = SystemTime::now();
     
+    // Two phase approach: collect values first, then build params
+    let mut string_params: Vec<String> = Vec::new();
     let mut updates = Vec::new();
-    let mut params: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = Vec::new();
     let mut param_index = 1;
     
-    if let Some(name) = name {
+    if name.is_some() {
         updates.push(format!("name = ${}", param_index));
-        params.push(name);
+        string_params.push(name.unwrap().to_string());
         param_index += 1;
     }
-    if let Some(description) = description {
+    if description.is_some() {
         updates.push(format!("description = ${}", param_index));
-        params.push(description);
+        string_params.push(description.unwrap().to_string());
         param_index += 1;
     }
-    if let Some(parent_id) = parent_id {
+    if parent_id.is_some() {
         updates.push(format!("parent_id = ${}", param_index));
-        params.push(&parent_id);
         param_index += 1;
     }
-    if let Some(allow_any_nas) = allow_any_nas {
+    if allow_any_nas.is_some() {
         updates.push(format!("allow_any_nas = ${}", param_index));
-        params.push(&allow_any_nas);
         param_index += 1;
     }
     
     updates.push(format!("updated_at = ${}", param_index));
-    params.push(&now);
     param_index += 1;
     
+    let mut params: Vec<&(dyn ToSql + Sync)> = Vec::new();
+    let mut string_idx = 0;
+    
+    if name.is_some() {
+        params.push(&string_params[string_idx]);
+        string_idx += 1;
+    }
+    if description.is_some() {
+        params.push(&string_params[string_idx]);
+        // No need to increment - this is the last string parameter
+    }
+    if let Some(ref val) = parent_id {
+        params.push(val);
+    }
+    if let Some(ref val) = allow_any_nas {
+        params.push(val);
+    }
+    params.push(&now);
     params.push(&id);
     
     let query = format!(
@@ -282,12 +327,12 @@ pub async fn create_user_identifier(
     is_enabled: bool,
     comment: Option<&str>,
     auth_attribute_group_id: Option<i64>,
-    expiration_date: Option<DateTime<Utc>>,
+    expiration_date: Option<SystemTime>,
     reject_expired: bool,
     expired_auth_attribute_group_id: Option<i64>,
 ) -> Result<i64> {
     let client = pool.get().await?;
-    let now = Utc::now();
+    let now = SystemTime::now();
     
     let row = client.query_one(
         "INSERT INTO user_identifiers (user_id, identifier_type_id, value, plain_password, is_enabled, comment, auth_attribute_group_id, expiration_date, reject_expired, expired_auth_attribute_group_id, created_at, updated_at) 
@@ -308,67 +353,95 @@ pub async fn update_user_identifier(
     is_enabled: Option<bool>,
     comment: Option<&str>,
     auth_attribute_group_id: Option<i64>,
-    expiration_date: Option<Option<DateTime<Utc>>>,
+    expiration_date: Option<Option<SystemTime>>,
     reject_expired: Option<bool>,
     expired_auth_attribute_group_id: Option<i64>,
 ) -> Result<bool> {
     let client = pool.get().await?;
-    let now = Utc::now();
+    let now = SystemTime::now();
     
+    // Two phase approach: collect values first, then build params
+    let mut string_params: Vec<String> = Vec::new();
     let mut updates = Vec::new();
-    let mut params: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = Vec::new();
     let mut param_index = 1;
     
-    if let Some(identifier_type_id) = identifier_type_id {
+    if identifier_type_id.is_some() {
         updates.push(format!("identifier_type_id = ${}", param_index));
-        params.push(&identifier_type_id);
         param_index += 1;
     }
-    if let Some(value) = value {
+    if value.is_some() {
         updates.push(format!("value = ${}", param_index));
-        params.push(value);
+        string_params.push(value.unwrap().to_string());
         param_index += 1;
     }
-    if let Some(plain_password) = plain_password {
+    if plain_password.is_some() {
         updates.push(format!("plain_password = ${}", param_index));
-        params.push(plain_password);
+        string_params.push(plain_password.unwrap().to_string());
         param_index += 1;
     }
-    if let Some(is_enabled) = is_enabled {
+    if is_enabled.is_some() {
         updates.push(format!("is_enabled = ${}", param_index));
-        params.push(&is_enabled);
         param_index += 1;
     }
-    if let Some(comment) = comment {
+    if comment.is_some() {
         updates.push(format!("comment = ${}", param_index));
-        params.push(comment);
+        string_params.push(comment.unwrap().to_string());
         param_index += 1;
     }
-    if let Some(auth_attribute_group_id) = auth_attribute_group_id {
+    if auth_attribute_group_id.is_some() {
         updates.push(format!("auth_attribute_group_id = ${}", param_index));
-        params.push(&auth_attribute_group_id);
         param_index += 1;
     }
-    if let Some(expiration_date) = expiration_date {
+    if expiration_date.is_some() {
         updates.push(format!("expiration_date = ${}", param_index));
-        params.push(&expiration_date);
         param_index += 1;
     }
-    if let Some(reject_expired) = reject_expired {
+    if reject_expired.is_some() {
         updates.push(format!("reject_expired = ${}", param_index));
-        params.push(&reject_expired);
         param_index += 1;
     }
-    if let Some(expired_auth_attribute_group_id) = expired_auth_attribute_group_id {
+    if expired_auth_attribute_group_id.is_some() {
         updates.push(format!("expired_auth_attribute_group_id = ${}", param_index));
-        params.push(&expired_auth_attribute_group_id);
         param_index += 1;
     }
     
     updates.push(format!("updated_at = ${}", param_index));
-    params.push(&now);
     param_index += 1;
     
+    let mut params: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = Vec::new();
+    let mut string_idx = 0;
+    
+    if let Some(ref val) = identifier_type_id {
+        params.push(val);
+    }
+    if value.is_some() {
+        params.push(&string_params[string_idx]);
+        string_idx += 1;
+    }
+    if plain_password.is_some() {
+        params.push(&string_params[string_idx]);
+        string_idx += 1;
+    }
+    if let Some(ref val) = is_enabled {
+        params.push(val);
+    }
+    if comment.is_some() {
+        params.push(&string_params[string_idx]);
+        // No need to increment - this is the last string parameter
+    }
+    if let Some(ref val) = auth_attribute_group_id {
+        params.push(val);
+    }
+    if let Some(ref val) = expiration_date {
+        params.push(val);
+    }
+    if let Some(ref val) = reject_expired {
+        params.push(val);
+    }
+    if let Some(ref val) = expired_auth_attribute_group_id {
+        params.push(val);
+    }
+    params.push(&now);
     params.push(&id);
     
     let query = format!(
@@ -388,6 +461,18 @@ pub async fn delete_user_identifiers(pool: &Pool, user_id: i64) -> Result<()> {
         &[&user_id],
     ).await?;
     Ok(())
+}
+
+pub async fn get_user_identifier(pool: &Pool, id: i64) -> Result<Option<Row>> {
+    let client = pool.get().await?;
+    let row = client.query_opt(
+        "SELECT id, user_id, identifier_type_id, value, is_enabled, comment, auth_attribute_group_id, expiration_date, reject_expired, expired_auth_attribute_group_id, created_at, updated_at 
+         FROM user_identifiers 
+         WHERE id = $1",
+        &[&id],
+    ).await?;
+    
+    Ok(row)
 }
 
 pub async fn get_user_identifiers(pool: &Pool, user_id: i64) -> Result<Vec<Row>> {
@@ -435,7 +520,7 @@ pub async fn create_nas_group(
     parent_id: Option<i64>,
 ) -> Result<i64> {
     let client = pool.get().await?;
-    let now = Utc::now();
+    let now = SystemTime::now();
     
     let row = client.query_one(
         "INSERT INTO nas_nas_group (name, description, parent_id, created_at, updated_at) 
@@ -455,32 +540,45 @@ pub async fn update_nas_group(
     parent_id: Option<i64>,
 ) -> Result<bool> {
     let client = pool.get().await?;
-    let now = Utc::now();
+    let now = SystemTime::now();
     
+    // Two phase approach: collect values first, then build params
+    let mut string_params: Vec<String> = Vec::new();
     let mut updates = Vec::new();
-    let mut params: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = Vec::new();
     let mut param_index = 1;
     
-    if let Some(name) = name {
+    if name.is_some() {
         updates.push(format!("name = ${}", param_index));
-        params.push(name);
+        string_params.push(name.unwrap().to_string());
         param_index += 1;
     }
-    if let Some(description) = description {
+    if description.is_some() {
         updates.push(format!("description = ${}", param_index));
-        params.push(description);
+        string_params.push(description.unwrap().to_string());
         param_index += 1;
     }
-    if let Some(parent_id) = parent_id {
+    if parent_id.is_some() {
         updates.push(format!("parent_id = ${}", param_index));
-        params.push(&parent_id);
         param_index += 1;
     }
     
     updates.push(format!("updated_at = ${}", param_index));
-    params.push(&now);
     param_index += 1;
     
+    let mut params: Vec<&(dyn ToSql + Sync)> = Vec::new();
+    let mut string_idx = 0;
+    
+    if name.is_some() {
+        params.push(&string_params[string_idx]);
+        string_idx += 1;
+    }
+    if description.is_some() {
+        params.push(&string_params[string_idx]);
+    }
+    if let Some(ref val) = parent_id {
+        params.push(val);
+    }
+    params.push(&now);
     params.push(&id);
     
     let query = format!(
@@ -546,7 +644,7 @@ pub async fn create_nas_device(
     is_active: bool,
 ) -> Result<i64> {
     let client = pool.get().await?;
-    let now = Utc::now();
+    let now = SystemTime::now();
     
     let row = client.query_one(
         "INSERT INTO nas_nas (name, description, ip_address, coa_enabled, coa_port, vendor_id, secret_id, timezone_id, is_active, created_at, updated_at) 
@@ -572,62 +670,90 @@ pub async fn update_nas_device(
     is_active: Option<bool>,
 ) -> Result<bool> {
     let client = pool.get().await?;
-    let now = Utc::now();
+    let now = SystemTime::now();
     
+    // Two phase approach: collect values first, then build params
+    let mut string_params: Vec<String> = Vec::new();
     let mut updates = Vec::new();
-    let mut params: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = Vec::new();
     let mut param_index = 1;
     
-    if let Some(name) = name {
+    if name.is_some() {
         updates.push(format!("name = ${}", param_index));
-        params.push(name);
+        string_params.push(name.unwrap().to_string());
         param_index += 1;
     }
-    if let Some(description) = description {
+    if description.is_some() {
         updates.push(format!("description = ${}", param_index));
-        params.push(description);
+        string_params.push(description.unwrap().to_string());
         param_index += 1;
     }
-    if let Some(ip_address) = ip_address {
+    if ip_address.is_some() {
         updates.push(format!("ip_address = ${}", param_index));
-        params.push(ip_address);
+        string_params.push(ip_address.unwrap().to_string());
         param_index += 1;
     }
-    if let Some(coa_enabled) = coa_enabled {
+    if coa_enabled.is_some() {
         updates.push(format!("coa_enabled = ${}", param_index));
-        params.push(&coa_enabled);
         param_index += 1;
     }
-    if let Some(coa_port) = coa_port {
+    if coa_port.is_some() {
         updates.push(format!("coa_port = ${}", param_index));
-        params.push(&coa_port);
         param_index += 1;
     }
-    if let Some(vendor_id) = vendor_id {
+    if vendor_id.is_some() {
         updates.push(format!("vendor_id = ${}", param_index));
-        params.push(&vendor_id);
         param_index += 1;
     }
-    if let Some(secret_id) = secret_id {
+    if secret_id.is_some() {
         updates.push(format!("secret_id = ${}", param_index));
-        params.push(&secret_id);
         param_index += 1;
     }
-    if let Some(timezone_id) = timezone_id {
+    if timezone_id.is_some() {
         updates.push(format!("timezone_id = ${}", param_index));
-        params.push(&timezone_id);
         param_index += 1;
     }
-    if let Some(is_active) = is_active {
+    if is_active.is_some() {
         updates.push(format!("is_active = ${}", param_index));
-        params.push(&is_active);
         param_index += 1;
     }
     
     updates.push(format!("updated_at = ${}", param_index));
-    params.push(&now);
     param_index += 1;
     
+    let mut params: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = Vec::new();
+    let mut string_idx = 0;
+    
+    if name.is_some() {
+        params.push(&string_params[string_idx]);
+        string_idx += 1;
+    }
+    if description.is_some() {
+        params.push(&string_params[string_idx]);
+        string_idx += 1;
+    }
+    if ip_address.is_some() {
+        params.push(&string_params[string_idx]);
+        // No need to increment - this is the last string parameter
+    }
+    if let Some(ref val) = coa_enabled {
+        params.push(val);
+    }
+    if let Some(ref val) = coa_port {
+        params.push(val);
+    }
+    if let Some(ref val) = vendor_id {
+        params.push(val);
+    }
+    if let Some(ref val) = secret_id {
+        params.push(val);
+    }
+    if let Some(ref val) = timezone_id {
+        params.push(val);
+    }
+    if let Some(ref val) = is_active {
+        params.push(val);
+    }
+    params.push(&now);
     params.push(&id);
     
     let query = format!(

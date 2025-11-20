@@ -25,6 +25,13 @@ use crate::models::*;
         crate::handlers::create_user,
         crate::handlers::update_user,
         crate::handlers::delete_user,
+        crate::handlers::list_user_groups,
+        crate::handlers::get_user_group,
+        crate::handlers::create_user_group,
+        crate::handlers::update_user_group,
+        crate::handlers::delete_user_group,
+        crate::handlers::update_user_identifier,
+        crate::handlers::list_user_identifier_types,
         crate::handlers::list_nas_groups,
         crate::handlers::get_nas_group,
         crate::handlers::create_nas_group,
@@ -47,6 +54,10 @@ use crate::models::*;
         UserUpdate,
         UserListResponse,
         UserGroup,
+        UserGroupCreate,
+        UserGroupUpdate,
+        UserIdentifierUpdate,
+        UserIdentifierType,
         NasGroup,
         NasGroupCreate,
         NasGroupUpdate,
@@ -62,30 +73,11 @@ use crate::models::*;
     tags(
         (name = "Health", description = "Health check endpoints"),
         (name = "Users", description = "User management endpoints"),
+        (name = "User Groups", description = "User group management endpoints"),
         (name = "NAS Groups", description = "NAS group management endpoints"),
         (name = "NAS", description = "NAS device management endpoints"),
         (name = "Vendors", description = "Vendor listing endpoints"),
         (name = "Secrets", description = "Secret listing endpoints")
-    ),
-    modifiers(&SecurityAddon)
+    )
 )]
 pub struct ApiDoc;
-
-struct SecurityAddon;
-
-impl utoipa::Modifier for SecurityAddon {
-    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
-        if let Some(components) = openapi.components.as_mut() {
-            components.add_security_scheme(
-                "Bearer",
-                utoipa::openapi::security::SecurityScheme::Http(
-                    utoipa::openapi::security::HttpBuilder::new()
-                        .scheme(utoipa::openapi::security::HttpAuthScheme::Bearer)
-                        .bearer_format("JWT")
-                        .description(Some("JWT token obtained from the API key management interface"))
-                        .build(),
-                ),
-            )
-        }
-    }
-}

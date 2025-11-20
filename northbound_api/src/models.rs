@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use chrono::{DateTime, Utc};
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct HealthResponse {
@@ -69,6 +68,29 @@ pub struct UserIdentifierCreate {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct UserIdentifierUpdate {
+    pub identifier_type_id: Option<u64>,
+    pub value: Option<String>,
+    pub plain_password: Option<String>,
+    pub is_enabled: Option<bool>,
+    pub comment: Option<String>,
+    pub auth_attribute_group_id: Option<u64>,
+    pub expiration_date: Option<String>,
+    pub reject_expired: Option<bool>,
+    pub expired_auth_attribute_group_id: Option<u64>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct UserIdentifierType {
+    pub id: u64,
+    pub name: String,
+    pub code: String,
+    pub description: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct UserUpdate {
     pub email: Option<String>,
     pub first_name: Option<String>,
@@ -96,6 +118,22 @@ pub struct UserGroup {
     pub allow_any_nas: bool,
     pub created_at: String,
     pub updated_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct UserGroupCreate {
+    pub name: String,
+    pub description: Option<String>,
+    pub parent_id: Option<u64>,
+    pub allow_any_nas: Option<bool>,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct UserGroupUpdate {
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub parent_id: Option<u64>,
+    pub allow_any_nas: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

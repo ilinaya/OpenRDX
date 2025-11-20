@@ -5,23 +5,13 @@
 
   .header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     margin-bottom: 32px;
     padding: 24px 32px;
     background: white;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-
-    h2 {
-      margin: 0;
-      font-size: 28px;
-      font-weight: 600;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
 
     .btn-primary {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);

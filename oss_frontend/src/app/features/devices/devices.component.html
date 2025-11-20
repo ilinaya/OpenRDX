@@ -1,24 +1,22 @@
 <div class="devices-container">
-  <div class="devices-header">
-    <h2>{{ 'devices.title' | translate }}</h2>
+  <div class="devices-sidebar">
+    <nav class="devices-nav">
+      <a routerLink="/devices/nas"
+         routerLinkActive="active"
+         [routerLinkActiveOptions]="{exact: true}">
+        <i class="fas fa-network-wired"></i>
+        {{ 'devices.nav.nasDevices' | translate }}
+      </a>
+      <a routerLink="/devices/groups"
+         routerLinkActive="active"
+         [routerLinkActiveOptions]="{exact: true}">
+        <i class="fas fa-layer-group"></i>
+        {{ 'devices.nav.nasGroups' | translate }}
+      </a>
+    </nav>
   </div>
 
   <div class="devices-content">
-    <div class="devices-nav">
-      <ul>
-        <li>
-          <a routerLink="/devices/nas"
-             routerLinkActive="active">{{ 'devices.nav.nasDevices' | translate }}</a>
-        </li>
-        <li>
-          <a routerLink="/devices/groups"
-             routerLinkActive="active">{{ 'devices.nav.nasGroups' | translate }}</a>
-        </li>
-      </ul>
-    </div>
-
-    <div class="devices-main">
-      <router-outlet></router-outlet>
-    </div>
+    <router-outlet></router-outlet>
   </div>
 </div>

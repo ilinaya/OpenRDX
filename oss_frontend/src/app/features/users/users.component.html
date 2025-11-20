@@ -1,24 +1,22 @@
 <div class="users-container">
-  <div class="users-header">
-    <h2>{{ 'users.title' | translate }}</h2>
+  <div class="users-sidebar">
+    <nav class="users-nav">
+      <a routerLink="/users/users"
+         routerLinkActive="active"
+         [routerLinkActiveOptions]="{exact: true}">
+        <i class="fas fa-user"></i>
+        {{ 'users.nav.users' | translate }}
+      </a>
+      <a routerLink="/users/groups"
+         routerLinkActive="active"
+         [routerLinkActiveOptions]="{exact: true}">
+        <i class="fas fa-users"></i>
+        {{ 'users.nav.userGroups' | translate }}
+      </a>
+    </nav>
   </div>
 
   <div class="users-content">
-    <div class="users-nav">
-      <ul>
-        <li>
-          <a routerLink="/users/users"
-             routerLinkActive="active">{{ 'users.nav.users' | translate }}</a>
-        </li>
-        <li>
-          <a routerLink="/users/groups"
-             routerLinkActive="active">{{ 'users.nav.userGroups' | translate }}</a>
-        </li>
-      </ul>
-    </div>
-
-    <div class="users-main">
-      <router-outlet></router-outlet>
-    </div>
+    <router-outlet></router-outlet>
   </div>
 </div>

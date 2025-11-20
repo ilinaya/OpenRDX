@@ -5,13 +5,19 @@
     <div class="header">
       <h1>OSS</h1>
       <div class="user-info">
+        <div class="language-switcher">
+          <select #langSelect
+                  (change)="switchLanguage(langSelect.value)"
+                  [value]="currentLang">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+          </select>
+        </div>
+
         <div class="user-menu"
              [class.active]="isUserMenuOpen">
           <div class="user-menu-trigger"
                (click)="toggleUserMenu()">
-            <div class="user-avatar">
-              <i class="fas fa-user"></i>
-            </div>
             <span class="user-name">{{ getUserDisplayName() }}</span>
             <i class="fas fa-chevron-down chevron-icon"></i>
           </div>
@@ -19,9 +25,6 @@
           @if (isUserMenuOpen) {
             <div class="dropdown-menu">
               <div class="dropdown-header">
-                <div class="dropdown-avatar">
-                  <i class="fas fa-user"></i>
-                </div>
                 <div class="dropdown-user-info">
                   <div class="dropdown-name">{{ getUserDisplayName() }}</div>
                   <div class="dropdown-email">{{ currentUser?.email }}</div>
@@ -41,15 +44,6 @@
               </a>
             </div>
           }
-        </div>
-
-        <div class="language-switcher">
-          <select #langSelect
-                  (change)="switchLanguage(langSelect.value)"
-                  [value]="currentLang">
-            <option value="en">English</option>
-            <option value="es">Español</option>
-          </select>
         </div>
       </div>
     </div>

@@ -166,23 +166,35 @@
 
             .btn-group {
               display: inline-flex;
-              gap: 8px;
+              gap: 6px;
+              flex-wrap: nowrap;
 
               .btn {
-                padding: 8px 16px;
+                padding: 6px 10px;
                 border: none;
                 border-radius: 6px;
-                font-size: 13px;
+                font-size: 12px;
                 font-weight: 600;
                 cursor: pointer;
                 display: inline-flex;
                 align-items: center;
-                gap: 6px;
+                gap: 4px;
                 transition: all 0.3s ease;
                 white-space: nowrap;
+                min-width: auto;
 
                 i {
-                  font-size: 14px;
+                  font-size: 13px;
+                }
+                
+                @media (max-width: 1200px) {
+                  span:not(:empty) {
+                    display: none;
+                  }
+                  
+                  padding: 6px 8px;
+                  min-width: 32px;
+                  justify-content: center;
                 }
 
                 &.btn-outline-primary {

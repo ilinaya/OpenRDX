@@ -141,6 +141,7 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        color: white;
       }
       
       .dropdown-email {
@@ -169,6 +170,7 @@
     transition: all 0.2s ease;
     font-size: 14px;
     font-weight: 500;
+    cursor: pointer;
     
     i {
       width: 20px;
@@ -179,11 +181,36 @@
     
     &:hover {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
+      color: white !important;
       transform: translateX(4px);
       
       i {
-        color: white;
+        color: white !important;
+      }
+      
+      span {
+        color: white !important;
+      }
+    }
+    
+    &.dropdown-item-logout {
+      color: #dc3545;
+      
+      i {
+        color: #dc3545;
+      }
+      
+      &:hover {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white !important;
+        
+        i {
+          color: white !important;
+        }
+        
+        span {
+          color: white !important;
+        }
       }
     }
   }
@@ -200,26 +227,6 @@
   }
 }
 
-.logout-btn {
-  padding: 10px 20px;
-  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.2);
-}
-
-.logout-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
-}
-
-.logout-btn:active {
-  transform: translateY(0);
-}
 
 .content {
   flex: 1;

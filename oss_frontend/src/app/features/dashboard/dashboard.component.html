@@ -34,6 +34,11 @@
                 <i class="fas fa-key"></i>
                 <span>Change Password</span>
               </a>
+              <a class="dropdown-item dropdown-item-logout"
+                 (click)="logout(); isUserMenuOpen = false">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+              </a>
             </div>
           }
         </div>
@@ -46,10 +51,6 @@
             <option value="es">Español</option>
           </select>
         </div>
-
-        <button class="logout-btn"
-                (click)="logout()">Logout
-        </button>
       </div>
     </div>
 

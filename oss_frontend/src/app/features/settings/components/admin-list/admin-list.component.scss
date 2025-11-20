@@ -173,25 +173,41 @@
 
     .actions {
       display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
+      gap: 6px;
+      flex-wrap: nowrap;
+      justify-content: flex-end;
 
       .btn {
-        padding: 8px 16px;
+        padding: 6px 10px;
         border: none;
         border-radius: 6px;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 600;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
-        gap: 6px;
+        gap: 4px;
         transition: all 0.3s ease;
         white-space: nowrap;
+        min-width: auto;
+
+        i {
+          font-size: 13px;
+        }
+        
+        @media (max-width: 1200px) {
+          span:not(:empty) {
+            display: none;
+          }
+          
+          padding: 6px 8px;
+          min-width: 32px;
+          justify-content: center;
+        }
 
         &.btn-sm {
-          padding: 6px 12px;
-          font-size: 12px;
+          padding: 5px 8px;
+          font-size: 11px;
         }
 
         &.btn-info {

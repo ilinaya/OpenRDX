@@ -839,13 +839,19 @@ impl RadiusAuthServer {
                 }
                 
                 // For MS-CHAPv2, the authenticator challenge should come from:
-                // 1. RADIUS authenticator from the Access-Request (most common for first request)
-                // 2. RADIUS authenticator from a previous Access-Challenge (for subsequent requests)
-                // Note: MS-CHAPv2-Challenge attribute in Access-Request is unusual and should be ignored
-                // The client should use the challenge from a previous Access-Challenge, or the RADIUS authenticator
-                // For the first Access-Request, we always use the RADIUS authenticator
-                let auth_challenge = {
-                    debug!("MS-CHAPv2: Using RADIUS authenticator as challenge: {:02x?}", packet.authenticator);
+                // 1. MS-CHAPv2-Challenge attribute (if present - client is using this challenge)
+                // 2. RADIUS authenticator from the Access-Request (fallback for first request)
+                // 3. RADIUS authenticator from a previous Access-Challenge (for subsequent requests)
+                // If the client sends MS-CHAPv2-Challenge, it means it computed NT-Response using that challenge
+                let auth_challenge = if let Some(challenge) = mschap_challenge {
+                    if challenge.len() != 16 {
+                        return self.create_access_reject(packet, secret, 
+                            &format!("MS-CHAPv2: Invalid challenge length: {} bytes (expected 16)", challenge.len()));
+                    }
+                    debug!("MS-CHAPv2: Using MS-CHAPv2-Challenge attribute as authenticator challenge: {:02x?}", challenge);
+                    challenge
+                } else {
+                    debug!("MS-CHAPv2: No MS-CHAPv2-Challenge attribute found, using RADIUS authenticator as challenge: {:02x?}", packet.authenticator);
                     packet.authenticator.to_vec()
                 };
 

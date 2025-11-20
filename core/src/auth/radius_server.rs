@@ -839,19 +839,13 @@ impl RadiusAuthServer {
                 }
                 
                 // For MS-CHAPv2, the authenticator challenge should come from:
-                // 1. MS-CHAPv2-Challenge attribute (if present in Access-Request, which is unusual)
-                // 2. RADIUS authenticator from the Access-Request (most common for first request)
-                // 3. RADIUS authenticator from a previous Access-Challenge (for subsequent requests)
-                // For the first Access-Request, we use the RADIUS authenticator
-                let auth_challenge = if let Some(challenge) = mschap_challenge {
-                    if challenge.len() != 16 {
-                        return self.create_access_reject(packet, secret, 
-                            &format!("MS-CHAPv2: Invalid challenge length: {} bytes (expected 16)", challenge.len()));
-                    }
-                    debug!("MS-CHAPv2: Using MS-CHAPv2-Challenge attribute as authenticator challenge: {:02x?}", challenge);
-                    challenge
-                } else {
-                    debug!("MS-CHAPv2: No MS-CHAPv2-Challenge attribute found, using RADIUS authenticator as challenge: {:02x?}", packet.authenticator);
+                // 1. RADIUS authenticator from the Access-Request (most common for first request)
+                // 2. RADIUS authenticator from a previous Access-Challenge (for subsequent requests)
+                // Note: MS-CHAPv2-Challenge attribute in Access-Request is unusual and should be ignored
+                // The client should use the challenge from a previous Access-Challenge, or the RADIUS authenticator
+                // For the first Access-Request, we always use the RADIUS authenticator
+                let auth_challenge = {
+                    debug!("MS-CHAPv2: Using RADIUS authenticator as challenge: {:02x?}", packet.authenticator);
                     packet.authenticator.to_vec()
                 };
 
@@ -1106,7 +1100,7 @@ impl RadiusAuthServer {
 
                     // Generate NT hash from the UTF-16LE password
                     let password_hash = nt_hash(&password_utf16);
-                    debug!("MS-CHAPv2: Generated password hash: {} bytes", password_hash.len());
+                    debug!("MS-CHAPv2: Generated password hash: {} bytes, value: {:02x?}", password_hash.len(), password_hash);
 
                     // Generate the challenge using SHA1(peer_challenge + authenticator + username)
                     debug!("MS-CHAPv2: Challenge inputs - peer_challenge: {:02x?}, authenticator: {:02x?}, username: {}", 
@@ -1257,13 +1251,12 @@ impl RadiusAuthServer {
         debug!("Creating Access-Accept for MS-CHAPv2");
         debug!("Secret: {}", secret);
 
-        // MS-CHAP2-Success (format: 1 byte identifier | ASCII("S=" + 40-char hex))
-        // Authenticator response is 20 bytes, which becomes 40 hex characters
+        // MS-CHAP2-Success format according to RFC 2759:
+        // Byte 0: Identifier (from MS-CHAPv2-Response)
+        // Bytes 1-20: Authenticator Response (20 bytes, NOT hex-encoded)
         assert_eq!(authenticator_response.len(), 20, "Authenticator response must be exactly 20 bytes");
-        let hex = authenticator_response.iter().map(|b| format!("{:02X}", b)).collect::<String>();
-        let success_str = format!("S={}", hex);
         let mut ms_chap_success = vec![ms_chap_v2_ident];
-        ms_chap_success.extend_from_slice(success_str.as_bytes());
+        ms_chap_success.extend_from_slice(&authenticator_response);
 
         response.attributes.push(RadiusAttribute {
             typ: ATTR_VENDOR_SPECIFIC,

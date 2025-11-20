@@ -11,9 +11,27 @@ COPY Cargo.toml ./
 COPY src ./src
 COPY config ./config
 
-# Generate Cargo.lock if it doesn't exist, then build
+# Generate Cargo.lock if it doesn't exist
 RUN cargo generate-lockfile || true
-RUN cargo build --release && strip target/release/northbound-api || true
+
+# Build the project (this will fail if build fails)
+RUN cargo build --release || (echo "Build failed! Showing errors:" && cargo build --release 2>&1 | head -50 && exit 1)
+
+# Cargo converts hyphens to underscores in binary names
+# So "northbound-api" becomes "northbound_api"
+RUN ls -la target/release/ && \
+    if [ -f target/release/northbound_api ]; then \
+        echo "Found binary: northbound_api (hyphen converted to underscore)"; \
+        strip target/release/northbound_api; \
+        cp target/release/northbound_api target/release/northbound-api; \
+    elif [ -f target/release/northbound-api ]; then \
+        echo "Found binary: northbound-api"; \
+        strip target/release/northbound-api; \
+    else \
+        echo "ERROR: Binary not found! Available files:"; \
+        ls -la target/release/; \
+        exit 1; \
+    fi
 
 ### Runtime stage (matches GLIBC from builder)
 FROM debian:trixie-slim

@@ -1298,17 +1298,28 @@ impl RadiusAuthServer {
         debug!("MS-CHAP2-Success: identifier={}, authenticator_response={:02x?}, total_length={}", 
                ms_chap_v2_ident, authenticator_response, ms_chap_success.len());
 
+        // VSA format: Vendor-ID (4 bytes) + Vendor-Type (1 byte) + Vendor-Length (1 byte) + Data (N bytes)
+        // Vendor-Length = 2 + N (includes Vendor-Type and Vendor-Length fields themselves)
+        // Total VSA value = 4 + 1 + 1 + N = 6 + N bytes
         let vendor_length = (ms_chap_success.len() + 2) as u8;
-        debug!("MS-CHAP2-Success VSA: vendor_length={}, data_length={}", vendor_length, ms_chap_success.len());
-        
         let vsa_value = [
             &VENDOR_MICROSOFT.to_be_bytes()[..],
             &[VENDOR_ATTR_MS_CHAP2_SUCCESS, vendor_length],
             &ms_chap_success[..]
         ].concat();
         
+        // Verify the VSA length calculation is correct
+        let expected_vsa_length = 4 + 1 + 1 + ms_chap_success.len(); // Vendor-ID + Vendor-Type + Vendor-Length + Data
+        assert_eq!(vsa_value.len(), expected_vsa_length,
+                   "MS-CHAP2-Success VSA length mismatch: expected {}, got {}",
+                   expected_vsa_length, vsa_value.len());
+        assert_eq!(vendor_length as usize, 2 + ms_chap_success.len(),
+                   "MS-CHAP2-Success vendor_length mismatch: expected {}, got {}",
+                   2 + ms_chap_success.len(), vendor_length);
+        
+        debug!("MS-CHAP2-Success VSA: vendor_length={}, data_length={}, total_vsa_length={}, expected_vsa_length={}", 
+               vendor_length, ms_chap_success.len(), vsa_value.len(), expected_vsa_length);
         debug!("MS-CHAP2-Success VSA value (hex): {:02x?}", vsa_value);
-        debug!("MS-CHAP2-Success VSA value length: {} bytes", vsa_value.len());
         
         response.attributes.push(RadiusAttribute {
             typ: ATTR_VENDOR_SPECIFIC,
@@ -1351,27 +1362,60 @@ impl RadiusAuthServer {
         let enc_send = Self::encrypt_mppe_key_with_offset(&send_key, secret, &request.authenticator, 0);
         let enc_recv = Self::encrypt_mppe_key_with_offset(&recv_key, secret, &request.authenticator, 1);
         debug!("MS-CHAPv2: Encrypted MPPE keys - send: {} bytes, recv: {} bytes", enc_send.len(), enc_recv.len());
+        debug!("MS-CHAPv2: Encrypted send key (hex): {:02x?}", &enc_send);
+        debug!("MS-CHAPv2: Encrypted recv key (hex): {:02x?}", &enc_recv);
 
         // Send Key
+        // VSA format: Vendor-ID (4 bytes) + Vendor-Type (1 byte) + Vendor-Length (1 byte) + Data (N bytes)
+        // Vendor-Length = 2 + N (includes Vendor-Type and Vendor-Length fields themselves)
+        // Total VSA value = 4 (Vendor-ID) + 1 (Vendor-Type) + 1 (Vendor-Length) + N (Data) = 6 + N bytes
+        let send_key_vendor_length = (enc_send.len() + 2) as u8;
+        let send_key_vsa = [
+            &VENDOR_MICROSOFT.to_be_bytes()[..],
+            &[VENDOR_ATTR_MS_MPPE_SEND_KEY, send_key_vendor_length],
+            &enc_send[..],
+        ].concat();
+        
+        // Verify the VSA length calculation is correct
+        let expected_vsa_length = 4 + 1 + 1 + enc_send.len(); // Vendor-ID + Vendor-Type + Vendor-Length + Data
+        assert_eq!(send_key_vsa.len(), expected_vsa_length, 
+                   "MS-MPPE-Send-Key VSA length mismatch: expected {}, got {}", 
+                   expected_vsa_length, send_key_vsa.len());
+        assert_eq!(send_key_vendor_length as usize, 2 + enc_send.len(),
+                   "MS-MPPE-Send-Key vendor_length mismatch: expected {}, got {}", 
+                   2 + enc_send.len(), send_key_vendor_length);
+        
+        debug!("MS-MPPE-Send-Key VSA: vendor_length={}, data_length={}, total_vsa_length={}, expected_vsa_length={}", 
+               send_key_vendor_length, enc_send.len(), send_key_vsa.len(), expected_vsa_length);
+        debug!("MS-MPPE-Send-Key VSA (hex): {:02x?}", &send_key_vsa);
         response.attributes.push(RadiusAttribute {
             typ: ATTR_VENDOR_SPECIFIC,
-            value: [
-                &VENDOR_MICROSOFT.to_be_bytes()[..],
-                &[VENDOR_ATTR_MS_MPPE_SEND_KEY, (enc_send.len() + 2) as u8],
-                &enc_send[..],
-            ]
-                .concat(),
+            value: send_key_vsa,
         });
 
         // Recv Key
+        let recv_key_vendor_length = (enc_recv.len() + 2) as u8;
+        let recv_key_vsa = [
+            &VENDOR_MICROSOFT.to_be_bytes()[..],
+            &[VENDOR_ATTR_MS_MPPE_RECV_KEY, recv_key_vendor_length],
+            &enc_recv[..],
+        ].concat();
+        
+        // Verify the VSA length calculation is correct
+        let expected_recv_vsa_length = 4 + 1 + 1 + enc_recv.len();
+        assert_eq!(recv_key_vsa.len(), expected_recv_vsa_length,
+                   "MS-MPPE-Recv-Key VSA length mismatch: expected {}, got {}",
+                   expected_recv_vsa_length, recv_key_vsa.len());
+        assert_eq!(recv_key_vendor_length as usize, 2 + enc_recv.len(),
+                   "MS-MPPE-Recv-Key vendor_length mismatch: expected {}, got {}",
+                   2 + enc_recv.len(), recv_key_vendor_length);
+        
+        debug!("MS-MPPE-Recv-Key VSA: vendor_length={}, data_length={}, total_vsa_length={}, expected_vsa_length={}", 
+               recv_key_vendor_length, enc_recv.len(), recv_key_vsa.len(), expected_recv_vsa_length);
+        debug!("MS-MPPE-Recv-Key VSA (hex): {:02x?}", &recv_key_vsa);
         response.attributes.push(RadiusAttribute {
             typ: ATTR_VENDOR_SPECIFIC,
-            value: [
-                &VENDOR_MICROSOFT.to_be_bytes()[..],
-                &[VENDOR_ATTR_MS_MPPE_RECV_KEY, (enc_recv.len() + 2) as u8],
-                &enc_recv[..],
-            ]
-                .concat(),
+            value: recv_key_vsa,
         });
 
         // Message-Authenticator placeholder

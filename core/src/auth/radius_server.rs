@@ -2145,15 +2145,14 @@ impl RadiusAuthServer {
 
     fn encrypt_mppe_key_with_offset(key: &[u8], secret: &str, authenticator: &[u8], offset: u8) -> Vec<u8> {
         use md5::Md5;
-        use rand::Rng;
+        use rand::random;
 
         // Maximum size for the encrypted key (253 bytes for VSA value - 6 bytes for VSA header)
         const MAX_ENCRYPTED_KEY_SIZE: usize = 247;
 
         // Generate salt - matching JavaScript implementation
         // salt = [0x80 | ((offset & 0x0f) << 3) | (salt_value & 0x07), salt_value & 0xff]
-        let mut rng = rand::thread_rng();
-        let salt_value: u32 = rng.gen();
+        let salt_value: u32 = random();
         let salt = [
             0x80 | ((offset & 0x0f) << 3) | ((salt_value & 0x07) as u8),
             (salt_value & 0xff) as u8

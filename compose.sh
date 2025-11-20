@@ -1,4 +1,7 @@
 #!/bin/bash
+
+git pull
+
 set -e
 
 echo "🚀 Starting Docker Compose services..."

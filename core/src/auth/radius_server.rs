@@ -39,6 +39,20 @@ const ATTR_USER_NAME: u8 = 1;
 const ATTR_NAS_IDENTIFIER: u8 = 32;  // NAS-Identifier attribute type
 
 const ATTR_REPLY_MESSAGE: u8 = 18;  // Reply-Message attribute type
+const ATTR_SERVICE_TYPE: u8 = 6;    // Service-Type attribute type
+
+// Service-Type values
+const SERVICE_TYPE_LOGIN_USER: u32 = 1;          // Login-User
+const SERVICE_TYPE_FRAMED_USER: u32 = 2;          // Framed-User
+const SERVICE_TYPE_CALLBACK_LOGIN_USER: u32 = 3;  // Callback-Login-User
+const SERVICE_TYPE_CALLBACK_FRAMED_USER: u32 = 4; // Callback-Framed-User
+const SERVICE_TYPE_OUTBOUND_USER: u32 = 5;         // Outbound-User
+const SERVICE_TYPE_ADMINISTRATIVE_USER: u32 = 6; // Administrative-User
+const SERVICE_TYPE_NAS_PROMPT_USER: u32 = 7;      // NAS-Prompt-User
+const SERVICE_TYPE_AUTHENTICATE_ONLY: u32 = 8;   // Authenticate-Only
+const SERVICE_TYPE_CALLBACK_NAS_PROMPT: u32 = 9;  // Callback-NAS-Prompt
+const SERVICE_TYPE_CALL_CHECK: u32 = 10;         // Call-Check
+const SERVICE_TYPE_CALLBACK_ADMINISTRATIVE: u32 = 11; // Callback-Administrative
 
 // EAP-related constants
 const ATTR_EAP_MESSAGE: u8 = 79;      // EAP-Message attribute
@@ -1268,6 +1282,12 @@ impl RadiusAuthServer {
         debug!("Creating Access-Accept for MS-CHAPv2");
         debug!("Secret: {}", secret);
 
+        // Service-Type: Login-User (required for Winbox authentication)
+        response.attributes.push(RadiusAttribute {
+            typ: ATTR_SERVICE_TYPE,
+            value: SERVICE_TYPE_LOGIN_USER.to_be_bytes().to_vec(),
+        });
+
         // MS-CHAP2-Success format according to RFC 2759:
         // Byte 0: Identifier (from MS-CHAPv2-Response)
         // Bytes 1-20: Authenticator Response (20 bytes, NOT hex-encoded)
@@ -1296,26 +1316,32 @@ impl RadiusAuthServer {
         });
 
         // MS-MPPE-Encryption-Policy
+        // Value 1 = Encryption-Required (may not be needed for Winbox, but included for compatibility)
+        let mppe_policy = [0, 0, 0, 1];
         response.attributes.push(RadiusAttribute {
             typ: ATTR_VENDOR_SPECIFIC,
             value: [
                 &VENDOR_MICROSOFT.to_be_bytes()[..],
                 &[VENDOR_ATTR_MS_MPPE_ENCRYPTION_POLICY, 6],
-                &[0, 0, 0, 1],
+                &mppe_policy[..],
             ]
                 .concat(),
         });
+        debug!("MS-MPPE-Encryption-Policy: {:02x?}", mppe_policy);
 
         // MS-MPPE-Encryption-Types
+        // Value 6 = RC4-40 (0x00000006) - may not be needed for Winbox, but included for compatibility
+        let mppe_types = [0, 0, 0, 6];
         response.attributes.push(RadiusAttribute {
             typ: ATTR_VENDOR_SPECIFIC,
             value: [
                 &VENDOR_MICROSOFT.to_be_bytes()[..],
                 &[VENDOR_ATTR_MS_MPPE_ENCRYPTION_TYPES, 6],
-                &[0, 0, 0, 6],
+                &mppe_types[..],
             ]
                 .concat(),
         });
+        debug!("MS-MPPE-Encryption-Types: {:02x?}", mppe_types);
 
         // Session keys
         let (send_key, recv_key) = Self::get_mschapv2_session_keys(password_hash, nt_response);

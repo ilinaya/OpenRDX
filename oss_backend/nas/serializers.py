@@ -69,7 +69,7 @@ class NasSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Nas
-        fields = ['id', 'name', 'description', 'ip_address', 'coa_enabled', 'coa_port', 
+        fields = ['id', 'name', 'description', 'ip_address', 'nas_identifier', 'coa_enabled', 'coa_port', 
                  'groups', 'group_ids', 'created_at', 'updated_at', 'is_active',
                   'vendor', 'vendor_id', 'timezone_id', 'timezone', 'secret', 'secret_id']
 
@@ -148,9 +148,15 @@ class NasCreateSerializer(serializers.ModelSerializer):
             instance.save()
         return instance
 
+    nas_identifier = serializers.CharField(
+        required=True,
+        max_length=255,
+        help_text="NAS Identifier (RADIUS attribute 32) - required for NAS matching"
+    )
+
     class Meta:
         model = Nas
-        fields = ['name', 'description', 'ip_address', 'coa_enabled', 'coa_port', 
+        fields = ['name', 'description', 'ip_address', 'nas_identifier', 'coa_enabled', 'coa_port', 
                  'group_ids', 'is_active', 'timezone_id', 'vendor_id', 'secret_id']
 
 
@@ -230,7 +236,13 @@ class NasUpdateSerializer(serializers.ModelSerializer):
             instance.save()
         return instance
 
+    nas_identifier = serializers.CharField(
+        required=True,
+        max_length=255,
+        help_text="NAS Identifier (RADIUS attribute 32) - required for NAS matching"
+    )
+
     class Meta:
         model = Nas
-        fields = ['name', 'description', 'ip_address', 'coa_enabled', 'coa_port', 
+        fields = ['name', 'description', 'ip_address', 'nas_identifier', 'coa_enabled', 'coa_port', 
                  'group_ids', 'is_active', 'vendor_id', 'timezone_id', 'secret_id']

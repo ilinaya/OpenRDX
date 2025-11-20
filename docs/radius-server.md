@@ -8,7 +8,7 @@ The OpenRDX RADIUS server is implemented in Rust and provides high-performance a
   - PAP (Password Authentication Protocol)
   - CHAP (Challenge Handshake Authentication Protocol)
   - MS-CHAP (Microsoft Challenge Handshake Authentication Protocol)
-  - MS-CHAPv2 (Microsoft Challenge Handshake Authentication Protocol v2)
+  - MS-CHAPv2 (Microsoft Challenge Handshake Authentication Protocol v2) with improved error messages
   - EAP (Extensible Authentication Protocol)
     - EAP-TLS
     - EAP-TTLS
@@ -16,6 +16,12 @@ The OpenRDX RADIUS server is implemented in Rust and provides high-performance a
     - EAP-SIM
     - EAP-AKA
     - EAP-AKA'
+
+- NAS Device Matching:
+  - Primary matching by NAS-Identifier (RADIUS attribute 32)
+  - Fallback to IP-based secret lookup
+  - Automatic NAS device identification from RADIUS packets
+  - Support for multiple NAS devices with unique identifiers
 
 - Accounting support
   - Start/Stop records
@@ -112,6 +118,27 @@ The RADIUS server provides detailed logging for:
 
 Logs are stored in MongoDB for analysis and auditing.
 
+## NAS Device Configuration
+
+### NAS-Identifier Matching
+
+The RADIUS server matches NAS devices primarily by **NAS-Identifier** (RADIUS attribute 32) extracted from authentication requests. This provides more reliable identification than IP-based matching alone.
+
+**Configuration:**
+1. Each NAS device must have a unique `nas_identifier` configured in the database
+2. The NAS device sends its identifier in the NAS-Identifier attribute (32) in RADIUS requests
+3. The server matches the identifier to find the corresponding NAS device and secret
+
+**Benefits:**
+- More reliable than IP-based matching (works with NAT, load balancers)
+- Supports multiple NAS devices behind the same IP
+- Better for dynamic IP environments
+- Clearer identification in logs and accounting records
+
+**Fallback:**
+- If NAS-Identifier is not present in the request, the server falls back to IP-based secret lookup
+- IP-based matching uses subnet-based secret configuration
+
 ## Troubleshooting
 
 Common issues and solutions:
@@ -120,13 +147,29 @@ Common issues and solutions:
    - Check shared secrets
    - Verify user credentials
    - Check certificate validity for EAP methods
+   - For MS-CHAPv2: Check error messages for specific failure reasons
+     - "Password incorrect or NT-Response validation failed" - Password mismatch
+     - "Invalid NT-Response length" - Protocol error
+     - "Missing peer-challenge" - Missing required MS-CHAPv2 attributes
 
-2. RadSec connection issues:
+2. NAS matching issues:
+   - Verify NAS-Identifier is configured in NAS device settings
+   - Check that NAS device sends NAS-Identifier attribute (32) in requests
+   - Verify NAS device is active in the database
+   - Check logs for NAS matching details
+
+3. RadSec connection issues:
    - Verify TLS certificates
    - Check firewall rules
    - Ensure proper TLS version support
 
-3. Accounting problems:
+4. Accounting problems:
    - Check MongoDB connection
    - Verify accounting port access
-   - Check for duplicate session IDs 
+   - Check for duplicate session IDs
+
+5. MS-CHAPv2 specific issues:
+   - Check that password is stored correctly (plain text for MS-CHAPv2)
+   - Verify challenge/response lengths match expected values
+   - Review debug logs for detailed authentication flow
+   - Ensure MikroTik or other NAS device is configured to send MS-CHAPv2-Response correctly 

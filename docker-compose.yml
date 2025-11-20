@@ -20,13 +20,14 @@ services:
   core-radsec-proxy:
     container_name: 'openrdx-radsec-proxy'
     build:
-      context: ./core
+      context: ./radsec_proxy
       dockerfile: Dockerfile
     ports:
       - "2083:2083/tcp"
     environment:
       - RADSEC_BIND_ADDR=0.0.0.0:2083
       - LOG_LEVEL=debug
+      - RUST_LOG=debug
     depends_on:
       - core-auth
       - core-acct
@@ -47,6 +48,7 @@ services:
       - RADIUS_BIND_ADDR=0.0.0.0:1812
       - SUBSCRIBER_CACHE_TTL=3600
       - LOG_LEVEL=debug
+      - RUST_LOG=debug
       - SERVICE_TYPE=auth
     depends_on:
       - postgres
@@ -68,6 +70,7 @@ services:
       - RADIUS_BIND_ADDR=0.0.0.0:1813
       - QUOTA_CHECK_INTERVAL=60
       - LOG_LEVEL=debug
+      - RUST_LOG=debug
       - SERVICE_TYPE=acct
     depends_on:
       - mongodb
@@ -154,7 +157,7 @@ services:
     environment:
       - API_KEY_JWT_SECRET=${API_KEY_JWT_SECRET}
       - NORTHBOUND_BIND_ADDRESS=0.0.0.0:8080
-      - RUST_LOG=info
+      - RUST_LOG=debug
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/postgres
     expose:
       - "8080"

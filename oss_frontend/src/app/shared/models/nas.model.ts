@@ -49,6 +49,7 @@ export interface Nas {
   name: string;
   description: string;
   ip_address: string;
+  nas_identifier: string;
   coa_enabled: boolean;
   coa_port: number;
   groups: NasGroup[];
@@ -66,6 +67,7 @@ export interface NasCreate {
   name: string;
   description: string;
   ip_address: string;
+  nas_identifier: string;
   coa_enabled: boolean;
   coa_port: number;
   group_ids: number[];
@@ -77,6 +79,7 @@ export interface NasUpdate {
   name: string;
   description?: string;
   ip_address: string;
+  nas_identifier: string;
   coa_enabled: boolean;
   coa_port?: number;
   group_ids?: number[];

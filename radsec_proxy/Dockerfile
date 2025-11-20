@@ -38,9 +38,6 @@ RUN useradd -m -u 1000 radius
 # Switch to non-root user
 USER radius
 
-# Set environment variables
-ENV RUST_LOG=info
-
 EXPOSE 2083
 
 ENTRYPOINT ["docker-entrypoint.sh"]

@@ -39,6 +39,7 @@ fn row_to_nas(row: &Row) -> Result<Nas, Box<dyn std::error::Error>> {
         name: row.get("name"),
         description: row.try_get("description").ok(),
         ip_address: row.get("ip_address"),
+        nas_identifier: row.get("nas_identifier"),
         coa_enabled: row.get("coa_enabled"),
         coa_port: row.get::<_, i32>("coa_port") as u16,
         vendor_id: row.try_get::<_, Option<i64>>("vendor_id").ok().flatten().map(|v| v as u64),
@@ -1189,6 +1190,9 @@ pub async fn create_nas(
     if nas_data.ip_address.is_empty() {
         return Err(ApiError::BadRequest("IP address is required".to_string()));
     }
+    if nas_data.nas_identifier.is_empty() {
+        return Err(ApiError::BadRequest("NAS identifier is required".to_string()));
+    }
     if nas_data.vendor_id == 0 {
         return Err(ApiError::BadRequest("Vendor ID is required".to_string()));
     }
@@ -1201,6 +1205,7 @@ pub async fn create_nas(
         &nas_data.name,
         nas_data.description.as_deref(),
         &nas_data.ip_address,
+        &nas_data.nas_identifier,
         nas_data.coa_enabled.unwrap_or(false),
         nas_data.coa_port.unwrap_or(3799) as i32,
         nas_data.vendor_id as i64,
@@ -1271,6 +1276,7 @@ pub async fn update_nas(
         nas_data.name.as_deref(),
         nas_data.description.as_deref(),
         nas_data.ip_address.as_deref(),
+        nas_data.nas_identifier.as_deref(),
         nas_data.coa_enabled,
         nas_data.coa_port.map(|p| p as i32),
         nas_data.vendor_id.map(|v| v as i64),

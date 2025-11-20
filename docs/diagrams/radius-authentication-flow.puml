@@ -13,8 +13,14 @@ participant "MongoDB" as mongo
 
 == Authentication Request ==
 
-nas -> auth: Access-Request\n(User, Password, NAS-IP)
+nas -> auth: Access-Request\n(User, Password, NAS-IP, NAS-Identifier)
 activate auth
+
+auth -> auth: Match NAS Device\n(by NAS-Identifier or IP)
+auth -> db: Query NAS Device & Secret
+activate db
+db --> auth: NAS Device & Secret
+deactivate db
 
 auth -> db: Query User Credentials
 activate db

@@ -186,7 +186,7 @@ The system provides Excel template download and upload functionality for bulk op
   - **Identifiers Sheet**: User Email/External ID, Identifier Type Code, Value, Password, Is Enabled, Comment, Auth Attribute Group Name, Expiration Date, Reject Expired, Expired Auth Attribute Group Name
   - **NAS Authorizations Sheet**: User Email/External ID, Identifier Value, NAS Name, Auth Attribute Group Name
 - **NAS Groups Template**: Download template with columns (Name, Description, Parent Group Name) and upload to bulk import NAS groups
-- **NAS Devices Template**: Download template with columns (Name, IP Address, Description, Vendor ID, Secret ID, Timezone ID, CoA Enabled, CoA Port, Group Names (comma-separated), Is Active) and upload to bulk import NAS devices
+- **NAS Devices Template**: Download template with columns (Name, IP Address, NAS Identifier, Description, Vendor ID, Secret ID, Timezone ID, CoA Enabled, CoA Port, Group Names (comma-separated), Is Active) and upload to bulk import NAS devices
 
 **How to Use:**
 1. Navigate to the relevant list page (Users, User Groups, NAS Groups, or NAS Devices)
@@ -335,7 +335,7 @@ See `northbound_api/README.md` for detailed API documentation.
     - User Identifiers (update)
     - User Identifier Types (list)
     - NAS Groups (full CRUD)
-    - NAS Devices (with secrets, vendors, groups, timezones)
+    - NAS Devices (with secrets, vendors, groups, timezones, nas_identifier)
     - Vendors (list)
     - Secrets (list)
   - Environment variables:

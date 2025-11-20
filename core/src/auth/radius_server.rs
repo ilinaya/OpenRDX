@@ -35,6 +35,7 @@ const VENDOR_ATTR_MS_MPPE_SEND_KEY: u8 = 16;          // Microsoft's MS-MPPE-Sen
 const VENDOR_ATTR_MS_MPPE_RECV_KEY: u8 = 17;          // Microsoft's MS-MPPE-Recv-Key
 
 const ATTR_USER_NAME: u8 = 1;
+const ATTR_NAS_IDENTIFIER: u8 = 32;  // NAS-Identifier attribute type
 
 const ATTR_REPLY_MESSAGE: u8 = 18;  // Reply-Message attribute type
 
@@ -453,6 +454,24 @@ impl RadiusAuthServer {
             None => return Err("Invalid packet format".into()),
         };
 
+        // Extract NAS-Identifier from packet
+        let nas_identifier = packet.attributes.iter()
+            .find(|attr| attr.typ == ATTR_NAS_IDENTIFIER)
+            .and_then(|attr| String::from_utf8(attr.value.clone()).ok());
+
+        if let Some(ref nas_id) = nas_identifier {
+            debug!("Found NAS-Identifier in packet: {}", nas_id);
+            
+            // Try to find NAS device by identifier
+            if let Some(nas_device) = self.auth_server.find_nas_device_by_identifier(nas_id) {
+                debug!("Matched NAS device: {} (ID: {})", nas_device.name, nas_device.id);
+            } else {
+                warn!("No NAS device found for identifier: {}", nas_id);
+            }
+        } else {
+            debug!("No NAS-Identifier found in packet, falling back to IP-based matching");
+        }
+
         // Check for Message-Authenticator
         let mut has_msg_auth = false;
         let mut msg_auth_value = None;
@@ -564,7 +583,27 @@ impl RadiusAuthServer {
                     let ip = src.ip();
                     debug!("Source IP: {}", ip);
 
-                    if let Some(secret) = self.auth_server.find_secret_for_ip(ip) {
+                    // Parse packet to extract NAS-Identifier
+                    let nas_identifier = if let Some(packet) = RadiusPacket::parse(&buf[..size]) {
+                        packet.attributes.iter()
+                            .find(|attr| attr.typ == ATTR_NAS_IDENTIFIER)
+                            .and_then(|attr| String::from_utf8(attr.value.clone()).ok())
+                    } else {
+                        None
+                    };
+
+                    // Try to find secret by NAS-Identifier first, then fall back to IP
+                    let secret = if let Some(ref nas_id) = nas_identifier {
+                        debug!("Looking up secret by NAS-Identifier: {}", nas_id);
+                        // For now, still use IP-based secret lookup, but we could extend this
+                        // to store secrets per NAS device in the future
+                        self.auth_server.find_secret_for_ip(ip)
+                    } else {
+                        debug!("No NAS-Identifier found, using IP-based lookup");
+                        self.auth_server.find_secret_for_ip(ip)
+                    };
+
+                    if let Some(secret) = secret {
                         debug!("Found secret for IP {}: {}", ip, secret);
 
                         // Create a copy of the received data to ensure it's not modified by subsequent requests
@@ -684,10 +723,30 @@ impl RadiusAuthServer {
                                 }
                             }
                             VENDOR_ATTR_MS_CHAP2_RESPONSE => {
-                                debug!("Found MS-CHAPv2-Response in VSA");
+                                debug!("Found MS-CHAPv2-Response in VSA, vendor_data length: {}", vendor_data.len());
                                 if vendor_data.len() >= 50 {
+                                    // MS-CHAPv2-Response format:
+                                    // Byte 0: Identifier
+                                    // Byte 1: Flags
+                                    // Bytes 2-17: Peer-Challenge (16 bytes)
+                                    // Bytes 18-25: Reserved (8 bytes)
+                                    // Bytes 26-49: NT-Response (24 bytes)
                                     mschap2_peer_challenge = Some(vendor_data[2..18].to_vec());
                                     mschap2_nt_response = Some(vendor_data[26..50].to_vec());
+                                    debug!("Extracted peer_challenge: {} bytes, nt_response: {} bytes", 
+                                           vendor_data[2..18].len(), vendor_data[26..50].len());
+                                } else {
+                                    warn!("MS-CHAPv2-Response VSA too short: {} bytes (expected at least 50)", vendor_data.len());
+                                }
+                            }
+                            VENDOR_ATTR_MS_CHAP2_CHALLENGE => {
+                                debug!("Found MS-CHAPv2-Challenge in VSA");
+                                // MS-CHAPv2-Challenge is 16 bytes
+                                if vendor_data.len() >= 16 {
+                                    mschap_challenge = Some(vendor_data[0..16].to_vec());
+                                    debug!("Extracted MS-CHAPv2-Challenge: {} bytes", vendor_data[0..16].len());
+                                } else {
+                                    warn!("MS-CHAPv2-Challenge VSA too short: {} bytes (expected at least 16)", vendor_data.len());
                                 }
                             }
 
@@ -756,17 +815,58 @@ impl RadiusAuthServer {
                 }
             }
             "MS-CHAPv2" => {
+                debug!("Processing MS-CHAPv2 authentication");
+                debug!("Username: {:?}, Peer-Challenge: {:?}, NT-Response: {:?}, Auth-Challenge: {:?}",
+                       username.as_ref(), 
+                       mschap2_peer_challenge.as_ref().map(|c| format!("{} bytes", c.len())),
+                       mschap2_nt_response.as_ref().map(|r| format!("{} bytes", r.len())),
+                       mschap_challenge.as_ref().map(|c| format!("{} bytes", c.len())));
 
-                if let (Some(username), Some(peer_challenge), Some(nt_response), Some(auth_challenge)) =
-                    (username, mschap2_peer_challenge, mschap2_nt_response, mschap_challenge)
-                {
-                    // Extract MS-CHAPv2 identifier from the VSA
-                    let ms_chap_v2_ident = packet.attributes.iter()
-                        .find_map(|attr| {
-                            if attr.typ == ATTR_VENDOR_SPECIFIC && attr.value.len() >= 6 {
-                                let vendor_id = u32::from_be_bytes([attr.value[0], attr.value[1], attr.value[2], attr.value[3]]);
-                                let vendor_type = attr.value[4];
-                                if vendor_id == VENDOR_MICROSOFT && vendor_type == VENDOR_ATTR_MS_CHAP2_RESPONSE {
+                // Validate required fields
+                if username.is_none() {
+                    return self.create_access_reject(packet, secret, "MS-CHAPv2: Missing username");
+                }
+                if mschap2_peer_challenge.is_none() {
+                    return self.create_access_reject(packet, secret, "MS-CHAPv2: Missing peer-challenge in MS-CHAPv2-Response");
+                }
+                if mschap2_nt_response.is_none() {
+                    return self.create_access_reject(packet, secret, "MS-CHAPv2: Missing NT-Response in MS-CHAPv2-Response");
+                }
+                
+                // For MS-CHAPv2, if no explicit challenge is provided, use the RADIUS authenticator
+                let auth_challenge = if let Some(challenge) = mschap_challenge {
+                    if challenge.len() != 16 {
+                        return self.create_access_reject(packet, secret, 
+                            &format!("MS-CHAPv2: Invalid challenge length: {} bytes (expected 16)", challenge.len()));
+                    }
+                    challenge
+                } else {
+                    debug!("No MS-CHAPv2-Challenge found, using RADIUS authenticator as challenge");
+                    packet.authenticator.to_vec()
+                };
+
+                // Validate peer challenge length
+                let peer_challenge = mschap2_peer_challenge.unwrap();
+                if peer_challenge.len() != 16 {
+                    return self.create_access_reject(packet, secret, 
+                        &format!("MS-CHAPv2: Invalid peer-challenge length: {} bytes (expected 16)", peer_challenge.len()));
+                }
+
+                // Validate NT-Response length
+                let nt_response = mschap2_nt_response.unwrap();
+                if nt_response.len() < 24 {
+                    return self.create_access_reject(packet, secret, 
+                        &format!("MS-CHAPv2: Invalid NT-Response length: {} bytes (expected at least 24)", nt_response.len()));
+                }
+
+                // Extract MS-CHAPv2 identifier from the VSA
+                let ms_chap_v2_ident = packet.attributes.iter()
+                    .find_map(|attr| {
+                        if attr.typ == ATTR_VENDOR_SPECIFIC && attr.value.len() >= 6 {
+                            let vendor_id = u32::from_be_bytes([attr.value[0], attr.value[1], attr.value[2], attr.value[3]]);
+                            let vendor_type = attr.value[4];
+                            if vendor_id == VENDOR_MICROSOFT && vendor_type == VENDOR_ATTR_MS_CHAP2_RESPONSE {
+                                if attr.value.len() >= 7 {
                                     Some(attr.value[6]) // <-- This is the identifier
                                 } else {
                                     None
@@ -774,36 +874,50 @@ impl RadiusAuthServer {
                             } else {
                                 None
                             }
-                        })
-                        .unwrap_or(0); // fallback
+                        } else {
+                            None
+                        }
+                    })
+                    .unwrap_or(0); // fallback
 
-                    match self.authenticate_mschap2(&username, &peer_challenge, &nt_response, &auth_challenge, secret).await {
-                        Ok(mschapv2_result) => match mschapv2_result.result {
-                            AuthResult::Success => {
-
-                                if let Some(auth_resp) = mschapv2_result.authenticator_response {
-
-
-                                    self.create_access_accept_mschapv2(
-                                        packet,
-                                        secret,
-                                        ms_chap_v2_ident,
-                                        &auth_resp,
-                                        mschapv2_result.password_hash.as_deref().unwrap_or(&[]),
-                                        &nt_response)
-                                } else {
-                                    self.create_access_reject(packet, secret, "Missing authenticator response")
-                                }
+                match self.authenticate_mschap2(&username.unwrap(), &peer_challenge, &nt_response, &auth_challenge, secret).await {
+                    Ok(mschapv2_result) => match mschapv2_result.result {
+                        AuthResult::Success => {
+                            if let Some(auth_resp) = mschapv2_result.authenticator_response {
+                                debug!("MS-CHAPv2 authentication successful for user: {}", username.unwrap());
+                                self.create_access_accept_mschapv2(
+                                    packet,
+                                    secret,
+                                    ms_chap_v2_ident,
+                                    &auth_resp,
+                                    mschapv2_result.password_hash.as_deref().unwrap_or(&[]),
+                                    &nt_response)
+                            } else {
+                                error!("MS-CHAPv2: Authentication succeeded but authenticator response is missing");
+                                self.create_access_reject(packet, secret, "MS-CHAPv2: Internal error - authenticator response generation failed")
                             }
-                            AuthResult::UserNotFound => self.create_access_reject(packet, secret, "User not found"),
-                            AuthResult::InvalidPassword => self.create_access_reject(packet, secret, "Invalid MS-CHAPv2 response"),
-                            AuthResult::AccountDisabled => self.create_access_reject(packet, secret, "Account is disabled"),
-                            AuthResult::DatabaseError(_) => self.create_access_reject(packet, secret, "Internal server error"),
-                        },
-                        Err(_) => self.create_access_reject(packet, secret, "Internal server error"),
+                        }
+                        AuthResult::UserNotFound => {
+                            debug!("MS-CHAPv2: User not found: {}", username.unwrap());
+                            self.create_access_reject(packet, secret, &format!("MS-CHAPv2: User '{}' not found", username.unwrap()))
+                        }
+                        AuthResult::InvalidPassword => {
+                            debug!("MS-CHAPv2: Password validation failed for user: {}", username.unwrap());
+                            self.create_access_reject(packet, secret, "MS-CHAPv2: Password incorrect or NT-Response validation failed")
+                        }
+                        AuthResult::AccountDisabled => {
+                            debug!("MS-CHAPv2: Account disabled for user: {}", username.unwrap());
+                            self.create_access_reject(packet, secret, &format!("MS-CHAPv2: Account for user '{}' is disabled", username.unwrap()))
+                        }
+                        AuthResult::DatabaseError(e) => {
+                            error!("MS-CHAPv2: Database error: {:?}", e);
+                            self.create_access_reject(packet, secret, "MS-CHAPv2: Database error during authentication")
+                        }
+                    },
+                    Err(e) => {
+                        error!("MS-CHAPv2: Authentication error: {:?}", e);
+                        self.create_access_reject(packet, secret, &format!("MS-CHAPv2: Authentication error: {}", e))
                     }
-                } else {
-                    self.create_access_reject(packet, secret, "Invalid MS-CHAPv2 request")
                 }
             }
             _ => self.create_access_reject(packet, secret, "Unsupported authentication method"),
@@ -926,7 +1040,23 @@ impl RadiusAuthServer {
 
     async fn authenticate_mschap2(&self, username: &str, peer_challenge: &[u8], nt_response: &[u8], authenticator: &[u8], secret: &str) -> Result<Mschapv2Result, sqlx::Error> {
         let pool = self.auth_server.get_pool();
-        debug!("Query Username: {}", username);
+        debug!("MS-CHAPv2: Starting authentication for user: {}", username);
+        debug!("MS-CHAPv2: Input lengths - peer_challenge: {} bytes, nt_response: {} bytes, authenticator: {} bytes",
+               peer_challenge.len(), nt_response.len(), authenticator.len());
+
+        // Validate input lengths
+        if peer_challenge.len() != 16 {
+            error!("MS-CHAPv2: Invalid peer_challenge length: {} (expected 16)", peer_challenge.len());
+            return Err(sqlx::Error::Protocol(format!("Invalid peer_challenge length: {} (expected 16)", peer_challenge.len()).into()));
+        }
+        if nt_response.len() < 24 {
+            error!("MS-CHAPv2: Invalid nt_response length: {} (expected at least 24)", nt_response.len());
+            return Err(sqlx::Error::Protocol(format!("Invalid nt_response length: {} (expected at least 24)", nt_response.len()).into()));
+        }
+        if authenticator.len() != 16 {
+            error!("MS-CHAPv2: Invalid authenticator length: {} (expected 16)", authenticator.len());
+            return Err(sqlx::Error::Protocol(format!("Invalid authenticator length: {} (expected 16)", authenticator.len()).into()));
+        }
 
         let result = sqlx::query!(
             r#"
@@ -939,12 +1069,14 @@ impl RadiusAuthServer {
         .fetch_optional(pool)
         .await?;
 
-        debug!("Got Db user for MS-CHAPv2: {:?}", result);
-
+        debug!("MS-CHAPv2: Database query result - found: {}, enabled: {:?}",
+               result.is_some(),
+               result.as_ref().map(|r| r.is_enabled));
 
         match result {
             Some(record) => {
                 if !record.is_enabled {
+                    debug!("MS-CHAPv2: Account disabled for user: {}", username);
                     return Ok(Mschapv2Result {
                         result: AuthResult::AccountDisabled,
                         authenticator_response: None,
@@ -953,45 +1085,56 @@ impl RadiusAuthServer {
                 }
 
                 if let Some(stored_pass) = record.plain_password {
-                    // Generate NT hash from password
+                    debug!("MS-CHAPv2: Password found for user: {} (length: {} bytes)", username, stored_pass.len());
 
+                    // Generate NT hash from password
                     let password_utf16: Vec<u8> = stored_pass.encode_utf16()
                         .flat_map(|c| c.to_le_bytes().to_vec())
                         .collect();
 
+                    debug!("MS-CHAPv2: Password UTF-16LE length: {} bytes", password_utf16.len());
+
                     // Generate NT hash from the UTF-16LE password
                     let password_hash = nt_hash(&password_utf16);
+                    debug!("MS-CHAPv2: Generated password hash: {} bytes", password_hash.len());
 
                     // Generate the challenge using SHA1(peer_challenge + authenticator + username)
                     let challenge = generate_nt_response_challenge(peer_challenge, authenticator, username);
+                    debug!("MS-CHAPv2: Generated challenge: {} bytes", challenge.len());
 
                     // Generate expected response
                     let expected_response = generate_nt_response(&password_hash, &challenge);
+                    debug!("MS-CHAPv2: Generated expected NT-Response: {} bytes", expected_response.len());
 
-                    if nt_response[0..24] == expected_response[0..24] {
+                    // Compare only the first 24 bytes (NT-Response is 24 bytes)
+                    let received_nt_response = &nt_response[0..24];
+                    if received_nt_response == &expected_response[0..24] {
+                        debug!("MS-CHAPv2: NT-Response validation successful for user: {}", username);
                         let authenticator_response = Some(calculate_authenticator_response(
                             &password_hash,
-                            &nt_response[0..24],
+                            received_nt_response,
                             peer_challenge,
                             authenticator,
                             username,
                         ));
+                        debug!("MS-CHAPv2: Generated authenticator response: {} bytes", authenticator_response.as_ref().map(|r| r.len()).unwrap_or(0));
                         Ok(Mschapv2Result {
                             result: AuthResult::Success,
-                            authenticator_response, //authenticator_response,
+                            authenticator_response,
                             password_hash: Some(password_hash)
                         })
                     } else {
-                        debug!("MS-CHAPv2 authentication failed for user: {}", username);
+                        debug!("MS-CHAPv2: NT-Response validation failed for user: {}", username);
+                        debug!("MS-CHAPv2: Expected: {:02x?}", &expected_response[0..24]);
+                        debug!("MS-CHAPv2: Received: {:02x?}", received_nt_response);
                         Ok(Mschapv2Result {
                             result: AuthResult::InvalidPassword,
                             authenticator_response: None,
                             password_hash: None
                         })
                     }
-
-
                 } else {
+                    debug!("MS-CHAPv2: No password stored for user: {}", username);
                     Ok(Mschapv2Result {
                         result: AuthResult::InvalidPassword,
                         authenticator_response: None,
@@ -1000,9 +1143,9 @@ impl RadiusAuthServer {
                 }
             }
             None => {
-                debug!("User not found for MS-CHAPv2: {}", username);
+                debug!("MS-CHAPv2: User not found in database: {}", username);
                 Ok(Mschapv2Result {
-                    result: AuthResult::InvalidPassword,
+                    result: AuthResult::UserNotFound,
                     authenticator_response: None,
                     password_hash: None,
                 })

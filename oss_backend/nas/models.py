@@ -94,6 +94,7 @@ class Nas(models.Model):
     name = models.CharField(_("NAS Name"), max_length=255)
     description = models.TextField(_("Description"), blank=True)
     ip_address = models.CharField(_("IP Address or Hostname"), max_length=255)
+    nas_identifier = models.CharField(_("NAS Identifier"), max_length=255)
     coa_enabled = models.BooleanField(_("CoA Enabled"), default=False)
     coa_port = models.PositiveIntegerField(_("CoA Port"), default=3799)
     groups = models.ManyToManyField(NasGroup, related_name="nas_devices", blank=True, 
@@ -116,6 +117,7 @@ class Nas(models.Model):
         indexes = [
             models.Index(fields=['vendor'], name='nas_vendor_idx'),
             models.Index(fields=['ip_address'], name='nas_ip_idx'),
+            models.Index(fields=['nas_identifier'], name='nas_nas_identifier_idx'),
         ]
         db_table = 'nas_nas'
 

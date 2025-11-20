@@ -15,6 +15,7 @@ pub struct Subscriber {
 pub struct NasDevice {
     pub id: i64,
     pub name: String,
+    pub nas_identifier: String,
     pub is_active: bool,
 }
 

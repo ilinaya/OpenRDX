@@ -76,7 +76,7 @@ impl Config {
 pub struct AuthServer {
     pub config: Config,
     db_pool: PgPool,
-    nas_devices: HashMap<IpNetwork, NasDevice>,
+    nas_devices: HashMap<String, NasDevice>,  // Keyed by nas_identifier
     secrets: HashMap<IpNetwork, SecretInfo>,
 }
 
@@ -247,15 +247,23 @@ impl AuthServer {
         info!("Loading NAS devices from database");
         debug!("Executing NAS devices query");
         
-        let nas_devices = sqlx::query_as!(
-            NasDevice,
+        #[derive(sqlx::FromRow)]
+        struct NasDeviceRow {
+            id: i64,
+            name: String,
+            nas_identifier: String,
+            is_active: bool,
+        }
+        
+        let nas_devices = sqlx::query_as::<_, NasDeviceRow>(
             r#"
             SELECT 
                 nas_nas.id,
                 nas_nas.name,
+                nas_nas.nas_identifier,
                 nas_nas.is_active 
             FROM nas_nas
-            WHERE is_active = true
+            WHERE is_active = true AND nas_identifier IS NOT NULL AND nas_identifier != ''
             "#
         )
         .fetch_all(&self.db_pool)
@@ -264,18 +272,30 @@ impl AuthServer {
         debug!("Query returned {} NAS devices", nas_devices.len());
         self.nas_devices.clear();
         
-        for device in nas_devices {
-            debug!("Processing NAS device: id={}, name={}, is_active={}", 
-                device.id, device.name, device.is_active);
-            info!("Loaded NAS device: {}", device.id);
+        for device_row in nas_devices {
+            let device = NasDevice {
+                id: device_row.id,
+                name: device_row.name,
+                nas_identifier: device_row.nas_identifier.clone(),
+                is_active: device_row.is_active,
+            };
+            debug!("Processing NAS device: id={}, name={}, nas_identifier={}, is_active={}", 
+                device.id, device.name, device.nas_identifier, device.is_active);
+            self.nas_devices.insert(device_row.nas_identifier, device);
+            info!("Loaded NAS device: {} with identifier: {}", device_row.id, device_row.nas_identifier);
         }
 
         info!("Successfully loaded {} NAS devices", self.nas_devices.len());
         Ok(())
     }
 
+    pub fn find_nas_device_by_identifier(&self, nas_identifier: &str) -> Option<&NasDevice> {
+        self.nas_devices.get(nas_identifier)
+    }
+
     pub fn find_nas_device(&self, ip: IpNetwork) -> Option<&NasDevice> {
-        self.nas_devices.get(&ip)
+        // Legacy method - kept for backward compatibility but not used for matching
+        None
     }
 
     pub async fn refresh_nas_devices(&mut self) -> Result<(), Box<dyn std::error::Error>> {

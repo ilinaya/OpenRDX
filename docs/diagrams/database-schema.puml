@@ -90,6 +90,7 @@ package "PostgreSQL - Device Management" {
     * name : VARCHAR
     * description : TEXT
     * ip_address : VARCHAR
+    * nas_identifier : VARCHAR <<UNIQUE>>
     * coa_enabled : BOOLEAN
     * coa_port : INT
     * vendor_id : INT <<FK>>

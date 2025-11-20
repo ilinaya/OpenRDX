@@ -603,7 +603,7 @@ pub async fn list_nas_devices(pool: &Pool, page: i64, page_size: i64) -> Result<
     let offset = (page - 1) * page_size;
     
     let rows = client.query(
-        "SELECT id, name, description, ip_address, coa_enabled, coa_port, vendor_id, secret_id, timezone_id, is_active, created_at, updated_at 
+        "SELECT id, name, description, ip_address, nas_identifier, coa_enabled, coa_port, vendor_id, secret_id, timezone_id, is_active, created_at, updated_at 
          FROM nas_nas 
          ORDER BY name 
          LIMIT $1 OFFSET $2",
@@ -622,7 +622,7 @@ pub async fn count_nas_devices(pool: &Pool) -> Result<i64> {
 pub async fn get_nas_device(pool: &Pool, id: i64) -> Result<Option<Row>> {
     let client = pool.get().await?;
     let row = client.query_opt(
-        "SELECT id, name, description, ip_address, coa_enabled, coa_port, vendor_id, secret_id, timezone_id, is_active, created_at, updated_at 
+        "SELECT id, name, description, ip_address, nas_identifier, coa_enabled, coa_port, vendor_id, secret_id, timezone_id, is_active, created_at, updated_at 
          FROM nas_nas 
          WHERE id = $1",
         &[&id],
@@ -636,6 +636,7 @@ pub async fn create_nas_device(
     name: &str,
     description: Option<&str>,
     ip_address: &str,
+    nas_identifier: &str,
     coa_enabled: bool,
     coa_port: i32,
     vendor_id: i64,
@@ -647,10 +648,10 @@ pub async fn create_nas_device(
     let now = SystemTime::now();
     
     let row = client.query_one(
-        "INSERT INTO nas_nas (name, description, ip_address, coa_enabled, coa_port, vendor_id, secret_id, timezone_id, is_active, created_at, updated_at) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
+        "INSERT INTO nas_nas (name, description, ip_address, nas_identifier, coa_enabled, coa_port, vendor_id, secret_id, timezone_id, is_active, created_at, updated_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
          RETURNING id",
-        &[&name, &description, &ip_address, &coa_enabled, &coa_port, &vendor_id, &secret_id, &timezone_id, &is_active, &now, &now],
+        &[&name, &description, &ip_address, &nas_identifier, &coa_enabled, &coa_port, &vendor_id, &secret_id, &timezone_id, &is_active, &now, &now],
     ).await?;
     
     Ok(row.get(0))
@@ -662,6 +663,7 @@ pub async fn update_nas_device(
     name: Option<&str>,
     description: Option<&str>,
     ip_address: Option<&str>,
+    nas_identifier: Option<&str>,
     coa_enabled: Option<bool>,
     coa_port: Option<i32>,
     vendor_id: Option<i64>,
@@ -690,6 +692,11 @@ pub async fn update_nas_device(
     if ip_address.is_some() {
         updates.push(format!("ip_address = ${}", param_index));
         string_params.push(ip_address.unwrap().to_string());
+        param_index += 1;
+    }
+    if nas_identifier.is_some() {
+        updates.push(format!("nas_identifier = ${}", param_index));
+        string_params.push(nas_identifier.unwrap().to_string());
         param_index += 1;
     }
     if coa_enabled.is_some() {
@@ -733,7 +740,11 @@ pub async fn update_nas_device(
     }
     if ip_address.is_some() {
         params.push(&string_params[string_idx]);
-        // No need to increment - this is the last string parameter
+        string_idx += 1;
+    }
+    if nas_identifier.is_some() {
+        params.push(&string_params[string_idx]);
+        string_idx += 1;
     }
     if let Some(ref val) = coa_enabled {
         params.push(val);

@@ -41,8 +41,8 @@
           <tr>
             <th>{{ 'devices.nas.list.name' | translate }}</th>
             <th>{{ 'devices.nas.list.vendor' | translate }}</th>
-
             <th>{{ 'devices.nas.list.ipAddress' | translate }}</th>
+            <th>{{ 'devices.nas.list.nasIdentifier' | translate }}</th>
             <th>{{ 'devices.nas.list.groups' | translate }}</th>
             <th>{{ 'devices.nas.list.secret' | translate }}</th>
             <th>{{ 'common.actions' | translate }}</th>
@@ -53,14 +53,13 @@
               <tr>
                 <td>{{ nas.name }}</td>
                 <td>{{ nas.vendor?.name || ('common.none' | translate) }}</td>
-
                 <td>{{ nas.ip_address }}</td>
+                <td>{{ nas.nas_identifier }}</td>
                 <td>
                   @for (group of nas.groups; track group; let last = $last) {
                     {{ group.name }}{{ !last ? ', ' : '' }}
                   }
                 </td>
-
                 <td>{{ nas.secret?.name || ('common.none' | translate) }}</td>
 
                 <td>
@@ -83,7 +82,7 @@
             }
             @if (nasDevices.length === 0) {
               <tr>
-                <td colspan="6"
+                <td colspan="7"
                     class="text-center">{{ 'devices.nas.list.noDevices' | translate }}
                 </td>
               </tr>

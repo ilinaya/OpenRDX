@@ -103,6 +103,7 @@ services:
       - JWT_SECRET_KEY=jwt-secret-key-for-development-only
       - JWT_ACCESS_TOKEN_LIFETIME=60
       - JWT_REFRESH_TOKEN_LIFETIME=1
+      - API_KEY_JWT_SECRET=${API_KEY_JWT_SECRET}
       
       # Email settings (Mailgun)
       - MAILGUN_API_KEY=

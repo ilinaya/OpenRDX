@@ -6,12 +6,14 @@ use tokio_rustls::rustls::{Certificate, PrivateKey, ServerConfig};
 use tokio_rustls::TlsAcceptor;
 use dotenv::dotenv;
 use tracing::{info, error};
+use base64::engine::general_purpose::STANDARD;
+use base64::Engine;
 
 mod radius;
 use radius::{RadiusPacket, forward_packet};
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Initialize logging
     tracing_subscriber::fmt::init();
     
@@ -27,8 +29,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cert_base64 = env::var("RADSEC_CERT_BASE64").expect("RADSEC_CERT_BASE64 must be set");
     let key_base64 = env::var("RADSEC_KEY_BASE64").expect("RADSEC_KEY_BASE64 must be set");
     
-    let cert = base64::decode(cert_base64)?;
-    let key = base64::decode(key_base64)?;
+    let cert = STANDARD.decode(cert_base64)?;
+    let key = STANDARD.decode(key_base64)?;
     
     // Configure TLS
     let config = ServerConfig::builder()
@@ -66,7 +68,7 @@ async fn handle_connection(
     acceptor: TlsAcceptor,
     radius_server: String,
     radius_secret: String,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let mut tls_stream = acceptor.accept(stream).await?;
     
     // Read the RadSec packet

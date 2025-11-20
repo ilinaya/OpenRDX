@@ -48,8 +48,8 @@ impl RadiusPacket {
 pub async fn forward_packet(
     packet: &RadiusPacket,
     server_addr: &str,
-    secret: &str,
-) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    _secret: &str,
+) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
     let socket = UdpSocket::bind("0.0.0.0:0").await?;
     let server_addr: SocketAddr = server_addr.parse()?;
     

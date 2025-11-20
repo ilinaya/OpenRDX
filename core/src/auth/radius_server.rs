@@ -42,6 +42,8 @@ const ATTR_NAS_IDENTIFIER: u8 = 32;  // NAS-Identifier attribute type
 
 const ATTR_REPLY_MESSAGE: u8 = 18;  // Reply-Message attribute type
 const ATTR_SERVICE_TYPE: u8 = 6;    // Service-Type attribute type
+const ATTR_SESSION_TIMEOUT: u8 = 27; // Session-Timeout attribute type
+const ATTR_ACCT_INTERIM_INTERVAL: u8 = 85; // Acct-Interim-Interval attribute type
 
 // Service-Type values
 const SERVICE_TYPE_LOGIN_USER: u32 = 1;          // Login-User
@@ -1328,33 +1330,8 @@ impl RadiusAuthServer {
             value: vsa_value,
         });
 
-        // MS-MPPE-Encryption-Policy
-        // Value 1 = Encryption-Required (may not be needed for Winbox, but included for compatibility)
-        let mppe_policy = [0, 0, 0, 1];
-        response.attributes.push(RadiusAttribute {
-            typ: ATTR_VENDOR_SPECIFIC,
-            value: [
-                &VENDOR_MICROSOFT.to_be_bytes()[..],
-                &[VENDOR_ATTR_MS_MPPE_ENCRYPTION_POLICY, 6],
-                &mppe_policy[..],
-            ]
-                .concat(),
-        });
-        debug!("MS-MPPE-Encryption-Policy: {:02x?}", mppe_policy);
-
-        // MS-MPPE-Encryption-Types
-        // Value 6 = RC4-40 (0x00000006) - may not be needed for Winbox, but included for compatibility
-        let mppe_types = [0, 0, 0, 6];
-        response.attributes.push(RadiusAttribute {
-            typ: ATTR_VENDOR_SPECIFIC,
-            value: [
-                &VENDOR_MICROSOFT.to_be_bytes()[..],
-                &[VENDOR_ATTR_MS_MPPE_ENCRYPTION_TYPES, 6],
-                &mppe_types[..],
-            ]
-                .concat(),
-        });
-        debug!("MS-MPPE-Encryption-Types: {:02x?}", mppe_types);
+        // Note: MS-MPPE-Encryption-Policy (311:7) and MS-MPPE-Encryption-Types (311:8) are deprecated
+        // and not needed according to legacy code, so we skip them
 
         // Session keys
         let (send_key, recv_key) = Self::get_mschapv2_session_keys(password_hash, nt_response);
@@ -1439,6 +1416,34 @@ impl RadiusAuthServer {
             typ: ATTR_VENDOR_SPECIFIC,
             value: mikrotik_group_vsa,
         });
+
+        // Session-Timeout (attribute type 27, value in seconds)
+        // Common values: 3600 (1 hour), 7200 (2 hours), 86400 (24 hours)
+        // Using 3600 seconds (1 hour) as default
+        let session_timeout: u32 = 3600;
+        response.attributes.push(RadiusAttribute {
+            typ: ATTR_SESSION_TIMEOUT,
+            value: session_timeout.to_be_bytes().to_vec(),
+        });
+        debug!("Session-Timeout: {} seconds ({} minutes)", session_timeout, session_timeout / 60);
+
+        // Acct-Interim-Interval (attribute type 85, value in seconds)
+        // Common values: 300 (5 minutes), 600 (10 minutes), 3600 (1 hour)
+        // Using 600 seconds (10 minutes) as default
+        let acct_interim_interval: u32 = 600;
+        response.attributes.push(RadiusAttribute {
+            typ: ATTR_ACCT_INTERIM_INTERVAL,
+            value: acct_interim_interval.to_be_bytes().to_vec(),
+        });
+        debug!("Acct-Interim-Interval: {} seconds ({} minutes)", acct_interim_interval, acct_interim_interval / 60);
+
+        // Reply-Message (attribute type 18, string value)
+        let reply_message = b"hello";
+        response.attributes.push(RadiusAttribute {
+            typ: ATTR_REPLY_MESSAGE,
+            value: reply_message.to_vec(),
+        });
+        debug!("Reply-Message: {}", String::from_utf8_lossy(reply_message));
 
         // Message-Authenticator placeholder
         response.attributes.push(RadiusAttribute {

@@ -25,6 +25,8 @@ export class ApiKeyListComponent implements OnInit {
   totalPages = 1;
   totalItems = 0;
   pageSize = 10;
+  selectedApiKey: ApiKey | null = null;
+  copied = false;
 
   constructor(
     private apiKeyService: ApiKeyService,
@@ -101,12 +103,25 @@ export class ApiKeyListComponent implements OnInit {
     });
   }
 
+  viewApiKey(apiKey: ApiKey): void {
+    this.selectedApiKey = apiKey;
+    this.copied = false;
+  }
+
+  closeModal(): void {
+    this.selectedApiKey = null;
+    this.copied = false;
+  }
+
   copyToClipboard(text: string): void {
     navigator.clipboard.writeText(text).then(() => {
-      // You could show a toast notification here
-      console.log('Copied to clipboard');
+      this.copied = true;
+      setTimeout(() => {
+        this.copied = false;
+      }, 2000);
     }).catch(err => {
       console.error('Failed to copy to clipboard:', err);
+      this.error = 'Failed to copy to clipboard';
     });
   }
 

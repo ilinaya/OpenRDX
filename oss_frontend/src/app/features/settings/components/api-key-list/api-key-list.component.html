@@ -31,7 +31,6 @@
         <thead>
         <tr>
           <th>{{ 'settings.apiKeys.name' | translate }}</th>
-          <th>{{ 'settings.apiKeys.key' | translate }}</th>
           <th>{{ 'settings.apiKeys.expiresAt' | translate }}</th>
           <th>{{ 'settings.apiKeys.daysUntilExpiry' | translate }}</th>
           <th>{{ 'settings.apiKeys.status' | translate }}</th>
@@ -44,14 +43,6 @@
           @for (apiKey of apiKeys; track apiKey.id) {
             <tr>
               <td>{{ apiKey.name }}</td>
-              <td class="key-cell">
-                <div class="key-container">
-                  <code class="api-key-value">{{ apiKey.key }}</code>
-                  <button class="btn-copy" (click)="copyToClipboard(apiKey.key)" title="Copy to clipboard">
-                    <i class="fas fa-copy"></i>
-                  </button>
-                </div>
-              </td>
               <td>{{ apiKey.expires_at | date:'medium' }}</td>
               <td>
                 <span class="days-badge" [class.expired]="apiKey.is_expired" [class.warning]="apiKey.days_until_expiry <= 30 && !apiKey.is_expired">
@@ -72,6 +63,9 @@
               <td>{{ apiKey.created_by_email || ('common.unknown' | translate) }}</td>
               <td>{{ apiKey.created_at | date:'medium' }}</td>
               <td class="actions">
+                <button class="btn btn-sm btn-info" (click)="viewApiKey(apiKey)" title="View API Key">
+                  <i class="fas fa-eye"></i> View
+                </button>
                 @if (apiKey.is_active && !apiKey.is_expired) {
                   <button class="btn btn-sm btn-warning" (click)="revokeApiKey(apiKey)" title="{{ 'settings.apiKeys.revoke' | translate }}">
                     <i class="fas fa-ban"></i> {{ 'settings.apiKeys.revoke' | translate }}
@@ -112,4 +106,69 @@
     </div>
   }
 </div>
+
+<!-- API Key View Modal -->
+@if (selectedApiKey) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ selectedApiKey.name }}</h3>
+        <button class="modal-close" (click)="closeModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="api-key-display">
+          <label class="field-label">{{ 'settings.apiKeys.key' | translate }}</label>
+          <div class="key-container">
+            <code class="api-key-value">{{ selectedApiKey.key }}</code>
+            <button class="btn-copy" (click)="copyToClipboard(selectedApiKey.key)" [class.copied]="copied">
+              <i class="fas" [class.fa-copy]="!copied" [class.fa-check]="copied"></i>
+              <span>{{ copied ? 'Copied!' : 'Copy' }}</span>
+            </button>
+          </div>
+        </div>
+        <div class="api-key-info">
+          <div class="info-row">
+            <span class="info-label">{{ 'settings.apiKeys.expiresAt' | translate }}:</span>
+            <span class="info-value">{{ selectedApiKey.expires_at | date:'medium' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">{{ 'settings.apiKeys.daysUntilExpiry' | translate }}:</span>
+            <span class="info-value">
+              <span class="days-badge" [class.expired]="selectedApiKey.is_expired" [class.warning]="selectedApiKey.days_until_expiry <= 30 && !selectedApiKey.is_expired">
+                {{ selectedApiKey.days_until_expiry }} {{ 'settings.apiKeys.days' | translate }}
+              </span>
+            </span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">{{ 'settings.apiKeys.status' | translate }}:</span>
+            <span class="info-value">
+              <span class="status-badge" [class.active]="selectedApiKey.is_active && !selectedApiKey.is_expired" [class.inactive]="!selectedApiKey.is_active || selectedApiKey.is_expired">
+                @if (selectedApiKey.is_expired) {
+                  {{ 'settings.apiKeys.expired' | translate }}
+                } @else if (selectedApiKey.is_active) {
+                  {{ 'common.active' | translate }}
+                } @else {
+                  {{ 'common.inactive' | translate }}
+                }
+              </span>
+            </span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">{{ 'settings.apiKeys.createdBy' | translate }}:</span>
+            <span class="info-value">{{ selectedApiKey.created_by_email || ('common.unknown' | translate) }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">{{ 'settings.apiKeys.createdAt' | translate }}:</span>
+            <span class="info-value">{{ selectedApiKey.created_at | date:'medium' }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" (click)="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+}
 

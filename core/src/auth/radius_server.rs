@@ -7,6 +7,7 @@ use std::io::BufReader;
 use crate::auth::AuthServer;
 use hmac::{Hmac, Mac};
 use md5::{Md5};
+use hex;
 
 use digest::{Digest, KeyInit};
 use rustls::{Certificate, PrivateKey, ServerConfig};
@@ -34,6 +35,7 @@ const VENDOR_ATTR_MS_CHAP2_CHALLENGE: u8 = 11;   // Microsoft's MS-CHAPv2-Challe
 const VENDOR_ATTR_MS_CHAP2_SUCCESS: u8 = 26;     // Microsoft's MS-CHAP2-Success
 const VENDOR_ATTR_MS_MPPE_ENCRYPTION_POLICY: u8 = 7;  // Microsoft's MS-MPPE-Encryption-Policy
 const VENDOR_ATTR_MS_MPPE_ENCRYPTION_TYPES: u8 = 8;   // Microsoft's MS-MPPE-Encryption-Types
+const VENDOR_ATTR_MS_CHAP_MPPE_KEYS: u8 = 12;         // Microsoft's MS-CHAP-MPPE-Keys (combined, old format)
 const VENDOR_ATTR_MS_MPPE_SEND_KEY: u8 = 16;          // Microsoft's MS-MPPE-Send-Key
 const VENDOR_ATTR_MS_MPPE_RECV_KEY: u8 = 17;          // Microsoft's MS-MPPE-Recv-Key
 
@@ -1217,46 +1219,50 @@ impl RadiusAuthServer {
         // Encode the packet to get the complete structure
         let mut encoded = response.encode();
 
-        // 1. Calculate Response Authenticator first
-        let mut hasher = md5::Md5::new();
-        hasher.update(&encoded[0..4]); // Code+ID+Length
-        hasher.update(&request.authenticator); // RequestAuth
-        hasher.update(&encoded[20..]); // Attributes
-        hasher.update(secret.as_bytes()); // Secret
-        let response_auth = hasher.finalize();
+        // Correct algorithm for Access-Accept with Message-Authenticator:
+        // ① Build Access-Accept with Message-Authenticator = 0s (already done)
+        // ② Set authenticator = request.authenticator (TEMPORARY, for Message-Authenticator calculation)
+        // ③ Compute Message-Authenticator (HMAC-MD5)
+        // ④ Put Message-Authenticator into the packet
+        // ⑤ Now compute real Response-Authenticator (MD5)
+        // ⑥ Patch final authenticator (16 bytes)
 
-        // Update Response Authenticator in the packet
-        encoded[4..20].copy_from_slice(&response_auth);
-
-        // 2. Calculate Message-Authenticator if present
         if has_msg_auth {
             if let Some(pos) = encoded.windows(2).position(|w| w[0] == ATTR_MESSAGE_AUTHENTICATOR) {
-                // Create a temporary packet with zeroed Message-Authenticator
-                let mut temp_packet = encoded.clone();
+                // ② Create temporary packet with request authenticator for Message-Authenticator calculation
+                let mut temp_for_mac = encoded.clone();
+                temp_for_mac[4..20].copy_from_slice(&request.authenticator);
+                
+                // Zero out Message-Authenticator in temp packet
                 for i in 0..16 {
-                    temp_packet[pos + 2 + i] = 0;
+                    temp_for_mac[pos + 2 + i] = 0;
                 }
 
-                // Calculate HMAC-MD5 over the entire packet
+                // ③ Calculate Message-Authenticator = HMAC-MD5 over the whole packet
                 let mut mac = <Hmac<Md5> as Mac>::new_from_slice(secret.as_bytes())
                     .expect("HMAC can take key of any size");
-                mac.update(&temp_packet);
-                let result = mac.finalize();
-                let message_auth = result.into_bytes();
+                mac.update(&temp_for_mac);
+                let message_auth = mac.finalize().into_bytes();
 
-                // Update Message-Authenticator in the packet
+                // ④ Put Message-Authenticator into the packet
                 encoded[pos + 2..pos + 18].copy_from_slice(&message_auth);
                 debug!("Message-Authenticator calculated: {:?}", message_auth);
-
-                // Verify the Message-Authenticator is not zeroed out
-                let is_zeroed = encoded[pos + 2..pos + 18].iter().all(|&b| b == 0);
-                if is_zeroed {
-                    error!("Message-Authenticator is zeroed out after calculation in create_access_accept!");
-                }
             }
         }
 
-        // Debug the final encoded packet
+        // ⑤ Compute Response-Authenticator = MD5(Code || Identifier || Length || RequestAuth || Attributes || Secret)
+        // Note: Use request.authenticator in the calculation, NOT the packet's authenticator field
+        let mut hasher = md5::Md5::new();
+        hasher.update(&encoded[0..4]); // Code+ID+Length
+        hasher.update(&request.authenticator); // RequestAuth (from request, not from encoded packet)
+        hasher.update(&encoded[20..]); // Attributes (with Message-Authenticator already set)
+        hasher.update(secret.as_bytes()); // Secret
+        let response_auth = hasher.finalize();
+
+        // ⑥ Patch final Response-Authenticator into the packet
+        encoded[4..20].copy_from_slice(&response_auth);
+
+        debug!("✅ Final Response Authenticator: {:02X?}", response_auth);
         debug!("Final encoded packet: {:?}", encoded);
 
         encoded
@@ -1292,20 +1298,33 @@ impl RadiusAuthServer {
             value: SERVICE_TYPE_LOGIN_USER.to_be_bytes().to_vec(),
         });
 
-        // MS-CHAP2-Success format according to RFC 2759:
-        // Byte 0: Identifier (from MS-CHAPv2-Response)
-        // Bytes 1-20: Authenticator Response (20 bytes, NOT hex-encoded)
+        // MS-CHAP2-Success format required by MikroTik: "S=<40 hex>"
+        // Format: "S=" followed by uppercase hex-encoded authenticator response
         assert_eq!(authenticator_response.len(), 20, "Authenticator response must be exactly 20 bytes");
-        let mut ms_chap_success = vec![ms_chap_v2_ident];
-        ms_chap_success.extend_from_slice(&authenticator_response);
         
-        debug!("MS-CHAP2-Success: identifier={}, authenticator_response={:02x?}, total_length={}", 
-               ms_chap_v2_ident, authenticator_response, ms_chap_success.len());
+        let mut ascii = String::from("S=");
+        ascii.push_str(&hex::encode_upper(authenticator_response));
+        let ms_chap_success = ascii.into_bytes();
+        
+        // Verify the MS-CHAP2-Success data structure
+        // "S=" (2 bytes) + 40 hex characters (20 bytes * 2) = 42 bytes total
+        assert_eq!(ms_chap_success.len(), 42, "MS-CHAP2-Success must be exactly 42 bytes (\"S=\" + 40 hex characters)");
+        
+        debug!("MS-CHAP2-Success: format=\"{}\", authenticator_response={:02x?}, total_length={}", 
+               String::from_utf8_lossy(&ms_chap_success), authenticator_response, ms_chap_success.len());
 
         // VSA format: Vendor-ID (4 bytes) + Vendor-Type (1 byte) + Vendor-Length (1 byte) + Data (N bytes)
-        // Vendor-Length = 2 + N (includes Vendor-Type and Vendor-Length fields themselves)
-        // Total VSA value = 4 + 1 + 1 + N = 6 + N bytes
-        let vendor_length = (ms_chap_success.len() + 2) as u8;
+        // CRITICAL: vendor_length MUST be exactly 2 + data_length
+        // vendor_length includes: Vendor-Type (1 byte) + Vendor-Length (1 byte) + Data (N bytes)
+        // So vendor_length = 2 + N
+        let data_length = ms_chap_success.len();
+        let vendor_length = (2 + data_length) as u8;
+        
+        // Verify vendor_length calculation BEFORE creating VSA
+        assert_eq!(vendor_length as usize, 2 + data_length,
+                   "MS-CHAP2-Success: vendor_length MUST be exactly 2 + data_length. Got vendor_length={}, data_length={}, expected={}",
+                   vendor_length, data_length, 2 + data_length);
+        
         let vsa_value = [
             &VENDOR_MICROSOFT.to_be_bytes()[..],
             &[VENDOR_ATTR_MS_CHAP2_SUCCESS, vendor_length],
@@ -1313,13 +1332,15 @@ impl RadiusAuthServer {
         ].concat();
         
         // Verify the VSA length calculation is correct
-        let expected_vsa_length = 4 + 1 + 1 + ms_chap_success.len(); // Vendor-ID + Vendor-Type + Vendor-Length + Data
+        let expected_vsa_length = 4 + 1 + 1 + data_length; // Vendor-ID (4) + Vendor-Type (1) + Vendor-Length (1) + Data (N)
         assert_eq!(vsa_value.len(), expected_vsa_length,
                    "MS-CHAP2-Success VSA length mismatch: expected {}, got {}",
                    expected_vsa_length, vsa_value.len());
-        assert_eq!(vendor_length as usize, 2 + ms_chap_success.len(),
-                   "MS-CHAP2-Success vendor_length mismatch: expected {}, got {}",
-                   2 + ms_chap_success.len(), vendor_length);
+        
+        // Double-check vendor_length byte in the VSA
+        assert_eq!(vsa_value[5], vendor_length,
+                   "MS-CHAP2-Success: vendor_length byte in VSA ({}) doesn't match calculated value ({})",
+                   vsa_value[5], vendor_length);
         
         debug!("MS-CHAP2-Success VSA: vendor_length={}, data_length={}, total_vsa_length={}, expected_vsa_length={}", 
                vendor_length, ms_chap_success.len(), vsa_value.len(), expected_vsa_length);
@@ -1344,61 +1365,57 @@ impl RadiusAuthServer {
         debug!("MS-CHAPv2: Encrypted send key (hex): {:02x?}", &enc_send);
         debug!("MS-CHAPv2: Encrypted recv key (hex): {:02x?}", &enc_recv);
 
-        // Send Key
-        // VSA format: Vendor-ID (4 bytes) + Vendor-Type (1 byte) + Vendor-Length (1 byte) + Data (N bytes)
-        // Vendor-Length = 2 + N (includes Vendor-Type and Vendor-Length fields themselves)
-        // Total VSA value = 4 (Vendor-ID) + 1 (Vendor-Type) + 1 (Vendor-Length) + N (Data) = 6 + N bytes
-        let send_key_vendor_length = (enc_send.len() + 2) as u8;
-        let send_key_vsa = [
+        // MS-CHAP-MPPE-Keys (VSA 311:12) - Combined format for MikroTik
+        // This is the old combined format that contains both send and recv keys in one attribute
+        // Format: Send-Key (encrypted) + Recv-Key (encrypted)
+        let combined_mppe_keys = [&enc_send[..], &enc_recv[..]].concat();
+        
+        // CRITICAL: vendor_length MUST be exactly 2 + data_length
+        // vendor_length includes: Vendor-Type (1 byte) + Vendor-Length (1 byte) + Data (N bytes)
+        // So vendor_length = 2 + N
+        let data_length = combined_mppe_keys.len();
+        let mppe_keys_vendor_length = (2 + data_length) as u8;
+        
+        // Verify vendor_length calculation BEFORE creating VSA
+        assert_eq!(mppe_keys_vendor_length as usize, 2 + data_length,
+                   "MS-CHAP-MPPE-Keys: vendor_length MUST be exactly 2 + data_length. Got vendor_length={}, data_length={}, expected={}",
+                   mppe_keys_vendor_length, data_length, 2 + data_length);
+        
+        let mppe_keys_vsa = [
             &VENDOR_MICROSOFT.to_be_bytes()[..],
-            &[VENDOR_ATTR_MS_MPPE_SEND_KEY, send_key_vendor_length],
-            &enc_send[..],
+            &[VENDOR_ATTR_MS_CHAP_MPPE_KEYS, mppe_keys_vendor_length],
+            &combined_mppe_keys[..],
         ].concat();
         
         // Verify the VSA length calculation is correct
-        let expected_vsa_length = 4 + 1 + 1 + enc_send.len(); // Vendor-ID + Vendor-Type + Vendor-Length + Data
-        assert_eq!(send_key_vsa.len(), expected_vsa_length, 
-                   "MS-MPPE-Send-Key VSA length mismatch: expected {}, got {}", 
-                   expected_vsa_length, send_key_vsa.len());
-        assert_eq!(send_key_vendor_length as usize, 2 + enc_send.len(),
-                   "MS-MPPE-Send-Key vendor_length mismatch: expected {}, got {}", 
-                   2 + enc_send.len(), send_key_vendor_length);
+        let expected_mppe_keys_vsa_length = 4 + 1 + 1 + data_length; // Vendor-ID (4) + Vendor-Type (1) + Vendor-Length (1) + Data (N)
+        assert_eq!(mppe_keys_vsa.len(), expected_mppe_keys_vsa_length,
+                   "MS-CHAP-MPPE-Keys VSA length mismatch: expected {}, got {}",
+                   expected_mppe_keys_vsa_length, mppe_keys_vsa.len());
         
-        debug!("MS-MPPE-Send-Key VSA: vendor_length={}, data_length={}, total_vsa_length={}, expected_vsa_length={}", 
-               send_key_vendor_length, enc_send.len(), send_key_vsa.len(), expected_vsa_length);
-        debug!("MS-MPPE-Send-Key VSA (hex): {:02x?}", &send_key_vsa);
+        // Double-check vendor_length byte in the VSA
+        assert_eq!(mppe_keys_vsa[5], mppe_keys_vendor_length,
+                   "MS-CHAP-MPPE-Keys: vendor_length byte in VSA ({}) doesn't match calculated value ({})",
+                   mppe_keys_vsa[5], mppe_keys_vendor_length);
+        
+        debug!("MS-CHAP-MPPE-Keys VSA: vendor_id={}, vendor_type={}, vendor_length={}, send_key_length={}, recv_key_length={}, total_data_length={}, total_vsa_length={}", 
+               VENDOR_MICROSOFT, VENDOR_ATTR_MS_CHAP_MPPE_KEYS, mppe_keys_vendor_length,
+               enc_send.len(), enc_recv.len(), combined_mppe_keys.len(), mppe_keys_vsa.len());
+        debug!("MS-CHAP-MPPE-Keys VSA (hex): {:02x?}", &mppe_keys_vsa);
+        debug!("MS-CHAP-MPPE-Keys combined data (hex): {:02x?}", &combined_mppe_keys);
+        
         response.attributes.push(RadiusAttribute {
             typ: ATTR_VENDOR_SPECIFIC,
-            value: send_key_vsa,
-        });
-
-        // Recv Key
-        let recv_key_vendor_length = (enc_recv.len() + 2) as u8;
-        let recv_key_vsa = [
-            &VENDOR_MICROSOFT.to_be_bytes()[..],
-            &[VENDOR_ATTR_MS_MPPE_RECV_KEY, recv_key_vendor_length],
-            &enc_recv[..],
-        ].concat();
-        
-        // Verify the VSA length calculation is correct
-        let expected_recv_vsa_length = 4 + 1 + 1 + enc_recv.len();
-        assert_eq!(recv_key_vsa.len(), expected_recv_vsa_length,
-                   "MS-MPPE-Recv-Key VSA length mismatch: expected {}, got {}",
-                   expected_recv_vsa_length, recv_key_vsa.len());
-        assert_eq!(recv_key_vendor_length as usize, 2 + enc_recv.len(),
-                   "MS-MPPE-Recv-Key vendor_length mismatch: expected {}, got {}",
-                   2 + enc_recv.len(), recv_key_vendor_length);
-        
-        debug!("MS-MPPE-Recv-Key VSA: vendor_length={}, data_length={}, total_vsa_length={}, expected_vsa_length={}", 
-               recv_key_vendor_length, enc_recv.len(), recv_key_vsa.len(), expected_recv_vsa_length);
-        debug!("MS-MPPE-Recv-Key VSA (hex): {:02x?}", &recv_key_vsa);
-        response.attributes.push(RadiusAttribute {
-            typ: ATTR_VENDOR_SPECIFIC,
-            value: recv_key_vsa,
+            value: mppe_keys_vsa,
         });
 
         // MikroTik-Group attribute (Vendor ID 14988, Type 3, Value "full")
-        let mikrotik_group_value = b"full";
+        // Using byte string literal to ensure no null terminator
+        let mikrotik_group_value: &[u8] = b"full";
+        // Verify no null bytes in the value
+        assert!(!mikrotik_group_value.contains(&0u8), "MikroTik-Group value contains null byte!");
+        assert_eq!(mikrotik_group_value.len(), 4, "MikroTik-Group value should be exactly 4 bytes");
+        
         let mikrotik_group_vendor_length = (mikrotik_group_value.len() + 2) as u8; // Vendor-Type + Vendor-Length + Data
         let mikrotik_group_vsa = [
             &VENDOR_MIKROTIK.to_be_bytes()[..],
@@ -1406,10 +1423,14 @@ impl RadiusAuthServer {
             mikrotik_group_value,
         ].concat();
         
+        // Verify no null bytes in the VSA
+        assert!(!mikrotik_group_vsa.contains(&0u8), "MikroTik-Group VSA contains null byte!");
+        
         debug!("MikroTik-Group VSA: vendor_id={}, vendor_type={}, vendor_length={}, data_length={}, total_vsa_length={}", 
                VENDOR_MIKROTIK, VENDOR_ATTR_MIKROTIK_GROUP, mikrotik_group_vendor_length, 
                mikrotik_group_value.len(), mikrotik_group_vsa.len());
         debug!("MikroTik-Group VSA (hex): {:02x?}", &mikrotik_group_vsa);
+        debug!("MikroTik-Group value (bytes): {:?}, length: {}", mikrotik_group_value, mikrotik_group_value.len());
         debug!("MikroTik-Group value: {}", String::from_utf8_lossy(mikrotik_group_value));
         
         response.attributes.push(RadiusAttribute {
@@ -1438,11 +1459,21 @@ impl RadiusAuthServer {
         debug!("Acct-Interim-Interval: {} seconds ({} minutes)", acct_interim_interval, acct_interim_interval / 60);
 
         // Reply-Message (attribute type 18, string value)
-        let reply_message = b"hello";
+        // Using byte string literal to ensure no null terminator
+        let reply_message: &[u8] = b"hello";
+        // Verify no null bytes in the message
+        assert!(!reply_message.contains(&0u8), "Reply-Message contains null byte!");
+        assert_eq!(reply_message.len(), 5, "Reply-Message should be exactly 5 bytes");
+        
+        let reply_message_vec = reply_message.to_vec();
+        // Double-check no null bytes in the vector
+        assert!(!reply_message_vec.contains(&0u8), "Reply-Message vector contains null byte!");
+        
         response.attributes.push(RadiusAttribute {
             typ: ATTR_REPLY_MESSAGE,
-            value: reply_message.to_vec(),
+            value: reply_message_vec,
         });
+        debug!("Reply-Message (bytes): {:?}, length: {}", reply_message, reply_message.len());
         debug!("Reply-Message: {}", String::from_utf8_lossy(reply_message));
 
         // Message-Authenticator placeholder
@@ -1452,9 +1483,15 @@ impl RadiusAuthServer {
         });
 
         // === Encode and patch ===
-        let mut encoded = response.encode();
+        // Correct algorithm for Access-Accept with Message-Authenticator:
+        // ① Build Access-Accept with Message-Authenticator = 0s (already done)
+        // ② Set authenticator = request.authenticator (TEMPORARY, for Message-Authenticator calculation)
+        // ③ Compute Message-Authenticator (HMAC-MD5)
+        // ④ Put Message-Authenticator into the packet
+        // ⑤ Now compute real Response-Authenticator (MD5)
+        // ⑥ Patch final authenticator (16 bytes)
 
-        encoded[4..20].copy_from_slice(&request.authenticator);
+        let mut encoded = response.encode();
 
         // Find Message-Authenticator
         let mut msg_auth_pos = None;
@@ -1473,36 +1510,33 @@ impl RadiusAuthServer {
         }
 
         if let Some(pos) = msg_auth_pos {
+            // ② Create temporary packet with request authenticator for Message-Authenticator calculation
             let mut temp_for_mac = encoded.clone();
+            temp_for_mac[4..20].copy_from_slice(&request.authenticator);
+            
+            // Zero out Message-Authenticator in temp packet
             for i in 0..16 {
                 temp_for_mac[pos + 2 + i] = 0;
             }
-            temp_for_mac[4..20].copy_from_slice(&request.authenticator);
 
-            // Calculate Message-Authenticator = HMAC-MD5 over the whole packet with the secret
+            // ③ Calculate Message-Authenticator = HMAC-MD5 over the whole packet with the secret
             let mut mac = <HmacMd5 as hmac::digest::KeyInit>::new_from_slice(secret.as_bytes()).unwrap();
-
             mac.update(&temp_for_mac);
             let msg_auth = mac.finalize().into_bytes();
-            // Patch into our encoded buffer (which still has a request authenticator)
+            
+            // ④ Put Message-Authenticator into the packet
             encoded[pos + 2..pos + 18].copy_from_slice(&msg_auth);
 
-            // --- PASS 3: Now compute the final Response Authenticator
-
-            // Build buffer for Response Authenticator calculation:
-            let mut temp_for_auth = encoded.clone();
-            // Set authenticator to request authenticator (per RFC) for calculation
-            temp_for_auth[4..20].copy_from_slice(&request.authenticator);
-
-            // Compute correct Response Authenticator
+            // ⑤ Compute Response-Authenticator = MD5(Code || Identifier || Length || RequestAuth || Attributes || Secret)
+            // Note: Use request.authenticator in the calculation, NOT the packet's authenticator field
             let mut md5 = Md5::new();
-            md5.update(&temp_for_auth[0..4]);
-            md5.update(&request.authenticator);
-            md5.update(&temp_for_auth[20..]);
-            md5.update(secret.as_bytes());
+            md5.update(&encoded[0..4]); // Code+ID+Length
+            md5.update(&request.authenticator); // RequestAuth (from request, not from encoded packet)
+            md5.update(&encoded[20..]); // Attributes (with Message-Authenticator already set)
+            md5.update(secret.as_bytes()); // Secret
             let response_auth = md5.finalize();
 
-            // Patch Response Authenticator into header of the final output
+            // ⑥ Patch final Response-Authenticator into the packet
             encoded[4..20].copy_from_slice(&response_auth);
 
             debug!("✅ Final Response Authenticator: {:02X?}", response_auth);
@@ -1512,6 +1546,14 @@ impl RadiusAuthServer {
 
         } else {
             error!("❌ Message-Authenticator not found in packet!");
+            // Even without Message-Authenticator, we still need to calculate Response-Authenticator
+            let mut md5 = Md5::new();
+            md5.update(&encoded[0..4]); // Code+ID+Length
+            md5.update(&request.authenticator); // RequestAuth
+            md5.update(&encoded[20..]); // Attributes
+            md5.update(secret.as_bytes()); // Secret
+            let response_auth = md5.finalize();
+            encoded[4..20].copy_from_slice(&response_auth);
             encoded
         }
 

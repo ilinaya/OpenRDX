@@ -273,16 +273,17 @@ impl AuthServer {
         self.nas_devices.clear();
         
         for device_row in nas_devices {
+            let nas_identifier = device_row.nas_identifier.clone();
             let device = NasDevice {
                 id: device_row.id,
                 name: device_row.name,
-                nas_identifier: device_row.nas_identifier.clone(),
+                nas_identifier: nas_identifier.clone(),
                 is_active: device_row.is_active,
             };
             debug!("Processing NAS device: id={}, name={}, nas_identifier={}, is_active={}", 
                 device.id, device.name, device.nas_identifier, device.is_active);
-            self.nas_devices.insert(device_row.nas_identifier, device);
-            info!("Loaded NAS device: {} with identifier: {}", device_row.id, device_row.nas_identifier);
+            self.nas_devices.insert(nas_identifier.clone(), device);
+            info!("Loaded NAS device: {} with identifier: {}", device_row.id, nas_identifier);
         }
 
         info!("Successfully loaded {} NAS devices", self.nas_devices.len());

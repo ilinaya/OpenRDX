@@ -1,3 +1,4 @@
+use crate::warn;
 use tokio::net::UdpSocket;
 use tracing::{info, debug, error};
 use std::sync::Arc;
@@ -880,7 +881,7 @@ impl RadiusAuthServer {
                     })
                     .unwrap_or(0); // fallback
 
-                match self.authenticate_mschap2(&username.unwrap(), &peer_challenge, &nt_response, &auth_challenge, secret).await {
+                match self.authenticate_mschap2(&username.clone().unwrap(), &peer_challenge, &nt_response, &auth_challenge, secret).await {
                     Ok(mschapv2_result) => match mschapv2_result.result {
                         AuthResult::Success => {
                             if let Some(auth_resp) = mschapv2_result.authenticator_response {
@@ -898,7 +899,7 @@ impl RadiusAuthServer {
                             }
                         }
                         AuthResult::UserNotFound => {
-                            debug!("MS-CHAPv2: User not found: {}", username.unwrap());
+                            debug!("MS-CHAPv2: User not found: {}", username.clone().unwrap());
                             self.create_access_reject(packet, secret, &format!("MS-CHAPv2: User '{}' not found", username.unwrap()))
                         }
                         AuthResult::InvalidPassword => {
@@ -906,7 +907,7 @@ impl RadiusAuthServer {
                             self.create_access_reject(packet, secret, "MS-CHAPv2: Password incorrect or NT-Response validation failed")
                         }
                         AuthResult::AccountDisabled => {
-                            debug!("MS-CHAPv2: Account disabled for user: {}", username.unwrap());
+                            debug!("MS-CHAPv2: Account disabled for user: {}", username.clone().unwrap());
                             self.create_access_reject(packet, secret, &format!("MS-CHAPv2: Account for user '{}' is disabled", username.unwrap()))
                         }
                         AuthResult::DatabaseError(e) => {

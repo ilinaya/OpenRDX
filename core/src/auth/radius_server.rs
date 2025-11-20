@@ -1412,7 +1412,7 @@ impl RadiusAuthServer {
         // MikroTik-Group attribute (Vendor ID 14988, Type 3, Value "full")
         // Using byte string literal to ensure no null terminator
         let mikrotik_group_value: &[u8] = b"full";
-        // Verify no null bytes in the value
+        // Verify no null bytes in the value (data portion only)
         assert!(!mikrotik_group_value.contains(&0u8), "MikroTik-Group value contains null byte!");
         assert_eq!(mikrotik_group_value.len(), 4, "MikroTik-Group value should be exactly 4 bytes");
         
@@ -1423,8 +1423,8 @@ impl RadiusAuthServer {
             mikrotik_group_value,
         ].concat();
         
-        // Verify no null bytes in the VSA
-        assert!(!mikrotik_group_vsa.contains(&0u8), "MikroTik-Group VSA contains null byte!");
+        // Note: The VSA may contain null bytes in the vendor ID portion (e.g., vendor ID 14988 = [0x00, 0x00, 0x3A, 0x8C])
+        // This is normal and expected for VSA format. We only verify the data portion has no null bytes.
         
         debug!("MikroTik-Group VSA: vendor_id={}, vendor_type={}, vendor_length={}, data_length={}, total_vsa_length={}", 
                VENDOR_MIKROTIK, VENDOR_ATTR_MIKROTIK_GROUP, mikrotik_group_vendor_length, 
